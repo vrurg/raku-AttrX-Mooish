@@ -2,21 +2,26 @@ use Test;
 use AttrX::Extended;
 use Data::Dump;
 
-class Foo {
-    has Int $.bar is rw is extended(builder=>'init-bar', lazy=>1, :clearer);
-    has Int $.attr is rw; 
-    has $.build-count is rw = 0;
+subtest "Class Basics", {
+    class Foo {
+        has Int $.bar is rw is extended(builder=>'init-bar', lazy=>1, :clearer);
+        has Int $.attr is rw; 
+        has $.build-count is rw = 0;
 
-    method init-bar {
-        note "init-bar()";
-        $!build-count++;
-        31415926;
-    }
+        method init-bar {
+            note "init-bar()";
+            $!build-count++;
+            31415926;
+        }
 
-    method direct {
-        note "### bar:", $!bar;
+        method direct {
+            note "### bar:", $!bar;
+        }
     }
 }
+
+done-testing;
+exit;
 
 role FooRole {
     has $.baz is rw is extended(:lazy, builder => "build-baz");
@@ -30,6 +35,7 @@ role FooRole {
 class Foo2 does FooRole {
     has Rat $.baz1 is extended(:lazy);
     has $!baz2 is extended(:lazy);
+    has Rat $.baz3;
 
     method t {
         note "=== baz2:", $!baz2;
@@ -58,7 +64,7 @@ note "CREATED";
 $inst.direct;
 is $inst.bar, 31415926, "default from builder";
 $inst.bar = 1234;
-is $inst.bar, e, "changed value";
+is $inst.bar, 1234, "changed value";
 #$inst.bar = Nil;
 note "Nil assign:", $inst.bar;
 is $inst.bar, Nil, "changed value to Nil";

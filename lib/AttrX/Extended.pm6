@@ -5,12 +5,12 @@ class X::Fatal is Exception {
     has Str $.message is rw;
 }
 
-my %attributes-set;
+my %attr-data;
 
 my role AttrXExtendedClassRole[Mu $package] {
     submethod DESTROY {
-        note "&&& DESTROY &&&";
-        %attributes-set{self.WHICH}:delete;
+        #note "&&& DESTROY &&&";
+        %attr-data{self.WHICH}:delete;
     }
 }
 
@@ -20,6 +20,7 @@ my role AttrXExtendedAttributeHOW {
     has $.builder is rw = 'build-' ~ $!base-name;
     has $.clearer is rw = False;
 
+    #`(
     method compose ( Mu \type ) {
         note "^^^ ATTRIBUTE COMPOSE";
 
@@ -38,6 +39,7 @@ my role AttrXExtendedAttributeHOW {
 
         nextsame;
     }
+)
 
     method check-value ( $value ) {
         if !$value.defined {
@@ -54,67 +56,62 @@ my role AttrXExtendedAttributeHOW {
         my $attr = self;
         my $obj-id = $instance.WHICH;
 
-        return if so %attributes-set{$obj-id}{$.name};
+        return if so %attr-data{$obj-id}{$.name};
 
-        note ">>> LAZIFYING ", $.name;
+        #note ">>> LAZIFYING ", $.name;
 
-        sub proxy-obj {
-        }
-
-        note "Getting default value";
         my $default = self.get_value( $instance );
-        note "Setting to proxy object";
-        my $proxy-obj := 
+        #note "Setting to proxy object";
+        self.set_value( $instance, 
             Proxy.new(
-                FETCH => method {
-                    note "FETCH";
-                    $attr.build-attr( $instance );
-                    note "BUILT ATTR";
-                    %attributes-set{$obj-id}{$.name}<value>;
+                FETCH => -> $ {
+                    #note "FETCH of {$.name}";
+                    self.build-attr( $instance );
+                    %attr-data{$obj-id}{$.name}<value>;
                 },
-                STORE => method ( $value ) {
-                    note "STORE";
-                    $attr.set-attribute( $instance, $value );
+                STORE => -> $, $value {
+                    #note "STORE (", self, ")";
+                    self.store-value( $instance, $value );
                 }
-            );
-        self.set_value( $instance, $proxy-obj.VAR );
-        note "Storing value in global hash";
-        %attributes-set{$obj-id}{$.name}<value> = $default;
+            )
+        );
+        #note "Storing value in global hash";
+        %attr-data{$obj-id}{$.name}<value> = $default;
 
-        note "<<< DONE LAZIFYING ", $.name;
+        #note "<<< DONE LAZIFYING ", $.name;
     }
 
-    method set-attribute ( Mu $instance, $value ) {
+    method store-value ( Mu $instance, $value ) {
         self.check-value( $value );
-        %attributes-set{$instance.WHICH}{$.name}<value> = $value;
+        %attr-data{$instance.WHICH}{$.name}<value> = $value;
     }
 
     method is-set ( Mu $instance ) {
-        %attributes-set{$instance.WHICH}{$.name}<value>;
+        %attr-data{$instance.WHICH}{$.name}<value>;
     }
 
     method build-attr ( Mu $instance ) {
         unless self.is-set( $instance ) {
-            note "&&& Calling builder {$!builder}";
+            #note "&&& Calling builder {$!builder}";
             die "No builder method {$!builder} defined" unless $instance.can($!builder);
             my $val = $instance."{$!builder}"();
-            note "Builder-generated value: ", $val;
-            self.set-attribute( $instance, $val );
-            note "Set ATTR";
+            #note "Builder-generated value: ", $val;
+            self.store-value( $instance, $val );
+            #note "Set ATTR";
         }
     }
 }
 
 my role AttrXExtendedClassHOW {
     method compose ( Mu:U \type ) {
-        note "+++ composing class ", type.WHO, " of ", type.HOW;
+        #note "+++ composing class ", type.WHO, " of ", type.HOW;
         unless type ~~ AttrXExtendedClassRole[type] {
-            note "*** Adding tole to ", type.WHO;
+            #note "*** Adding tole to ", type.WHO;
             type.^add_role( AttrXExtendedClassRole[type] );
             type.^add_trustee( AttrXExtendedClassRole[type] ) unless type.HOW ~~ Metamodel::ParametricRoleHOW;
         }
 
-        note "+++ checking for stagers";
+        #note "+++ checking for stagers";
 
         # To resolve possible cross-role conflicts of constructors/destructors
         if type.HOW ~~ Metamodel::ClassHOW {
@@ -123,33 +120,33 @@ my role AttrXExtendedClassHOW {
 
         my $package = self;
         my &my-buildall = method BUILDALL (|) {
-            note "&&& AUTOGEN BUILDALL &&&";
+            #note "&&& AUTOGEN BUILDALL &&&";
             $package.on_create( self );
             nextsame;
         }
 
-        note "CHECKING FOR BUILDALL";
+        #note "CHECKING FOR BUILDALL";
         if my $orig-method = type.^lookup( 'BUILDALL' ) {
-            note "*** WRAPPING BUILDALL ", $orig-method.WHAT;
+            #note "*** WRAPPING BUILDALL ", $orig-method.WHAT;
             $orig-method.wrap( &my-buildall );
         } else {
-            note "*** ADDING BUILDALL";
+            #note "*** ADDING BUILDALL";
             type.^add_method( 'BUILDALL', &my-buildall );
         }
 
         callsame;
-        note "HAS ROLE NOW:", type ~~ AttrXExtendedClassRole[type];
-        note "HAS ROLE NOW 2:", type ~~ AttrXExtendedClassRole;
-        note "+++ done class composition";
+        #note "HAS ROLE NOW:", type ~~ AttrXExtendedClassRole[type];
+        #note "HAS ROLE NOW 2:", type ~~ AttrXExtendedClassRole;
+        #note "+++ done class composition";
     }
 
     method on_create ( Mu $instance ) {
         my @lazyAttrs = self.attributes( self ).grep( AttrXExtendedAttributeHOW );
 
-        note "ON CREATE";
+        #note "ON CREATE";
 
         for @lazyAttrs -> $attr {
-            note "Found lazy attr ", $attr.name;
+            #note "Found lazy attr ", $attr.name;
             $attr.make-lazy( $instance );
         }
     }
