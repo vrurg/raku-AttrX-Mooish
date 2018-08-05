@@ -181,5 +181,32 @@ subtest "Lazy Chain", {
     is $inst.bar, pi * e, "lazy initialized from a method";
 }
 
+subtest "Private", {
+    plan 3;
+    my $inst;
+
+    my class Foo1 {
+        has $!bar is mooish(:lazy, :clearer, :predicate);
+
+        method !build-bar {
+            "private val";
+        }
+
+        method !priv-builder {
+            note "Yes, it's me";
+        }
+
+        method run-test {
+            is $!bar, "private val", "initialized with private builder";
+            is self!has-bar, True, "private predicate";
+            self!clear-bar;
+            is self!has-bar, False, "private clearer works";
+        }
+    }
+
+    $inst = Foo1.new;
+    $inst.run-test;
+}
+
 done-testing;
 # vim: ft=perl6

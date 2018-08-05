@@ -104,5 +104,27 @@ subtest "Overriding", {
     is $inst.bar, "from init-bar with my suffix", "named builder overridden";
 }
 
+subtest "Private", {
+    plan 1;
+    my $inst;
+
+    my class Foo1 {
+        has $!bar is mooish(:lazy);
+
+        method !build-bar { "private value" }
+
+        method get-bar { $!bar }
+    }
+
+    my class Foo2 is Foo1 {
+        method run-test {
+            is self.get-bar, "private value", "private attribute from parent class";
+        }
+    }
+
+    $inst = Foo2.new;
+    $inst.run-test;
+}
+
 done-testing;
 # vim: ft=perl6

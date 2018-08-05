@@ -1,6 +1,36 @@
 unit module AttrX::Mooish:ver<0.0.1>:auth<github:vrurg>;
 #use Data::Dump;
 
+=begin pod
+=head1 NAME
+
+AttrX::Mooish
+
+=head1 SYNOPSIS
+
+    class Foo {
+        has $.bar1 is mooish(:lazy, :clearer, :predicate) is rw;
+        has $!bar2 is mooish(:lazy, :clearer, :predicate) is rw;
+
+        method build-bar1 {
+            "lazy init value"
+        }
+        
+        method build-bar2 {
+        }
+
+        method baz {
+            # Yes, works with private too! Isn't it magical? ;)
+            "Take a look at the magic: «{ $!bar2 }»";
+        }
+    }
+
+    my $foo = Foo.new;
+
+    say $foo.bar1;
+
+=end pod
+
 class X::Fatal is Exception {
     has Str $.message is rw;
 }
@@ -44,7 +74,11 @@ my role AttrXMooishAttributeHOW {
             X::Fatal.new( message => "Cannot install {$helper} {$helper-name}: method already defined").throw
                 if type.^lookup( $helper-name );
 
-            type.^add_method( $helper-name, %helpers{$helper} );
+            if $.has_accessor { # I.e. – public?
+                type.^add_method( $helper-name, %helpers{$helper} );
+            } else {
+                type.^add_private_method( $helper-name, %helpers{$helper} );
+            }
         }
     }
 
@@ -119,10 +153,17 @@ my role AttrXMooishAttributeHOW {
 
     method build-attr ( Any \instance ) {
         my $obj-id = instance.WHICH;
+        my \type = $.package;
+        my $publicity = $.has_accessor ?? "public" !! "private";
         unless self.is-set( $obj-id ) {
             #note "&&& Calling builder {$!builder}";
-            die "No builder method {$!builder} defined" unless instance.can($!builder);
-            my $val = instance."{$!builder}"();
+            my $builder = $.has_accessor ?? instance.^find_method($!builder) !! type.^find_private_method($!builder);
+            X::Method::NotFound.new(
+                method => $!builder,
+                private => !$.has_accessor,
+                typename => instance.WHO,
+            ).throw unless so $builder;
+            my $val = instance.&$builder();
             #note "Builder-generated value: ", $val, " -- for ", $obj-id;
             self.store-value( $obj-id, $val );
             #note "Set ATTR";
