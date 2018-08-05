@@ -1,5 +1,5 @@
 unit module AttrX::Mooish:ver<0.0.1>:auth<github:vrurg>;
-use Data::Dump;
+#use Data::Dump;
 
 class X::Fatal is Exception {
     has Str $.message is rw;

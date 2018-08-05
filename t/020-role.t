@@ -1,6 +1,5 @@
 use Test;
 use AttrX::Mooish;
-use Data::Dump;
 
 my %inst-records;
 
