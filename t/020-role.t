@@ -1,0 +1,95 @@
+use Test;
+use AttrX::Mooish;
+use Data::Dump;
+
+my %inst-records;
+
+subtest "Role Basics", {
+    plan 17;
+
+    my $inst;
+
+    my role FooRole1 {
+        has $.bar is rw is mooish(:lazy, :clearer, :predicate);
+        has Int $.build-count = 0;
+
+        method build-bar { $!build-count++; "is bar" }
+        method direct-access { $!bar }
+    }
+
+    my class FooR1 does FooRole1 {
+        has $.baz is rw;
+
+        submethod BUILD { %inst-records{self.WHICH} = True }
+        submethod DESTROY { %inst-records{self.WHICH}:delete };
+    }
+
+    $inst = FooR1.new;
+    is $inst.bar, "is bar", "initialized from builder";
+
+    my $inst2 = FooR1.new;
+    is $inst2.direct-access, "is bar", "initialized by builder via direct access";
+
+    $inst.bar = "manual value";
+    is $inst.bar, "manual value", "set manually";
+    # Test if we occasionally use same back store for attributes
+    is $inst2.bar, "is bar", "second object attribute unchanged";
+
+    # So far, two object, one lazy attribute was initialized per each object.
+    is $inst.HOW.slots-used, 2, "2 used slots correspond to attribute count";
+    # Self-check the test
+    is %inst-records.keys.elems, 2, "two control instance records found";
+
+    $inst = FooR1.new;
+    for 1..2000 {
+        my $v = $inst.bar;
+    }
+
+    is $inst.build-count, 1, "initialized only once";
+    is $inst.HOW.slots-used, 3, "3 used slots correspond to attribute count";
+
+    for 1..20000 {
+        $inst = FooR1.new;
+        my $v = $inst.bar;
+    }
+
+    is $inst.HOW.slots-used, %inst-records.keys.elems, "used slots correspond to number of objects survived GC";
+
+    $inst.bar = "something different";
+    is $inst.bar, "something different", "set before clear";
+    $inst.clear-bar;
+    is $inst.has-bar, False, "prefix reports no value";
+    is $inst.bar, "is bar", "cleared and re-initialized";
+    is $inst.has-bar, True, "prefix reports a value";
+
+    my role FooRole2 {
+        has $.bar is rw is mooish(:lazy, :clearer);
+        has $.baz is rw;
+
+        method build-bar { "not from new" }
+    }
+
+    my class FooR2 does FooRole2 {
+    }
+
+    $inst = FooR2.new( bar => "from new",  baz => "from NEW" );
+    is $inst.baz, "from NEW", "set from constructor";
+    is $inst.bar, "from new", "set from constructor";
+    $inst.clear-bar;
+    is $inst.bar, "not from new", "reset and set not from constructor parameters";
+
+    my role FooRole3 { 
+        has $.bar is mooish(:lazy, builder => 'init-bar');
+        method init-bar { "from init-bar" }
+    }
+
+    my class FooR3 does FooRole3 {
+    }
+
+    $inst = FooR3.new;
+    is $inst.bar, "from init-bar", "named builder works";
+}
+
+done-testing;
+
+# vim: ft=perl6

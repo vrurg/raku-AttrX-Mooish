@@ -1,13 +1,13 @@
 {
     "perl"          : "6.c",
-    "name"          : "AttrX::Extended",
+    "name"          : "AttrX::Mooish",
     "license"       : "Artistic-2.0",
     "version"       : "0.0.1",
     "authors"       : [ "github:vrurg" ],
     "description"   : "Extending attribute functionality with some ideas from Moo/Moose",
     "depends"       : [ ],
     "provides"      : {
-        "AttrX::Extended"    : "lib/AttrX/Extended.pm6"
+        "AttrX::Mooish"    : "lib/AttrX/Mooish.pm6"
     },
-    "source-url"    : "git://github.com/vrurg/Perl6-AttrX-Extended.git"
+    "source-url"    : "git://github.com/vrurg/Perl6-AttrX-Mooish.git"
 }
