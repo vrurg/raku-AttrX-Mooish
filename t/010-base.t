@@ -156,5 +156,31 @@ subtest "Errors", {
         #CATCH { note "Got exception ", $_.WHO; $_.throw}
 }
 
+subtest "Lazy Chain", {
+    plan 2;
+    my $inst;
+
+    my class Foo1 {
+        has $.bar is rw is mooish(:lazy);
+        has $.baz is rw is mooish(:lazy);
+
+        method build-bar { "foo bar" }
+        method build-baz { "({$!bar}) and baz" } 
+    }
+
+    $inst = Foo1.new;
+    is $inst.baz, "(foo bar) and baz", "lazy initialized from lazy";
+
+    my class Foo2 {
+        has $.bar is rw is mooish(:lazy);
+
+        method take-a-value { pi }
+        method build-bar { self.take-a-value * e }
+    }
+
+    $inst = Foo2.new;
+    is $inst.bar, pi * e, "lazy initialized from a method";
+}
+
 done-testing;
 # vim: ft=perl6
