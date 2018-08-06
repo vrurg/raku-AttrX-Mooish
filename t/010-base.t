@@ -4,7 +4,7 @@ use AttrX::Mooish;
 my %inst-records;
 
 subtest "Class Basics", {
-    plan 16;
+    plan 17;
     my $inst;
 
     my class Foo1 {
@@ -45,12 +45,25 @@ subtest "Class Basics", {
 
     is $inst.HOW.slots-used, %inst-records.keys.elems, "used slots correspond to number of objects survived GC";
 
-    $inst.bar = "something different";
-    is $inst.bar, "something different", "set before clear";
-    $inst.clear-bar;
-    is $inst.has-bar, False, "prefix reports no value";
-    is $inst.bar, pi, "cleared and re-initialized";
-    is $inst.has-bar, True, "prefix reports a value";
+    subtest "Clearer/prefix", {
+        plan 4;
+        $inst.bar = "something different";
+        is $inst.bar, "something different", "set before clear";
+        $inst.clear-bar;
+        is $inst.has-bar, False, "prefix reports no value";
+        is $inst.bar, pi, "cleared and re-initialized";
+        is $inst.has-bar, True, "prefix reports a value";
+    }
+
+    subtest "Manual initial set", {
+        plan 4;
+        $inst = Foo1.new;
+        $inst.bar = "bypass build";
+        ok $inst.has-bar, "value has been set to check builder bypassing";
+        is $inst.build-count, 0, "attribute is set manually without involving builder";
+        is $inst.bar, "bypass build", "attribute value is what we set it to";
+        is $inst.build-count, 0, "reading from attribute still didn't use the builder";
+    }
 
     my class Foo2 {
         has $.bar is rw is mooish(:lazy, :clearer);
@@ -72,6 +85,18 @@ subtest "Class Basics", {
 
     $inst = Foo3.new;
     is $inst.bar, "from init-bar", "named builder works";
+
+    my class Foo4 {
+        has $.bar is rw is mooish(:lazy, clearer => "reset-bar", predicate => "is-set-bar");
+
+        method build-bar { "from builder" };
+    }
+
+    $inst = Foo4.new;
+    $inst.bar;
+    ok $inst.is-set-bar, "custom predicate name";
+    lives-ok { $inst.reset-bar }, "custom clearer name";
+    nok $inst.is-set-bar, "clearer did the job";
 }
 
 subtest "Validating values", {
