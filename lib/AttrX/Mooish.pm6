@@ -213,8 +213,8 @@ attributes. Consider the C<$!bar2> attribute from L<#SYNOPSIS>.
 This module is using manual type checking for attributes with constraints. This could result in outcome different from
 default Perl6 behaviour.
 
-Due to the magical nature of attribute behaviour conflicts with other traits are possible but not yet known to the
-author.
+Due to the magical nature of attribute behaviour conflicts with other traits are possible. None is known to the author
+yet.
 
 =head1 AUTHOR
 
