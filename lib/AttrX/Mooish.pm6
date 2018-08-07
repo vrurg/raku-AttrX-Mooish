@@ -191,16 +191,16 @@ For all the trait parameters, if it is applied to a private attribute then all a
 too. The builder method is expected to be private as well. I.e.:
 
 =begin code
-class Foo {
-    has $!bar is rw is mooish(:lazy, :clearer<reset-bar>, :predicate);
+    class Foo {
+        has $!bar is rw is mooish(:lazy, :clearer<reset-bar>, :predicate);
 
-    method !build-bar { "a private value" }
-    method baz {
-        if self!has-bar {
-            self!reset-bar;
+        method !build-bar { "a private value" }
+        method baz {
+            if self!has-bar {
+                self!reset-bar;
+            }
         }
     }
-}
 =end code
 
 =head2 Some magic
@@ -213,7 +213,7 @@ attributes. Consider the C<$!bar2> attribute from L<#SYNOPSIS>.
 This module is using manual type checking for attributes with constraints. This could result in outcome different from
 default Perl6 behaviour.
 
-Due to the magical nature of attribute behaviour conflicts with other traits are possible bot not yet known to the
+Due to the magical nature of attribute behaviour conflicts with other traits are possible but not yet known to the
 author.
 
 =head1 AUTHOR
