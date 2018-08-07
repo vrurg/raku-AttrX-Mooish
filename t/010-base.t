@@ -207,7 +207,7 @@ subtest "Lazy Chain", {
 }
 
 subtest "Private", {
-    plan 3;
+    plan 7;
     my $inst;
 
     my class Foo1 {
@@ -230,6 +230,22 @@ subtest "Private", {
     }
 
     $inst = Foo1.new;
+    $inst.run-test;
+
+    my class Foo2 {
+        has $!bar is mooish(:lazy, :clearer<reset-bar>, :predicate<is-bar-set>);
+
+        method !build-bar { "private value" }
+        method run-test {
+            nok self!is-bar-set, "private predicate reports attribute not set";
+            is $!bar, "private value", "private builder ok";
+            ok self!is-bar-set, "private predicate reports attribute is set";
+            self!reset-bar;
+            nok self!is-bar-set, "private predicate indicate attribute was reset";
+        }
+    }
+
+    $inst = Foo2.new;
     $inst.run-test;
 }
 
