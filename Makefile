@@ -1,5 +1,7 @@
 
 MAIN_MOD=lib/AttrX/Mooish.pm6
+MOD_VER:=$(perl6 -Ilib -e 'use AttrX::Mooish; AttrX::Mooish.^ver.say')
+MOD_DISTRO=AttrX-Mooish-$(MOD_VER)
 
 all: 
 	echo "Useful targets: test, readme, release"
@@ -13,5 +15,6 @@ test:
 author-test:
 	@AUTHOR_TESTING=1 prove -l --exec "perl6 -Ilib" -r t
 
-release: author-test
-	@git archive --prefix=Vortex-TotalPerspective-0.0.1/ -o ../Vortex-TotalPerspective-0.0.1.tar.gz HEAD
+release: #author-test
+	echo USING MOD_DISTRO $(MOD_DISTRO)
+	#git archive --prefix=$(MOD_DISTRO) -o ../$(MOD_DISTRO).tar.gz HEAD

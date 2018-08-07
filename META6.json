@@ -6,8 +6,7 @@
     "version"       : "0.0.1",
     "authors"       : [ "Vadim Belman" ],
     "description"   : "Extending attribute functionality with ideas from Moo/Moose",
-    "depends"       : [ ],
-    "test-depend"   : [ "Test" ],
+    "test-depends"  : [ "Test", "Test::META" ],
     "tags"          : [
         "AttrX", "Moo", "Mooish", "attribute", "mooish", "trait"
     ],
