@@ -50,7 +50,7 @@ $(MOD_ARCH): $(DIST_FILES)
 	@echo "===> Creating release archive" $(MOD_ARCH)
 	@echo "Generating release archive will tag the HEAD with current module version."
 	@echo "Consider carefully if this is really what you want!"
-	@/bin/sh -c 'read -p "Do you really want to tag? (y/N) " answer; [ $$answer = "Y" ]'
+	@/bin/sh -c 'read -p "Do you really want to tag? (y/N) " answer; [ $$answer = "Y" -o $$answer = "y" ]'
 	@git tag -f $(MOD_VER) HEAD
 	@git archive --prefix="$(MOD_DISTRO)/" -o $(MOD_ARCH) $(MOD_VER)
 
@@ -60,7 +60,7 @@ $(META): $(META_BUILDER) $(MAIN_MOD)
 
 upload: release
 	@echo "===> Uploading to CPAN"
-	@/bin/sh -c 'read -p "Do you really want to upload to CPAN? (y/N) " answer; [ $$answer = "Y" ]'
+	@/bin/sh -c 'read -p "Do you really want to upload to CPAN? (y/N) " answer; [ $$answer = "Y" -o $$answer = "y" ]'
 	@cpan-upload -d Perl6 --md5 $(MOD_ARCH)
 	@echo "===> Uploaded."
 
