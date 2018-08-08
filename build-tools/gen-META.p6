@@ -23,7 +23,7 @@ my $m = META6.new(
         'AttrX::Mooish' => 'lib/Attrx/Mooish.pm6',
     },
     license        => 'Artistic-2.0',
-    production     => True,
+    production     => False,
 );
 
 print $m.to-json;
