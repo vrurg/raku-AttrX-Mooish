@@ -23,7 +23,10 @@ CLEAN_DIRS=lib/.precomp
 all: 
 	echo "Useful targets: test, readme, release"
 
-readme: $(MAIN_MOD)
+readme: README.md
+	
+README.md: $(MAIN_MOD)
+	echo "===> Generating README.md"
 	@perl6 --doc=Markdown $(MAIN_MOD) >README.md
 
 test:
