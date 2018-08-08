@@ -68,3 +68,6 @@ clean:
 	@rm $(CLEAN_FILES)
 	@rm -rf $(CLEAN_DIRS)
 
+install: 
+	@echo "===> Installing"
+	@zef install .
