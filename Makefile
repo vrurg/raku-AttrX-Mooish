@@ -48,8 +48,10 @@ release-test:
 clean-repo:
 	@git diff-index --quiet HEAD || (echo "*ERROR* Repository is not clean, commit your changes first!"; exit 1)
 
-release: $(META) release-test $(MOD_ARCH) clean-repo
+release: meta release-test $(MOD_ARCH) clean-repo
 	@echo "===> Done releasing"
+
+meta: $(META)
 
 $(MOD_ARCH): $(DIST_FILES)
 	@echo "===> Creating release archive" $(MOD_ARCH)
