@@ -21,7 +21,6 @@ CLEAN_FILES=$(MOD_NAME_PFX)-v*.tar.gz
 CLEAN_DIRS=lib/.precomp
 
 all: release
-	@echo "Useful targets: test, readme, release"
 
 readme: README.md
 	
