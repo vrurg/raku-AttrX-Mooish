@@ -4,7 +4,7 @@ use AttrX::Mooish;
 my %inst-records;
 
 subtest "Class Basics", {
-    plan 17;
+    plan 22;
     my $inst;
 
     my class Foo1 {
@@ -27,6 +27,8 @@ subtest "Class Basics", {
     $inst.bar = "foo-bar-baz";
     is $inst.bar, "foo-bar-baz", "set manually ok";
     is $inst2.bar, pi, "second object attribute unchanged";
+    $inst.bar = Nil;
+    nok $inst.bar.defined, "Nil value assigned";
 
     # So far, two object, one lazy attribute was initialized per each object.
     is $inst.HOW.slots-used, 2, "2 used slots correspond to attribute count";
@@ -97,6 +99,28 @@ subtest "Class Basics", {
     ok $inst.is-set-bar, "custom predicate name";
     lives-ok { $inst.reset-bar }, "custom clearer name";
     nok $inst.is-set-bar, "clearer did the job";
+
+    my class Foo5 {
+        has $.bar is mooish(:lazy, :builder(-> $ {"block builder"}));
+        has $.baz is mooish(:lazy, :builder(method {"method builder"}));
+    }
+
+    $inst = Foo5.new;
+    is $inst.bar, "block builder", "block builder";
+    is $inst.baz, "method builder", "method builder";
+
+    my class Foo6 {
+        has $.bar is mooish(:lazy('init-bar'));
+        has $.baz is mooish(:lazy(method {"lazy builder"}));
+
+        method init-bar {
+            "init-bar builder";
+        }
+    }
+
+    $inst = Foo6.new;
+    is $inst.bar, "init-bar builder", "builder name defined in :lazy";
+    is $inst.baz, "lazy builder", ":lazy defined callable builder";
 }
 
 subtest "Validating values", {
@@ -163,8 +187,11 @@ subtest "Validating values", {
 }
 
 subtest "Errors", {
-    plan 1;
+    plan 2;
     my $inst;
+
+    throws-like q{my class Foo1 { has $.bar is mooish(:lazy(pi)); }}, 
+            X::TypeCheck::MooishOption, "bad option value";
 
     my class Foo4 {
         has Str $.bar is rw is mooish(:lazy) where * ~~ /:i ^ a/;
@@ -177,7 +204,7 @@ subtest "Errors", {
         message => q<Type check failed in assignment to attribute $!bar; expected "<anon>" but got "Str">,
         "value from builder don't conform 'where' constraint";
 
-        #CATCH { note "Got exception ", $_.WHO; $_.throw}
+        CATCH { note "Got exception ", $_.WHO; $_.throw}
 }
 
 subtest "Lazy Chain", {
@@ -247,6 +274,73 @@ subtest "Private", {
 
     $inst = Foo2.new;
     $inst.run-test;
+}
+
+subtest "Triggers", {
+    plan 7;
+    my $inst;
+    my class Foo1 {
+        has $.bar is rw is mooish(:trigger);
+        has $.baz is rw is mooish(:trigger<on_change>);
+        has $.foo is rw is mooish(:trigger(method ($value) {
+            pass "in-place trigger";
+            is $value, "foo value", "valid value passed to in-place";
+        }));
+
+        method trigger-bar ( $value ) {
+            pass "trigger for attribute $!bar";
+            is $value, "bar value", "valid value passed to trigger";
+        }
+
+        method on_change ( $value, :$attribute ) {
+            pass "generic trigger on_chage()";
+            is $value, "baz value", "valid value passed to on_change";
+            is $attribute, <$!baz>, "received attribute name";
+        }
+    }
+
+    $inst = Foo1.new;
+    $inst.bar = "bar value";
+    $inst.baz = "baz value";
+    $inst.foo = "foo value";
+}
+
+subtest "Filtering", {
+    plan 10;
+    my $inst;
+
+    my class Foo1 {
+        has $.bar is rw is mooish(:filter);
+
+        method filter-bar ( $value, :$attribute, *%params ) {
+            pass q<filter for attribute $.bar>;
+            is $attribute, '$!bar', "filter attribute name";
+            if $value == 1 {
+                nok %params<old-value>:exists, "no old value on first call";
+            } else {
+                ok %params<old-value>:exists, "have old value on first call";
+                is %params<old-value>, 1.5, "correct old value";
+            }
+            $value + 0.5;
+        }
+    }
+
+    $inst = Foo1.new;
+    $inst.bar = 1;
+    is $inst.bar, 1.5, "filtered value";
+    $inst.bar = 2;
+
+    my class Foo2 {
+        has $.bar is rw is mooish(:lazy(-> $ {pi}), :filter);
+
+        method filter-bar ($value, *%params) {
+            nok %params<old-value>:exists, "no old value after builder";
+            $value / 2;
+        }
+    }
+
+    $inst = Foo2.new;
+    is $inst.bar, pi/2, "builder value filtered";
 }
 
 done-testing;
