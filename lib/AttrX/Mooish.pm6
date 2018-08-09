@@ -1,4 +1,4 @@
-unit module AttrX::Mooish:ver<0.0.901>:auth<github:vrurg>;
+unit module AttrX::Mooish:ver<0.0.902>:auth<github:vrurg>;
 #use Data::Dump;
 
 =begin pod
@@ -8,10 +8,11 @@ C<AttrX::Mooish> - extend attributes with ideas from Moo/Moose (laziness!)
 
 =head1 SYNOPSIS
 
+    use AttrX::Mooish;
     class Foo {
         has $.bar1 is mooish(:lazy, :clearer, :predicate) is rw;
-        has $!bar2 is mooish(:lazy, :clearer, :predicate) is rw;
-        has $.bar3 is rw is mooish(:lazy);
+        has $!bar2 is mooish(:lazy, :clearer, :predicate, :trigger);
+        has Num $.bar3 is rw is mooish(:lazy, :filter);
 
         method build-bar1 {
             "lazy init value"
@@ -21,8 +22,21 @@ C<AttrX::Mooish> - extend attributes with ideas from Moo/Moose (laziness!)
             "this is private mana!"
         }
 
+        method !trigger-bar2 ( $value ) {
+            # do something after attribute changed.
+        }
+
         method build-bar3 {
-            .rand < 0.5 ?? Nil !! pi;
+            rand;
+        }
+
+        method filter-bar3 ( $value, *%params ) {
+            if %params<old-value>:exists {
+                # Only allow the value to grow
+                return ( !%params<old-value>.defined || $value > %params<old-value> ) ?? $value !! %params<old-value>;
+            }
+            # Only allow inital values from 0.5 and higher
+            return $value < 0.5 ?? Nil !! $value;
         }
 
         method baz {
@@ -35,6 +49,22 @@ C<AttrX::Mooish> - extend attributes with ideas from Moo/Moose (laziness!)
 
     say $foo.bar1;
     say $foo.bar3.defined ?? "DEF" !! "UNDEF";
+    for 1..10 { $foo.bar3 = rand; say $foo.bar3 }
+
+The above would generate a output similar to the following:
+
+    lazy init value
+    UNDEF
+    0.08662089602505263
+    0.49049512098324255
+    0.49049512098324255
+    0.5983833081770437
+    0.9367804461546302
+    0.9367804461546302
+    0.9367804461546302
+    0.9367804461546302
+    0.9367804461546302
+    0.9367804461546302
 
 =head1 DESCRIPTION
 
@@ -131,7 +161,31 @@ The L<#SYNOPSIS> is a very good example of how to use the trait C<mooish>.
 =begin item
 I<C<lazy>>
 
-C<Bool>, defines wether attribute is lazy.
+C<Bool>, defines wether attribute is lazy. Can have C<Bool>, C<Str>, or C<Callable> value. The later two have the
+same meaning, as for I<C<builder>> parameter.
+=end item
+
+=begin item
+I<C<builder>>
+
+Defines builder method for a lazy attribute. The value returned by the method will be used to initialize the attribute.
+
+This parameter can have C<Str> or C<Callable> values or be not defined at all. In the latter case we expect a method
+with a name composed of "I<build->" prefix followed by attribute name to be defined in our class. For example, for a
+attribute named C<$!bar> the method name is expected to be I<build-bar>.
+
+A string value defines builder's method name.
+
+A callable value is used as-is and called an object method. For example:
+
+    class Foo {
+        has $.bar is mooish(:lazy, :builder( -> $ {"in-place"} );
+    }
+
+    $inst = Foo.new;
+    say $inst.bar;
+
+This would output 'I<in-place>'.
 =end item
 
 =begin item
@@ -178,27 +232,52 @@ A C<Str> value defines method name:
 =end item
 
 =begin item
-I<C<builder>>
+I<C<filter>>
 
-Defines the name of attribute builder method. If not defined then lazyness would look for a user-defined method
-with name formed of U<build-> prefix followed by attribute name. I<C<builder>> lets user change it to whatever he
-considers appropriate.
+A filter is a method which is executed right before storing a value to an attribute. What is returned by the method
+will actually be stored into the attribute. This allows us to manipulate with a user-supplied value in any necessary
+way.
 
-I<Use of a C<Routine> object as a C<builder> value is planned but not implemented yet.>
+The parameter can have values of C<Bool>, C<Str>, C<Callable>. All values are treated similarly to the C<builder>
+parameter except that prefix 'I<filter->' is used when value is C<True>.
+
+The filter method is passed with user-supplied value and two named parameters: C<attribute> with full attribute name;
+and optional C<old-value> which could omitted if attribute has not been initialized yet. Otherwise C<old-value> contains
+attribute value before the assignment.
+
+B<Note> that it is not recommended for a filter method to use the corresponding attribute directly as it may cause
+unforseen side-effects like deep recursion. The C<old-value> parameter is the right way to do it.
 =end item
 
+=begin item
+I<C<trigger>>
+
+A trigger is a method which is executed when a value is being written into an attribute. It gets passed with the stored
+value as first positional parameter and named parameter C<attribute> with full attribute name. Allowed values for this
+parameter are C<Bool>, C<Str>, C<Callable>. All values are treated similarly to the C<builder> parameter except that
+prefix 'I<trigger->' is used when value is C<True>.
+
+Trigger method is being executed right after changing the attribute value. If there is a C<filter> defined for the 
+attribute then value will be the filtered one, not the initial.
+=end item
+
+## Public/Private
+
 For all the trait parameters, if it is applied to a private attribute then all auto-generated methods will be private
-too. The builder method is expected to be private as well. I.e.:
+too. The call-back style methods like C<builder> are expected to be private as well. I.e.:
 
 =begin code
     class Foo {
-        has $!bar is rw is mooish(:lazy, :clearer<reset-bar>, :predicate);
+        has $!bar is rw is mooish(:lazy, :clearer<reset-bar>, :predicate, :filter<wrap-filter>);
 
         method !build-bar { "a private value" }
         method baz {
             if self!has-bar {
                 self!reset-bar;
             }
+        }
+        method !wrap-filter ( $value, :$attribute ) {
+            "filtered $attribute: ($value)"
         }
     }
 =end code
@@ -229,7 +308,13 @@ See the LICENSE file in this distribution.
 =end pod
 
 class X::Fatal is Exception {
-    has Str $.message is rw;
+    #has Str $.message is rw;
+}
+
+class X::TypeCheck::MooishOption is X::TypeCheck {
+    method expectedn {
+        "Str or Callable";
+    }
 }
 
 my %attr-data;
@@ -242,6 +327,15 @@ my role AttrXMooishAttributeHOW {
     has $.builder is rw = 'build-' ~ $!base-name;
     has $.clearer is rw = False;
     has $.predicate is rw = False;
+    has $.trigger is rw = False;
+    has $.filter is rw = False;
+
+    my %opt2prefix = clearer => 'clear', 
+                     predicate => 'has',
+                     builder => 'build',
+                     trigger => 'trigger',
+                     filter => 'filter',
+                     ;
 
     method !bool-str-meth-name( $opt, Str $prefix ) {
         $opt ~~ Bool ?? $prefix ~ '-' ~ $!base-name !! $opt;
@@ -263,10 +357,9 @@ my role AttrXMooishAttributeHOW {
             clearer => method { $attr.clear-attr( self.WHICH ); },
             predicate => method { so $attr.is-set( self.WHICH ); },
             ;
-        my %helper-prefix = clearer => 'clear', predicate => 'has';
 
         for %helpers.keys -> $helper {
-            my $helper-name = self!bool-str-meth-name( self."$helper"(), %helper-prefix{$helper} );
+            my $helper-name = self!bool-str-meth-name( self."$helper"(), %opt2prefix{$helper} );
 
             X::Fatal.new( message => "Cannot install {$helper} {$helper-name}: method already defined").throw
                 if type.^lookup( $helper-name );
@@ -303,7 +396,7 @@ my role AttrXMooishAttributeHOW {
         }
     }
 
-    method make-lazy ( Mu \instance ) {
+    method make-mooish ( Mu \instance ) {
         my $attr = self;
         my $obj-id = instance.WHICH;
         #note "Using obj ID:", $obj-id;
@@ -319,12 +412,14 @@ my role AttrXMooishAttributeHOW {
             Proxy.new(
                 FETCH => -> $ {
                     #note "FETCH of {$attr.name} for ", $obj-id;
-                    self.build-attr( instance );
+                    self.build-attr( instance ) if so $.lazy;
                     %attr-data{$obj-id}{$attr.name}<value>;
                 },
-                STORE => -> $, $value {
+                STORE => -> $, $value is copy {
                     #note "STORE (", $obj-id, "): ", $value // '*undef*';
+                    self.invoke-filter( instance, $value );
                     self.store-value( $obj-id, $value );
+                    self.invoke-opt( instance, 'trigger', ( $value, :attribute($.name) ) ) if $.trigger;
                 }
             )
         );
@@ -334,6 +429,15 @@ my role AttrXMooishAttributeHOW {
         #note "<<< DONE LAZIFYING ", $.name;
     }
 
+    method invoke-filter ( Mu \instance, $value is rw ) {
+        if $.filter {
+            my $obj-id = instance.WHICH;
+            my @invoke-params = $value, attribute => $.name;
+            @invoke-params.push( 'old-value' => %attr-data{$obj-id}{$.name}<value> ) if self.is-set( $obj-id );
+            $value = self.invoke-opt( instance, 'filter', @invoke-params);
+        }
+    }
+
     method store-value ( $obj-id, $value ) {
         self.check-value( $value );
         #note "store-value for ", $obj-id;
@@ -341,27 +445,57 @@ my role AttrXMooishAttributeHOW {
     }
 
     method is-set ( $obj-id) {
-        %attr-data{$obj-id}{$.name}<value>;
+        %attr-data{$obj-id}{$.name}<value>:exists;
     }
     
     method clear-attr ( $obj-id ) {
         %attr-data{$obj-id}{$.name}:delete;
     }
 
+    method invoke-opt ( Any \instance, Str $option, @params = (), :$strict = False ) {
+        my $opt-value = self."$option"();
+        my \type = $.package;
+
+        return unless so $opt-value;
+        
+        my $method;
+
+        given $opt-value {
+            when Str | Bool {
+                if $opt-value ~~ Bool {
+                    die "Bug encountered: boolean option $option doesn't have a prefix assigned"
+                        unless %opt2prefix{$option};
+                    $opt-value = "{%opt2prefix{$option}}-{$.base-name}";
+                }
+                $method = $.has_accessor ?? instance.^find_method($opt-value) !! type.^find_private_method($opt-value);
+                unless so $method {
+                    # If no method found by name die if strict is on
+                    return unless $strict;
+                    X::Method::NotFound.new(
+                        method => $opt-value,
+                        private => !$.has_accessor,
+                        typename => instance.WHO,
+                    ).throw;
+                }
+            }
+            when Callable {
+                $method = $opt-value;
+            }
+            default {
+                die "Bug encountered: $option is of unsupported type {$opt-value.WHO}";
+            }
+        }
+
+        instance.$method(|(@params.Capture));
+    }
+
     method build-attr ( Any \instance ) {
         my $obj-id = instance.WHICH;
-        my \type = $.package;
         my $publicity = $.has_accessor ?? "public" !! "private";
         unless self.is-set( $obj-id ) {
             #note "&&& Calling builder {$!builder}";
-            my $builder = $.has_accessor ?? instance.^find_method($!builder) !! type.^find_private_method($!builder);
-            X::Method::NotFound.new(
-                method => $!builder,
-                private => !$.has_accessor,
-                typename => instance.WHO,
-            ).throw unless so $builder;
-            my $val = instance.&$builder();
-            #note "Builder-generated value: ", $val, " -- for ", $obj-id;
+            my $val = self.invoke-opt( instance, 'builder', :strict);
+            self.invoke-filter( instance, $val );
             self.store-value( $obj-id, $val );
             #note "Set ATTR";
         }
@@ -390,6 +524,7 @@ my role AttrXMooishClassHOW {
         my \ancestor = type.^mro[1];
         #note "ANCESTOR:", ancestor.WHO;
         my &ancestor-buildall = ancestor.^lookup('BUILDALL');
+        #note "Ancestor's BUILDALL: ", &ancestor-buildall.WHICH;
         %wrap-methods<BUILDALL> = method BUILDALL (|c) {
             #note "&&& AUTOGEN BUILD obj:{self.WHICH} type:{self.WHAT.WHICH} // {self.HOW} &&&";
             type.HOW.on_create( self );
@@ -427,7 +562,7 @@ my role AttrXMooishClassHOW {
 
         for @lazyAttrs -> $attr {
             #note "Found lazy attr ", $attr.name;
-            $attr.make-lazy( instance );
+            $attr.make-mooish( instance );
         }
     }
 
@@ -444,15 +579,30 @@ multi trait_mod:<is>( Attribute:D $attr, :$mooish! ) is export {
 
     my $opt-list = $mooish ~~ List ?? $mooish !! @$mooish;
     for $opt-list.values -> $option {
+
+        sub set-callable-opt ($opt, :$opt-name?) {
+            my $option = $opt-name // $opt.key;
+            X::TypeCheck::MooishOption.new(
+                operation => "set option {$opt.key} of mooish trait",
+                got => $opt.value,
+                expected => Str,
+            ).throw unless $opt.value ~~ Str | Callable;
+            $attr."$option"() = $opt.value;
+        }
+
         given $option {
             when Pair {
                 given $option.key {
                     when 'lazy' {
-                        $attr.lazy = so $option<lazy>;
+                        $attr.lazy = $option.value;
+                        set-callable-opt( opt-name => 'builder', $option ) unless $option.value ~~ Bool;
                     }
                     when 'builder' {
-                        X::Fatal.new( message => "Only builder name (Str) is currently supported for attribute {$attr.name}" ).throw unless $option<builder> ~~ Str;
-                        $attr.builder = $option<builder>;
+                        set-callable-opt( $option );
+                    }
+                    when 'trigger' | 'filter'  {
+                        $attr."$_"() = $option.value;
+                        set-callable-opt( $option ) unless $option.value ~~ Bool;
                     }
                     when 'clearer' | 'predicate' {
                         my $opt = $_;
@@ -468,7 +618,7 @@ multi trait_mod:<is>( Attribute:D $attr, :$mooish! ) is export {
                 }
             }
             default {
-                X::Fatal.new( message => "Unknown option type {$option.WHO}" ).throw;
+                X::Fatal.new( message => "Unsupported option type {$option.WHO}" ).throw;
             }
         }
     }
