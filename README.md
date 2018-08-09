@@ -6,10 +6,11 @@ NAME
 SYNOPSIS
 ========
 
+    use AttrX::Mooish;
     class Foo {
         has $.bar1 is mooish(:lazy, :clearer, :predicate) is rw;
-        has $!bar2 is mooish(:lazy, :clearer, :predicate) is rw;
-        has $.bar3 is rw is mooish(:lazy);
+        has $!bar2 is mooish(:lazy, :clearer, :predicate, :trigger);
+        has Num $.bar3 is rw is mooish(:lazy, :filter);
 
         method build-bar1 {
             "lazy init value"
@@ -19,8 +20,21 @@ SYNOPSIS
             "this is private mana!"
         }
 
+        method !trigger-bar2 ( $value ) {
+            # do something after attribute changed.
+        }
+
         method build-bar3 {
-            .rand < 0.5 ?? Nil !! pi;
+            rand;
+        }
+
+        method filter-bar3 ( $value, *%params ) {
+            if %params<old-value>:exists {
+                # Only allow the value to grow
+                return ( !%params<old-value>.defined || $value > %params<old-value> ) ?? $value !! %params<old-value>;
+            }
+            # Only allow inital values from 0.5 and higher
+            return $value < 0.5 ?? Nil !! $value;
         }
 
         method baz {
@@ -33,6 +47,22 @@ SYNOPSIS
 
     say $foo.bar1;
     say $foo.bar3.defined ?? "DEF" !! "UNDEF";
+    for 1..10 { $foo.bar3 = rand; say $foo.bar3 }
+
+The above would generate a output similar to the following:
+
+    lazy init value
+    UNDEF
+    0.08662089602505263
+    0.49049512098324255
+    0.49049512098324255
+    0.5983833081770437
+    0.9367804461546302
+    0.9367804461546302
+    0.9367804461546302
+    0.9367804461546302
+    0.9367804461546302
+    0.9367804461546302
 
 DESCRIPTION
 ===========
@@ -120,7 +150,26 @@ Trait parameters
 
   * *`lazy`*
 
-    `Bool`, defines wether attribute is lazy.
+    `Bool`, defines wether attribute is lazy. Can have `Bool`, `Str`, or `Callable` value. The later two have the same meaning, as for *`builder`* parameter.
+
+  * *`builder`*
+
+    Defines builder method for a lazy attribute. The value returned by the method will be used to initialize the attribute.
+
+    This parameter can have `Str` or `Callable` values or be not defined at all. In the latter case we expect a method with a name composed of "*build-*" prefix followed by attribute name to be defined in our class. For example, for a attribute named `$!bar` the method name is expected to be *build-bar*.
+
+    A string value defines builder's method name.
+
+    A callable value is used as-is and called an object method. For example:
+
+        class Foo {
+            has $.bar is mooish(:lazy, :builder( -> $ {"in-place"} );
+        }
+
+        $inst = Foo.new;
+        say $inst.bar;
+
+    This would output '*in-place*'.
 
   * *`predicate`*
 
@@ -153,22 +202,37 @@ Trait parameters
                     say self.has-bar;  # False
                 }
 
-  * *`builder`*
+  * *`filter`*
 
-    Defines the name of attribute builder method. If not defined then lazyness would look for a user-defined method with name formed of _build-_ prefix followed by attribute name. *`builder`* lets user change it to whatever he considers appropriate.
+    A filter is a method which is executed right before storing a value to an attribute. What is returned by the method will actually be stored into the attribute. This allows us to manipulate with a user-supplied value in any necessary way.
 
-    *Use of a `Routine` object as a `builder` value is planned but not implemented yet.*
+    The parameter can have values of `Bool`, `Str`, `Callable`. All values are treated similarly to the `builder` parameter except that prefix '*filter-*' is used when value is `True`.
 
-For all the trait parameters, if it is applied to a private attribute then all auto-generated methods will be private too. The builder method is expected to be private as well. I.e.:
+    The filter method is passed with user-supplied value and two named parameters: `attribute` with full attribute name; and optional `old-value` which could omitted if attribute has not been initialized yet. Otherwise `old-value` contains attribute value before the assignment.
+
+    **Note** that it is not recommended for a filter method to use the corresponding attribute directly as it may cause unforseen side-effects like deep recursion. The `old-value` parameter is the right way to do it.
+
+  * *`trigger`*
+
+    A trigger is a method which is executed when a value is being written into an attribute. It gets passed with the stored value as first positional parameter and named parameter `attribute` with full attribute name. Allowed values for this parameter are `Bool`, `Str`, `Callable`. All values are treated similarly to the `builder` parameter except that prefix '*trigger-*' is used when value is `True`.
+
+    Trigger method is being executed right after changing the attribute value. If there is a `filter` defined for the attribute then value will be the filtered one, not the initial.
+
+## Public/Private
+
+For all the trait parameters, if it is applied to a private attribute then all auto-generated methods will be private too. The call-back style methods like `builder` are expected to be private as well. I.e.:
 
         class Foo {
-            has $!bar is rw is mooish(:lazy, :clearer<reset-bar>, :predicate);
+            has $!bar is rw is mooish(:lazy, :clearer<reset-bar>, :predicate, :filter<wrap-filter>);
 
             method !build-bar { "a private value" }
             method baz {
                 if self!has-bar {
                     self!reset-bar;
                 }
+            }
+            method !wrap-filter ( $value, :$attribute ) {
+                "filtered $attribute: ($value)"
             }
         }
 
