@@ -20,14 +20,20 @@ DIST_FILES=LICENSE \
 CLEAN_FILES=$(MOD_NAME_PFX)-v*.tar.gz
 CLEAN_DIRS=lib/.precomp
 
-all: 
-	echo "Useful targets: test, readme, release"
+all: release
+	@echo "Useful targets: test, readme, release"
 
 readme: README.md
 	
 README.md: $(MAIN_MOD)
-	echo "===> Generating README.md"
-	@perl6 --doc=Markdown $(MAIN_MOD) >README.md
+	@echo "===> Generating $@"
+	@perl6 --doc=Markdown $^ >$@
+
+html: README.html
+
+README.html: $(MAIN_MOD)
+	@echo "===> Generating $@"
+	@perl6 --doc=HTML $^ >$@
 
 test:
 	@prove -l --exec "perl6 -Ilib" -r t
