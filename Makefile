@@ -48,7 +48,10 @@ release-test:
 clean-repo:
 	@git diff-index --quiet HEAD || (echo "*ERROR* Repository is not clean, commit your changes first!"; exit 1)
 
-release: meta release-test $(MOD_ARCH) clean-repo
+build: meta
+	@zef --deps-only install .
+
+release: build release-test $(MOD_ARCH) clean-repo
 	@echo "===> Done releasing"
 
 meta: $(META)
@@ -75,6 +78,6 @@ clean:
 	@rm $(CLEAN_FILES)
 	@rm -rf $(CLEAN_DIRS)
 
-install: 
+install: build
 	@echo "===> Installing"
 	@zef install .
