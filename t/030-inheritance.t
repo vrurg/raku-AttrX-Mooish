@@ -11,7 +11,6 @@ subtest "Inheritance basics", {
         has $.initial is default(pi);
         has $.bar is rw is mooish(:lazy, :clearer, :predicate);
         has Int $.build-count = 0;
-        #method BUILDALL (|) { note "Foo1 BUILDALL"; callsame }
         submethod BUILD { %inst-records{self.WHICH} = True; }
         submethod DESTROY { %inst-records{self.WHICH}:delete; }
         method build-bar { $!build-count++; $!initial }
@@ -19,6 +18,7 @@ subtest "Inheritance basics", {
     }
 
     my class Foo1 is Bar1 {
+        has $.fu;
     }
 
     $inst = Foo1.new;
@@ -124,6 +124,52 @@ subtest "Private", {
 
     $inst = Foo2.new;
     $inst.run-test;
+}
+
+subtest "Chained", {
+    plan 9;
+    my $inst;
+    my class Foo1 {
+        has $.foo1 is rw is mooish(:lazy, :clearer, :predicate, :trigger);
+        has $!foo2 is mooish(:lazy);
+        has $.foo3 is mooish(:lazy('setup-foo3'));
+
+        method build-foo1 { "Foo1::foo1" };
+        method trigger-foo1 ( $val ) { is $val, "manual foo1", "trigger on Foo1::foo1" }
+        method !build-foo2 { "Foo1::foo2" };
+        method get-foo2 { $!foo2 }
+        method set-foo2 ( $val) { $!foo2 = $val }
+        method setup-foo3 { "Foo1::foo3" }
+    }
+
+    my class Bar1 is Foo1 {
+        has $.bar1 is mooish(:lazy(-> $ {"Bar1::bar1"}));
+        has $.bar2 is rw is mooish(:filter);
+        method BUILDALL (|) { nextsame; } # A BUILDALL may break things sometime
+
+        method filter-bar2 ( $val ) { "filtered-bar2({$val})" }
+    }
+
+    my class Baz1 is Bar1 {
+        has $.baz1 is mooish(:lazy("init-baz1"));
+
+        method init-baz1 { "Baz1::baz1" }
+        method setup-foo3 { "Baz1::foo3" }
+    }
+
+    $inst = Baz1.new;
+    is $inst.foo1, "Foo1::foo1", "\$.foo1 lazy init";
+    is $inst.get-foo2, "Foo1::foo2", "private \$!foo2 lazy init";
+    is $inst.foo3, "Baz1::foo3", "overriden \$.foo3 lazy init";
+    $inst.foo1 = "manual foo1";
+    is $inst.bar1, "Bar1::bar1", "\$.bar1 lazy init";
+    $inst.bar2 = "a string";
+    is $inst.bar2, "filtered-bar2(a string)", "\$.bar2 filter";
+    is $inst.baz1, "Baz1::baz1", "\$.baz1 lazy init";
+
+    $inst = Baz1.new( foo1 => "foo1 from new", bar2 => "bar2 from new" );
+    is $inst.foo1, "foo1 from new", "foo1 from constructor";
+    is $inst.bar2, "bar2 from new", "bar2 from constructor";
 }
 
 done-testing;

@@ -11,7 +11,6 @@ subtest "Class Basics", {
         has $.initial is default(pi);
         has $.bar is rw is mooish(:lazy, :clearer, :predicate);
         has Int $.build-count = 0;
-        #method BUILDALL (|) { note "Foo1 BUILDALL"; callsame }
         submethod BUILD { %inst-records{self.WHICH} = True; }
         submethod DESTROY { %inst-records{self.WHICH}:delete; }
         method build-bar { $!build-count++; $!initial }
@@ -31,21 +30,21 @@ subtest "Class Basics", {
     nok $inst.bar.defined, "Nil value assigned";
 
     # So far, two object, one lazy attribute was initialized per each object.
-    is $inst.HOW.slots-used, 2, "2 used slots correspond to attribute count";
+    is mooish-obj-count, 2, "2 used slots correspond to attribute count";
 
     $inst = Foo1.new;
     for 1..2000 {
         my $v = $inst.bar;
     }
     is $inst.build-count, 1, "attribute build is executed only once";
-    is $inst.HOW.slots-used, 3, "3 used slots correspond to attribute count";
+    is mooish-obj-count, 3, "3 used slots correspond to attribute count";
 
     for 1..20000 {
         $inst = Foo1.new;
         my $v = $inst.bar;
     }
 
-    is $inst.HOW.slots-used, %inst-records.keys.elems, "used slots correspond to number of objects survived GC";
+    is mooish-obj-count, %inst-records.keys.elems, "used slots correspond to number of objects survived GC";
 
     subtest "Clearer/prefix", {
         plan 4;

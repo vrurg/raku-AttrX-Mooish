@@ -396,17 +396,22 @@ my role AttrXMooishAttributeHOW {
         }
     }
 
-    method make-mooish ( Mu \instance ) {
+    # force-default is true if attribute is set in .new( ) call
+    method make-mooish ( Mu \instance, Bool $force-default ) {
         my $attr = self;
         my $obj-id = instance.WHICH;
         #note "Using obj ID:", $obj-id;
+        #note "VAR:", instance.VAR;
 
         return if so %attr-data{$obj-id}{$.name};
 
         #note ">>> LAZIFYING ", $.name;
 
         my $default = self.get_value( instance );
-        #note "Initial value is ", $default;
+        if $default.defined || $force-default {
+            #note "=== Using initial value ", $default;
+            self.store-value( $obj-id, $default );
+        }
         #note "OBJ: ", Dump( instance );
         self.set_value( instance, 
             Proxy.new(
@@ -504,46 +509,42 @@ my role AttrXMooishAttributeHOW {
 
 my role AttrXMooishClassHOW {
 
-    method inject-method ( Mu \type, $name, &method ) {
-        #note "Injecting $name on {type.WHICH} // {type.HOW}";
-        if  type.^declares_method( $name ) {
-            my &orig-method = type.^lookup( $name );
-            #note "    -> by wrapping of {&orig-method.WHICH} from {&orig-method.package.WHICH}";
-            &orig-method.wrap( &method );
-        } else {
-            #note "    -> by adding {&method.WHICH}";
-            type.^add_method( $name, &method );
+    method add_method(Mu $obj, $name, $code_obj, :$nowrap=False) {
+        #note "^^^ ADDING METHOD $name on {$obj.WHICH}";
+        my $m = $code_obj;
+        unless $nowrap {
+            given $name {
+                when <DESTROY> {
+                    #note "^^^ WRAPPING DESTROY";
+                    $m = my submethod DESTROY {
+                        #note "&&& AUTOGEN DESTROY on {self.WHICH}";
+                        %attr-data{self.WHICH}:delete;
+                        self.&$code_obj;
+                    }
+                }
+            }
         }
+        nextwith($obj, $name, $m);
     }
 
     method install-stagers ( Mu \type ) {
-        #note "&&& INSTALLING STAGERS {type.WHO} {type.HOW}";
+        #note "+++ INSTALLING STAGERS {type.WHO} {type.HOW}";
         my %wrap-methods;
         
-        #note "MRO:", type.^mro;
-        my \ancestor = type.^mro[1];
-        #note "ANCESTOR:", ancestor.WHO;
-        my &ancestor-buildall = ancestor.^lookup('BUILDALL');
-        #note "Ancestor's BUILDALL: ", &ancestor-buildall.WHICH;
-        %wrap-methods<BUILDALL> = method BUILDALL (|c) {
-            #note "&&& AUTOGEN BUILD obj:{self.WHICH} type:{self.WHAT.WHICH} // {self.HOW} &&&";
-            type.HOW.on_create( self );
-            #note "&&& nextsame: ", nextcallee.WHICH, " // ancestor method: ", &ancestor-buildall.WHICH;
-            callsame;
-            #note "&&& calling ancestor's method";
-            # XXX Workaround for inheritance issue of wrapped methods
-            # Reported in https://github.com/rakudo/rakudo/issues/2178
-            self.&ancestor-buildall(|c);
-        }
-
-        %wrap-methods<DESTROY> = submethod {
+        %wrap-methods<DESTROY> = my submethod DESTROY {
             #note "&&& AUTOGEN DESTROY on {self.WHICH}";
             %attr-data{self.WHICH}:delete;
             nextsame;
         };
 
         for %wrap-methods.keys -> $method-name {
-            self.inject-method( type, $method-name, %wrap-methods{$method-name} );
+            my $orig-method = type.^declares_method( $method-name );
+            if $orig-method {
+                type.^find_method($method-name, :no_fallback(1)).wrap( %wrap-methods{$method-name} );
+            }
+            else {
+                self.add_method( type, $method-name, %wrap-methods{$method-name}, :nowrap );
+            }
         }
 
         type.^setup_finalization;
@@ -555,14 +556,15 @@ my role AttrXMooishClassHOW {
         nextsame;
     }
 
-    method on_create ( Mu \instance ) {
+
+    method on_create ( Mu \type, Mu \instance, Hash \attrinit ) {
         #note "ON CREATE";
 
-        my @lazyAttrs = self.attributes( self ).grep( AttrXMooishAttributeHOW );
+        my @lazyAttrs = type.^attributes( :local(1) ).grep( AttrXMooishAttributeHOW );
 
         for @lazyAttrs -> $attr {
-            #note "Found lazy attr ", $attr.name;
-            $attr.make-mooish( instance );
+            #note "Found lazy attr {$attr.name} // {$attr.base-name}";
+            $attr.make-mooish( instance, attrinit{$attr.base-name}:exists );
         }
     }
 
@@ -577,7 +579,40 @@ multi trait_mod:<is>( Attribute:D $attr, :$mooish! ) is export {
     #note "Applying to ", $*PACKAGE.WHO;
     $*PACKAGE.HOW does AttrXMooishClassHOW unless $*PACKAGE.HOW ~~ AttrXMooishClassHOW;
 
-    my $opt-list = $mooish ~~ List ?? $mooish !! @$mooish;
+    state Bool $is-wrapped = False;
+    unless $is-wrapped {
+        Mu.^lookup( 'new' ).wrap(
+            my method new (*%attrinit) {
+                my $inst = callsame;
+                #note "&&& WRAPPED new on {$inst.WHICH}";
+                for $inst.^mro -> \type {
+                    #note "+++ INIT {type.WHICH} // {type.HOW}";
+                    if type.HOW ~~ AttrXMooishClassHOW {
+                        type.^on_create( $inst, %attrinit );
+                    }
+                }
+                $inst
+            }
+        );
+        Mu.^lookup( 'bless' ).wrap(
+            my method bless (|) {
+                my $inst = callsame;
+                #note "&&& WRAPPED bless on {$inst.WHICH}";
+                $inst
+            }
+        );
+        $is-wrapped = True;
+    }
+
+    my $opt-list;
+
+    given $mooish {
+        when Bool { $opt-list = (); }
+        when List { $opt-list = $mooish; }
+        when Pair { $opt-list = [ $mooish ] }
+        default { die "Unsupported mooish value type {$mooish.WHO}" }
+    }
+
     for $opt-list.values -> $option {
 
         sub set-callable-opt ($opt, :$opt-name?) {

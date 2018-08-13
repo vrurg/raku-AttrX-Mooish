@@ -35,7 +35,7 @@ subtest "Role Basics", {
     is $inst2.bar, "is bar", "second object attribute unchanged";
 
     # So far, two object, one lazy attribute was initialized per each object.
-    is $inst.HOW.slots-used, 2, "2 used slots correspond to attribute count";
+    is mooish-obj-count, 2, "2 used slots correspond to attribute count";
     # Self-check the test
     is %inst-records.keys.elems, 2, "two control instance records found";
 
@@ -45,14 +45,14 @@ subtest "Role Basics", {
     }
 
     is $inst.build-count, 1, "initialized only once";
-    is $inst.HOW.slots-used, 3, "3 used slots correspond to attribute count";
+    is mooish-obj-count, 3, "3 used slots correspond to attribute count";
 
     for 1..20000 {
         $inst = FooR1.new;
         my $v = $inst.bar;
     }
 
-    is $inst.HOW.slots-used, %inst-records.keys.elems, "used slots correspond to number of objects survived GC";
+    is mooish-obj-count, %inst-records.keys.elems, "used slots correspond to number of objects survived GC";
 
     $inst.bar = "something different";
     is $inst.bar, "something different", "set before clear";
@@ -87,6 +87,30 @@ subtest "Role Basics", {
 
     $inst = FooR3.new;
     is $inst.bar, "from init-bar", "named builder works";
+}
+
+subtest "Require method", {
+    plan 2;
+    my $inst;
+
+    my role FooRole1 {
+        has $.bar is rw is mooish(:filter);
+        method filter-bar {...}
+    }
+
+    throws-like 
+        q<my class FooR1 does FooRole1 { }>, 
+        X::AdHoc, 
+        message => q<Method 'filter-bar' must be implemented by FooR1 because it is required by roles: FooRole1.>,
+        "cannot compose without required method";
+
+    my class FooR2 does FooRole1 {
+        method filter-bar ($val) { "filtered-FooR2($val)" }
+    }
+
+    $inst = FooR2.new;
+    $inst.bar = "fubar";
+    is $inst.bar, "filtered-FooR2(fubar)", "role's requirement";
 }
 
 done-testing;
