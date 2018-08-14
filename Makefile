@@ -49,9 +49,10 @@ clean-repo:
 	@git diff-index --quiet HEAD || (echo "*ERROR* Repository is not clean, commit your changes first!"; exit 1)
 
 build: meta
+	@echo "===> Installing dependencies"
 	@zef --deps-only install .
 
-release: build release-test $(MOD_ARCH) clean-repo
+release: build clean-repo release-test $(MOD_ARCH) 
 	@echo "===> Done releasing"
 
 meta: $(META)
@@ -62,6 +63,7 @@ $(MOD_ARCH): $(DIST_FILES)
 	@echo "Consider carefully if this is really what you want!"
 	@/bin/sh -c 'read -p "Do you really want to tag? (y/N) " answer; [ $$answer = "Y" -o $$answer = "y" ]'
 	@git tag -f $(MOD_VER) HEAD
+	@git push -f --tags
 	@git archive --prefix="$(MOD_DISTRO)/" -o $(MOD_ARCH) $(MOD_VER)
 
 $(META): $(META_BUILDER) $(MAIN_MOD)

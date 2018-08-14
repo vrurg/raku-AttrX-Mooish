@@ -1,4 +1,4 @@
-unit module AttrX::Mooish:ver<0.2.901>:auth<github:vrurg>;
+unit module AttrX::Mooish:ver<0.2.902>:auth<github:vrurg>;
 #use Data::Dump;
 
 =begin pod
@@ -511,6 +511,25 @@ my role AttrXMooishAttributeHOW {
 
 my role AttrXMooishClassHOW {
 
+    method compose ( Mu \type ) {
+        state Bool $is-wrapped = False;
+        unless $is-wrapped {
+            $is-wrapped = True;
+            Mu.^find_method( 'new', :no_fallback(1) ).wrap(
+                my multi method new ( *%attrinit ) {
+                    my $inst = callsame;
+                    for $inst.^mro -> \type {
+                        if type.HOW ~~ AttrXMooishClassHOW {
+                            type.^on_create( $inst, %attrinit );
+                        }
+                    }
+                    $inst
+                }
+            );
+        }
+        nextsame;
+    }
+
     method add_method(Mu $obj, $name, $code_obj, :$nowrap=False) {
         #note "^^^ ADDING METHOD $name on {$obj.WHICH}";
         my $m = $code_obj;
@@ -583,23 +602,6 @@ multi trait_mod:<is>( Attribute:D $attr, :$mooish! ) is export {
     $attr does AttrXMooishAttributeHOW;
     #note "Applying to ", $*PACKAGE.WHO;
     $*PACKAGE.HOW does AttrXMooishClassHOW unless $*PACKAGE.HOW ~~ AttrXMooishClassHOW;
-    no precompilation;
-
-    state Bool $is-wrapped = False;
-    unless $is-wrapped {
-        $is-wrapped = True;
-        Mu.^find_method( 'new', :no_fallback(1) ).wrap(
-            my multi method new ( *%attrinit ) {
-                my $inst = callsame;
-                for $inst.^mro -> \type {
-                    if type.HOW ~~ AttrXMooishClassHOW {
-                        type.^on_create( $inst, %attrinit );
-                    }
-                }
-                $inst
-            }
-        );
-    }
 
     my $opt-list;
 
