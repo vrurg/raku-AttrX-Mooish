@@ -602,7 +602,6 @@ multi trait_mod:<is>( Attribute:D $attr, :$mooish! ) is export {
     $attr does AttrXMooishAttributeHOW;
     #note "Applying to ", $*PACKAGE.WHO;
     $*PACKAGE.HOW does AttrXMooishClassHOW unless $*PACKAGE.HOW ~~ AttrXMooishClassHOW;
-    #no precompilation;
 
     my $opt-list;
 
