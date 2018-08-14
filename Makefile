@@ -62,6 +62,7 @@ $(MOD_ARCH): $(DIST_FILES)
 	@echo "Consider carefully if this is really what you want!"
 	@/bin/sh -c 'read -p "Do you really want to tag? (y/N) " answer; [ $$answer = "Y" -o $$answer = "y" ]'
 	@git tag -f $(MOD_VER) HEAD
+	@git push -f --tags
 	@git archive --prefix="$(MOD_DISTRO)/" -o $(MOD_ARCH) $(MOD_VER)
 
 $(META): $(META_BUILDER) $(MAIN_MOD)
