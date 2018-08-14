@@ -1,10 +1,20 @@
 {
-  "auth": "github:vrurg",
-  "license": "Artistic-2.0",
-  "depends": [
-    
+  "test-depends": [
+    "Test",
+    "Test::META",
+    "Test::When"
   ],
-  "meta-version": "0",
+  "authors": [
+    "Vadim Belman <vrurg@cpan.org>"
+  ],
+  "version": "0.2.901",
+  "description": "Extending attribute functionality with ideas from Moo/Moose",
+  "perl": "6.*",
+  "source-url": null,
+  "auth": "github:vrurg",
+  "provides": {
+    "AttrX::Mooish": "lib/Attrx/Mooish.pm6"
+  },
   "tags": [
     "AttrX",
     "Moo",
@@ -14,29 +24,22 @@
     "mooish",
     "trait"
   ],
-  "perl": "6.*",
-  "source-url": null,
-  "provides": {
-    "AttrX::Mooish": "lib/Attrx/Mooish.pm6"
+  "production": false,
+  "depends": [
+    
+  ],
+  "license": "Artistic-2.0",
+  "support": {
+    "source": "git://github.com/vrurg/Perl6-AttrX-Mooish.git"
   },
-  "name": "AttrX::Mooish",
-  "test-depends": [
-    "Test",
-    "Test::META"
-  ],
-  "build-depends": [
-    "META6"
-  ],
   "resources": [
     
   ],
-  "description": "Extending attribute functionality with ideas from Moo/Moose",
-  "version": "0.2.900",
-  "production": false,
-  "authors": [
-    "Vadim Belman <vrurg@cpan.org>"
+  "build-depends": [
+    "META6",
+    "p6doc",
+    "Pod::To::Markdown"
   ],
-  "support": {
-    "source": "git://github.com/vrurg/Perl6-AttrX-Mooish.git"
-  }
+  "meta-version": "0",
+  "name": "AttrX::Mooish"
 }

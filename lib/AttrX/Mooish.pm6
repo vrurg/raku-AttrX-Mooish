@@ -1,4 +1,4 @@
-unit module AttrX::Mooish:ver<0.2.900>:auth<github:vrurg>;
+unit module AttrX::Mooish:ver<0.2.901>:auth<github:vrurg>;
 #use Data::Dump;
 
 =begin pod
@@ -370,6 +370,8 @@ my role AttrXMooishAttributeHOW {
                 type.^add_private_method( $helper-name, %helpers{$helper} );
             }
         }
+
+        #note "+++ done composing attribute {$.name}";
     }
 
     method check-value ( $value ) {
@@ -549,10 +551,13 @@ my role AttrXMooishClassHOW {
 
         type.^setup_finalization;
         type.^compose_repr;
+        #note "+++ done installing stagers";
     }
 
     method create_BUILDPLAN ( Mu \type ) {
+        #note "+++ create_BUILDPLAN";
         self.install-stagers( type );
+        #note "+++ done create_BUILDPLAN";
         nextsame;
     }
 
@@ -578,15 +583,15 @@ multi trait_mod:<is>( Attribute:D $attr, :$mooish! ) is export {
     $attr does AttrXMooishAttributeHOW;
     #note "Applying to ", $*PACKAGE.WHO;
     $*PACKAGE.HOW does AttrXMooishClassHOW unless $*PACKAGE.HOW ~~ AttrXMooishClassHOW;
+    no precompilation;
 
     state Bool $is-wrapped = False;
     unless $is-wrapped {
-        Mu.^lookup( 'new' ).wrap(
-            my method new (*%attrinit) {
+        $is-wrapped = True;
+        Mu.^find_method( 'new', :no_fallback(1) ).wrap(
+            my multi method new ( *%attrinit ) {
                 my $inst = callsame;
-                #note "&&& WRAPPED new on {$inst.WHICH}";
                 for $inst.^mro -> \type {
-                    #note "+++ INIT {type.WHICH} // {type.HOW}";
                     if type.HOW ~~ AttrXMooishClassHOW {
                         type.^on_create( $inst, %attrinit );
                     }
@@ -594,14 +599,6 @@ multi trait_mod:<is>( Attribute:D $attr, :$mooish! ) is export {
                 $inst
             }
         );
-        Mu.^lookup( 'bless' ).wrap(
-            my method bless (|) {
-                my $inst = callsame;
-                #note "&&& WRAPPED bless on {$inst.WHICH}";
-                $inst
-            }
-        );
-        $is-wrapped = True;
     }
 
     my $opt-list;

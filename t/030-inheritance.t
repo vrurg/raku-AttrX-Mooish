@@ -129,7 +129,11 @@ subtest "Private", {
 subtest "Chained", {
     plan 9;
     my $inst;
-    my class Foo1 {
+    my class Foo0 {
+        has $.foo0;
+    }
+
+    my class Foo1 is Foo0 {
         has $.foo1 is rw is mooish(:lazy, :clearer, :predicate, :trigger);
         has $!foo2 is mooish(:lazy);
         has $.foo3 is mooish(:lazy('setup-foo3'));
