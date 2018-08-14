@@ -426,7 +426,7 @@ my role AttrXMooishAttributeHOW {
                     #note "STORE (", $obj-id, "): ", $value // '*undef*';
                     self.invoke-filter( instance, $value );
                     self.store-value( $obj-id, $value );
-                    self.invoke-opt( instance, 'trigger', ( $value, :attribute($.name) ) ) if $.trigger;
+                    self.invoke-opt( instance, 'trigger', ( $value, :attribute($.name) ), :strict ) if $.trigger;
                 }
             )
         );
@@ -441,7 +441,7 @@ my role AttrXMooishAttributeHOW {
             my $obj-id = instance.WHICH;
             my @invoke-params = $value, attribute => $.name;
             @invoke-params.push( 'old-value' => %attr-data{$obj-id}{$.name}<value> ) if self.is-set( $obj-id );
-            $value = self.invoke-opt( instance, 'filter', @invoke-params);
+            $value = self.invoke-opt( instance, 'filter', @invoke-params, :strict );
         }
     }
 
