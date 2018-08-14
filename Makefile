@@ -49,6 +49,7 @@ clean-repo:
 	@git diff-index --quiet HEAD || (echo "*ERROR* Repository is not clean, commit your changes first!"; exit 1)
 
 build: meta
+	@echo "===> Installing dependencies"
 	@zef --deps-only install .
 
 release: build clean-repo release-test $(MOD_ARCH) 
