@@ -410,7 +410,9 @@ my role AttrXMooishAttributeHOW {
         #note ">>> LAZIFYING ", $.name;
 
         my $default = self.get_value( instance );
-        if $default.defined || $force-default {
+        my $initialized = $default ~~ Positional | Associative ?? $default.elems !! $default.defined;
+
+        if $initialized || $force-default {
             #note "=== Using initial value ", $default;
             self.store-value( $obj-id, $default );
         }
@@ -503,6 +505,7 @@ my role AttrXMooishAttributeHOW {
     method build-attr ( Any \instance ) {
         my $obj-id = instance.WHICH;
         my $publicity = $.has_accessor ?? "public" !! "private";
+        #note "&&& KINDA BUILDING FOR $publicity {$.name} on $obj-id";
         unless self.is-set( $obj-id ) {
             #note "&&& Calling builder {$!builder}";
             my $val = self.invoke-opt( instance, 'builder', :strict);
@@ -603,7 +606,7 @@ my role AttrXMooishClassHOW {
 
 multi trait_mod:<is>( Attribute:D $attr, :$mooish! ) is export {
     $attr does AttrXMooishAttributeHOW;
-    #note "Applying to ", $*PACKAGE.WHO;
+    #note "Applying for {$attr.name} to ", $*PACKAGE.WHO;
     $*PACKAGE.HOW does AttrXMooishClassHOW unless $*PACKAGE.HOW ~~ AttrXMooishClassHOW;
 
     my $opt-list;
