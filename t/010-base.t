@@ -276,7 +276,7 @@ subtest "Private", {
 }
 
 subtest "Triggers", {
-    plan 7;
+    plan 8;
     my $inst;
     my class Foo1 {
         has $.bar is rw is mooish(:trigger);
@@ -302,6 +302,16 @@ subtest "Triggers", {
     $inst.bar = "bar value";
     $inst.baz = "baz value";
     $inst.foo = "foo value";
+
+    my class Foo2 {
+        has $.bar is rw is mooish(:lazy, :trigger);
+
+        method build-bar { "build bar" }
+        method trigger-bar ( $value ) { is $value, "build bar", "trigger on lazy build" }
+    }
+
+    $inst = Foo2.new;
+    $inst.bar;
 }
 
 subtest "Filtering", {

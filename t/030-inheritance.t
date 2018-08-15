@@ -137,9 +137,10 @@ subtest "Chained", {
         has $.foo1 is rw is mooish(:lazy, :clearer, :predicate, :trigger);
         has $!foo2 is mooish(:lazy);
         has $.foo3 is mooish(:lazy('setup-foo3'));
+        has $.skip-trigger is rw = True;
 
         method build-foo1 { "Foo1::foo1" };
-        method trigger-foo1 ( $val ) { is $val, "manual foo1", "trigger on Foo1::foo1" }
+        method trigger-foo1 ( $val ) { return if $.skip-trigger; is $val, "manual foo1", "trigger on Foo1::foo1" }
         method !build-foo2 { "Foo1::foo2" };
         method get-foo2 { $!foo2 }
         method set-foo2 ( $val) { $!foo2 = $val }
@@ -165,7 +166,9 @@ subtest "Chained", {
     is $inst.foo1, "Foo1::foo1", "\$.foo1 lazy init";
     is $inst.get-foo2, "Foo1::foo2", "private \$!foo2 lazy init";
     is $inst.foo3, "Baz1::foo3", "overriden \$.foo3 lazy init";
+    $inst.skip-trigger = False;
     $inst.foo1 = "manual foo1";
+    $inst.skip-trigger = True;
     is $inst.bar1, "Bar1::bar1", "\$.bar1 lazy init";
     $inst.bar2 = "a string";
     is $inst.bar2, "filtered-bar2(a string)", "\$.bar2 filter";

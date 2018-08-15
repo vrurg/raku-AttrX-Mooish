@@ -424,9 +424,7 @@ my role AttrXMooishAttributeHOW {
                 },
                 STORE => -> $, $value is copy {
                     #note "STORE (", $obj-id, "): ", $value // '*undef*';
-                    self.invoke-filter( instance, $value );
-                    self.store-value( $obj-id, $value );
-                    self.invoke-opt( instance, 'trigger', ( $value, :attribute($.name) ), :strict ) if $.trigger;
+                    self.store-with-cb( instance, $value );
                 }
             )
         );
@@ -443,6 +441,12 @@ my role AttrXMooishAttributeHOW {
             @invoke-params.push( 'old-value' => %attr-data{$obj-id}{$.name}<value> ) if self.is-set( $obj-id );
             $value = self.invoke-opt( instance, 'filter', @invoke-params, :strict );
         }
+    }
+
+    method store-with-cb ( Mu \instance, $value is rw ) {
+        self.invoke-filter( instance, $value );
+        self.store-value( instance.WHICH, $value );
+        self.invoke-opt( instance, 'trigger', ( $value, :attribute($.name) ), :strict ) if $.trigger;
     }
 
     method store-value ( $obj-id, $value ) {
@@ -502,8 +506,7 @@ my role AttrXMooishAttributeHOW {
         unless self.is-set( $obj-id ) {
             #note "&&& Calling builder {$!builder}";
             my $val = self.invoke-opt( instance, 'builder', :strict);
-            self.invoke-filter( instance, $val );
-            self.store-value( $obj-id, $val );
+            self.store-with-cb( instance, $val );
             #note "Set ATTR";
         }
     }
