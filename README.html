@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <title></title>
+  <meta charset="UTF-8" />
+  <style>
+    /* code gets the browser-default font
+     * kbd gets a slightly less common monospace font
+     * samp gets the hard pixelly fonts
+     */
+    kbd { font-family: "Droid Sans Mono", "Luxi Mono", "Inconsolata", monospace }
+    samp { font-family: "Terminus", "Courier", "Lucida Console", monospace }
+    /* WHATWG HTML frowns on the use of <u> because it looks like a link,
+     * so we make it not look like one.
+     */
+    u { text-decoration: none }
+    .nested {
+        margin-left: 3em;
+    }
+    // footnote things:
+    aside, u { opacity: 0.7 }
+    a[id^="fn-"]:target { background: #ff0 }
+  </style>
+  <link rel="stylesheet" href="//design.perl6.org/perl.css">
+  
+  
+</head>
+<body class="pod">
+<div id="___top"></div>
+
+
+<nav class="indexgroup">
+<table id="TOC">
+<caption><h2 id="TOC_Title">Table of Contents</h2></caption>
+<tr class="toc-level-1"><td class="toc-number">1</td><td class="toc-text"><a href="#NAME">NAME</a></td></tr>
+   <tr class="toc-level-1"><td class="toc-number">2</td><td class="toc-text"><a href="#SYNOPSIS">SYNOPSIS</a></td></tr>
+    <tr class="toc-level-1"><td class="toc-number">3</td><td class="toc-text"><a href="#DESCRIPTION">DESCRIPTION</a></td></tr>
+         <tr class="toc-level-2"><td class="toc-number">3.1</td><td class="toc-text"><a href="#Laziness_for_beginners">Laziness for beginners</a></td></tr>
+  <tr class="toc-level-3"><td class="toc-number">3.1.1</td><td class="toc-text"><a href="#What_is_&quot;lazy_attribute&quot;">What is &quot;lazy attribute&quot;</a></td></tr>
+   <tr class="toc-level-3"><td class="toc-number">3.1.2</td><td class="toc-text"><a href="#When_is_it_useful?">When is it useful?</a></td></tr>
+                    <tr class="toc-level-1"><td class="toc-number">4</td><td class="toc-text"><a href="#USAGE">USAGE</a></td></tr>
+      <tr class="toc-level-2"><td class="toc-number">4.1</td><td class="toc-text"><a href="#Trait_parameters">Trait parameters</a></td></tr>
+                                                                                                                                                  <tr class="toc-level-2"><td class="toc-number">4.2</td><td class="toc-text"><a href="#Public/Private">Public/Private</a></td></tr>
+                             <tr class="toc-level-2"><td class="toc-number">4.3</td><td class="toc-text"><a href="#User_method&#39;s_(callbacks)_options">User method&#39;s (callbacks) options</a></td></tr>
+                                     <tr class="toc-level-3"><td class="toc-number">4.3.1</td><td class="toc-text"><a href="#Options">Options</a></td></tr>
+               <tr class="toc-level-2"><td class="toc-number">4.4</td><td class="toc-text"><a href="#Some_magic">Some magic</a></td></tr>
+      <tr class="toc-level-1"><td class="toc-number">5</td><td class="toc-text"><a href="#CAVEATS">CAVEATS</a></td></tr>
+   <tr class="toc-level-1"><td class="toc-number">6</td><td class="toc-text"><a href="#AUTHOR">AUTHOR</a></td></tr>
+  <tr class="toc-level-1"><td class="toc-number">7</td><td class="toc-text"><a href="#LICENSE">LICENSE</a></td></tr>
+  
+</table>
+</nav>
+
+<div class="pod-body
+
+">
+<h1 id="NAME"><a class="u" href="#___top" title="go to top of document">NAME</a></h1>
+<p><code>AttrX::Mooish</code> - extend attributes with ideas from Moo/Moose (laziness!)</p>
+<h1 id="SYNOPSIS"><a class="u" href="#___top" title="go to top of document">SYNOPSIS</a></h1>
+<pre class="pod-block-code">use AttrX::Mooish;
+class Foo {
+    has $.bar1 is mooish(:lazy, :clearer, :predicate) is rw;
+    has $!bar2 is mooish(:lazy, :clearer, :predicate, :trigger);
+    has Num $.bar3 is rw is mooish(:lazy, :filter);
+
+    method build-bar1 {
+        &quot;lazy init value&quot;
+    }
+    
+    method !build-bar2 {
+        &quot;this is private mana!&quot;
+    }
+
+    method !trigger-bar2 ( $value ) {
+        # do something after attribute changed.
+    }
+
+    method build-bar3 {
+        rand;
+    }
+
+    method filter-bar3 ( $value, *%params ) {
+        if %params&lt;old-value&gt;:exists {
+            # Only allow the value to grow
+            return ( !%params&lt;old-value&gt;.defined || $value &gt; %params&lt;old-value&gt; ) ?? $value !! %params&lt;old-value&gt;;
+        }
+        # Only allow inital values from 0.5 and higher
+        return $value &lt; 0.5 ?? Nil !! $value;
+    }
+
+    method baz {
+        # Yes, works with private too! Isn&#39;t it magical? ;)
+        &quot;Take a look at the magic: «{ $!bar2 }»&quot;;
+    }
+}
+
+my $foo = Foo.new;
+
+say $foo.bar1;
+say $foo.bar3.defined ?? &quot;DEF&quot; !! &quot;UNDEF&quot;;
+for 1..10 { $foo.bar3 = rand; say $foo.bar3 }</pre>
+<p>The above would generate a output similar to the following:</p>
+<pre class="pod-block-code">lazy init value
+UNDEF
+0.08662089602505263
+0.49049512098324255
+0.49049512098324255
+0.5983833081770437
+0.9367804461546302
+0.9367804461546302
+0.9367804461546302
+0.9367804461546302
+0.9367804461546302
+0.9367804461546302</pre>
+<h1 id="DESCRIPTION"><a class="u" href="#___top" title="go to top of document">DESCRIPTION</a></h1>
+<p>This module is aiming at providing some functionality we&#39;re all missing from Moo/Moose. For now it implements laziness with accompanying methods. But more may come in the future.</p>
+<p>What makes this module different from previous versions one could find in the Perl6 modules repository is that it implements true laziness allowing <code>Nil</code> to be a first-class value of a lazy attribute. In other words, if you look at the <a href="#SYNOPSIS">SYNOPSIS</a> section, <code>$.bar3</code> value could randomly be either undefined or 3.1415926.</p>
+<h2 id="Laziness_for_beginners"><a class="u" href="#___top" title="go to top of document">Laziness for beginners</a></h2>
+<p>This section is inteded for beginners and could be skipped by experienced lazybones.</p>
+<h3 id="What_is_&quot;lazy_attribute&quot;"><a class="u" href="#___top" title="go to top of document">What is &quot;lazy attribute&quot;</a></h3>
+<p>As always, more information could be found by Google. In few simple words: a lazy attribute is the one which gets its first value on demand, i.e. – on first read operation. Consider the following code:</p>
+<pre class="pod-block-code">class Foo {
+    has $.bar is mooish(:lazy :predicate);
+
+    method build-bar { π }
+}
+
+my $foo = Foo.new
+say $foo.has-bar; # False
+say $foo.bar;     # 3.1415926...
+say $foo.has-bar; # True</pre>
+<h3 id="When_is_it_useful?"><a class="u" href="#___top" title="go to top of document">When is it useful?</a></h3>
+<p>Laziness becomes very handy in cases where intializing an attribute is very expensive operation yet it is not certain if attribute is gonna be used later or not. For example, imagine a monitoring code which raises an alert when a failure is detected:</p>
+<pre class="pod-block-code">class Monitor {
+    has $.notifier;
+    has $!failed-object;
+   
+    submethod BUILD {
+        $!notifier = Notifier.new;
+    }
+
+    method report-failure {
+        $.notifier.alert( :$!failed-object );
+    }
+
+    ...
+}</pre>
+<p>Now, imagine that notifier is a memory-consuming object, which is capable of sending notification over different kinds of media (SMTP, SMS, messengers, etc...). Besides, preparing handlers for all those media takes time. Yet, failures are rare and we may need the object, say, once in 10000 times. So, here is the solution:</p>
+<pre class="pod-block-code">class Monitor {
+    has $.notifier is mooish(:lazy);
+    has $!failed-object;
+
+    method build-notifier { Notifier.new( :$!failed-object ) }
+
+    method report-failure {
+        $.notifier.alert;
+    }
+
+    ...
+}</pre>
+<p>Now, it would only be created when we really need it.</p>
+<p>Such approach also works well in interactive code where many wuch objects are created only the moment a user action requires them. This way overall responsiveness of a program could be significally incresed so that instead of waiting long once a user would experience many short delays which sometimes are even hard to impossible to be aware of.</p>
+<p>Laziness has another interesting application in the area of taking care of attribute dependency. Say, <code>$.bar1</code> value depend on <code>$.bar2</code>, which, in turn, depends either on <code>$.bar3</code> or <code>$.bar4</code>. In this case instead of manually defining the order of initialization in a <code>BUILD</code> submethod, we just have the following code in our attribute builders:</p>
+<pre class="pod-block-code">method build-bar2 {
+    if $some-condition {
+        return self.prepare( $.bar3 );
+    }
+    self.prepare( $.bar4 );
+}</pre>
+<p>This module would take care of the rest.</p>
+<h1 id="USAGE"><a class="u" href="#___top" title="go to top of document">USAGE</a></h1>
+<p>The <a href="#SYNOPSIS">SYNOPSIS</a> is a very good example of how to use the trait <code>mooish</code>.</p>
+<h2 id="Trait_parameters"><a class="u" href="#___top" title="go to top of document">Trait parameters</a></h2>
+<ul><li><p><em><code>lazy</code></em></p>
+<p><code>Bool</code>, defines wether attribute is lazy. Can have <code>Bool</code>, <code>Str</code>, or <code>Callable</code> value. The later two have the same meaning, as for <em><code>builder</code></em> parameter.</p>
+</li>
+<li><p><em><code>builder</code></em></p>
+<p>Defines builder method for a lazy attribute. The value returned by the method will be used to initialize the attribute.</p>
+<p>This parameter can have <code>Str</code> or <code>Callable</code> values or be not defined at all. In the latter case we expect a method with a name composed of &quot;<em>build-</em>&quot; prefix followed by attribute name to be defined in our class. For example, for a attribute named <code>$!bar</code> the method name is expected to be <em>build-bar</em>.</p>
+<p>A string value defines builder&#39;s method name.</p>
+<p>A callable value is used as-is and invoked as an object method. For example:</p>
+<pre class="pod-block-code">class Foo {
+    has $.bar is mooish(:lazy, :builder( -&gt; $,*% {&quot;in-place&quot;} );
+}
+
+$inst = Foo.new;
+say $inst.bar;</pre>
+<p>This would output &#39;<em>in-place</em>&#39;.</p>
+<p>*Note* the use of slurpy <code>*%</code> in the pointy block. Read about callback parameters below.</p>
+</li>
+<li><p><em><code>predicate</code></em></p>
+<p>Could be <code>Bool</code> or <code>Str</code>. When defined trait will add a method to determine if attribute is set or not. Note that it doesn&#39;t matter wether it was set with a builder or by an assignment.</p>
+<p>If parameter is <code>Bool</code> <em>True</em> then method name is made of attribute name prefixed with <u>has-</u>. See <a href="#What_is_%26quot%3Blazy_attribute%26quot%3B">What is &quot;lazy attribute&quot;</a> section for example.</p>
+<p>If parameter is <code>Str</code> then the string contains predicate method name:</p>
+<pre class="pod-block-code">        has $.bar is mooish(:lazy :predicate&lt;bar-is-ready&gt;);
+        ...
+        method baz {
+            if self.bar-is-ready {
+                ...
+            }
+        }
+</pre>
+</li>
+<li><p><em><code>clearer</code></em></p>
+<p>Could be <code>Bool</code> or <code>Str</code>. When defined trait will add a method to reset the attribute to uninitialzed state. This is not equivalent to <em>undefined</em> because, as was stated above, <code>Nil</code> is a valid value of initialized attribute.</p>
+<p>Similarly to <em><code>predicate</code></em>, when <em>True</em> the method name is formed with <u>clear-</u> prefix followed by attribute&#39;s name. A <code>Str</code> value defines method name:</p>
+<pre class="pod-block-code">        has $.bar is mooish(:lazy, :clearer&lt;reset-bar&gt;, :predicate);
+        ...
+        method baz {
+            $.bar = &quot;a value&quot;;
+            say self.has-bar;  # True
+            self.reset-bar;
+            say self.has-bar;  # False
+        }
+</pre>
+</li>
+<li><p><em><code>filter</code></em></p>
+<p>A filter is a method which is executed right before storing a value to an attribute. What is returned by the method will actually be stored into the attribute. This allows us to manipulate with a user-supplied value in any necessary way.</p>
+<p>The parameter can have values of <code>Bool</code>, <code>Str</code>, <code>Callable</code>. All values are treated similarly to the <code>builder</code> parameter except that prefix &#39;<em>filter-</em>&#39; is used when value is <code>True</code>.</p>
+<p>The filter method is passed with user-supplied value and two named parameters: <code>attribute</code> with full attribute name; and optional <code>old-value</code> which could omitted if attribute has not been initialized yet. Otherwise <code>old-value</code> contains attribute value before the assignment.</p>
+<p><strong>Note</strong> that it is not recommended for a filter method to use the corresponding attribute directly as it may cause unforseen side-effects like deep recursion. The <code>old-value</code> parameter is the right way to do it.</p>
+</li>
+<li><p><em><code>trigger</code></em></p>
+<p>A trigger is a method which is executed when a value is being written into an attribute. It gets passed with the stored value as first positional parameter and named parameter <code>attribute</code> with full attribute name. Allowed values for this parameter are <code>Bool</code>, <code>Str</code>, <code>Callable</code>. All values are treated similarly to the <code>builder</code> parameter except that prefix &#39;<em>trigger-</em>&#39; is used when value is <code>True</code>.</p>
+<p>Trigger method is being executed right after changing the attribute value. If there is a <code>filter</code> defined for the attribute then value will be the filtered one, not the initial.</p>
+</li>
+</ul>
+<h2 id="Public/Private"><a class="u" href="#___top" title="go to top of document">Public/Private</a></h2>
+<p>For all the trait parameters, if it is applied to a private attribute then all auto-generated methods will be private too. The call-back style methods like <code>builder</code> are expected to be private as well. I.e.:</p>
+<pre class="pod-block-code">    class Foo {
+        has $!bar is rw is mooish(:lazy, :clearer&lt;reset-bar&gt;, :predicate, :filter&lt;wrap-filter&gt;);
+
+        method !build-bar { &quot;a private value&quot; }
+        method baz {
+            if self!has-bar {
+                self!reset-bar;
+            }
+        }
+        method !wrap-filter ( $value, :$attribute ) {
+            &quot;filtered $attribute: ($value)&quot;
+        }
+    }
+</pre>
+<h2 id="User_method's_(callbacks)_options"><a class="u" href="#___top" title="go to top of document">User method&#39;s (callbacks) options</a></h2>
+<p>User defined (callback-type) methods receive additional named parameters (options) to help them understand their context. For example, a class might have a couple of attributes for which it&#39;s ok to have same trigger method if only it knows what attribute it is applied to:</p>
+<pre class="pod-block-code">    class Foo {
+        has $.foo is rw is mooish(:trigger(&#39;on_fubar&#39;));
+        has $.bar is rw is mooish(:trigger(&#39;on_fubar&#39;));
+
+        method on_fubar ( $value, *%opt ) {
+            say &quot;Triggered for {%opt&lt;attribute&gt;} with {$value}&quot;;
+        }
+    }
+
+    my $inst = Foo.new;
+    $inst.foo = &quot;ABC&quot;;
+    $inst.bar = &quot;123&quot;;
+</pre>
+<pre class="pod-block-code">The expected output would be:</pre>
+<pre class="pod-block-code">    Triggered for $!foo with with ABC
+    Triggered for $!bar with with 123
+</pre>
+<p><strong>NOTE:</strong> If a method doesn&#39;t care about named parameters it may only have positional arguments in its signature. This doesn&#39;t work for pointy blocks where anonymous slurpy hash would be required:</p>
+<pre class="pod-block-code">    class Foo {
+        has $.bar is rw is mooish(:trigger(-&gt; $, $val, *% {...})); 
+    }
+</pre>
+<h3 id="Options"><a class="u" href="#___top" title="go to top of document">Options</a></h3>
+<ul><li><p><em><code>attribute</code></em></p>
+<p>Full attribute name with twigil. Passed to all callbacks.</p>
+</li>
+<li><p><em><code>builder</code></em></p>
+<p>Only set to <em>True</em> for <code>filter</code> and <code>trigger</code> methods when attribute value is generated by lazy builder. Otherwise no this parameter is not passed to the method.</p>
+</li>
+<li><p><em><code>old-value</code></em></p>
+<p>Set for <code>filter</code> only. See its description above.</p>
+</li>
+</ul>
+<h2 id="Some_magic"><a class="u" href="#___top" title="go to top of document">Some magic</a></h2>
+<p>Note that use of this trait doesn&#39;t change attribute accessors. More than that, accessors are not required for private attributes. Consider the <code>$!bar2</code> attribute from <a href="#SYNOPSIS">SYNOPSIS</a>.</p>
+<h1 id="CAVEATS"><a class="u" href="#___top" title="go to top of document">CAVEATS</a></h1>
+<p>This module is using manual type checking for attributes with constraints. This could result in outcome different from default Perl6 behaviour.</p>
+<p>Due to the magical nature of attribute behaviour conflicts with other traits are possible. None is known to the author yet.</p>
+<h1 id="AUTHOR"><a class="u" href="#___top" title="go to top of document">AUTHOR</a></h1>
+<p>Vadim Belman &lt;vrurg@cpan.org&gt;</p>
+<h1 id="LICENSE"><a class="u" href="#___top" title="go to top of document">LICENSE</a></h1>
+<p>Artistic License 2.0</p>
+<p>See the LICENSE file in this distribution.</p>
+
+</div>
+
+
+</body>
+</html>
+
