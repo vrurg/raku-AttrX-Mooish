@@ -69,7 +69,7 @@ DESCRIPTION
 
 This module is aiming at providing some functionality we're all missing from Moo/Moose. For now it implements laziness with accompanying methods. But more may come in the future.
 
-What makes this module different from previous versions one could find in the Perl6 modules repository is that it implements true laziness allowing `Nil` to be a first-class value of a lazy attribute. In other words, if you look at the [#SYNOPSIS](#SYNOPSIS) section, `$.bar3` value could randomly be either undefined or 3.1415926.
+What makes this module different from previous versions one could find in the Perl6 modules repository is that it implements true laziness allowing *Nil* to be a first-class value of a lazy attribute. In other words, if you look at the [#SYNOPSIS](#SYNOPSIS) section, `$.bar3` value could randomly be either undefined or 3.1415926.
 
 Laziness for beginners
 ----------------------
@@ -191,7 +191,7 @@ Trait parameters
 
   * *`clearer`*
 
-    Could be `Bool` or `Str`. When defined trait will add a method to reset the attribute to uninitialzed state. This is not equivalent to *undefined* because, as was stated above, `Nil` is a valid value of initialized attribute.
+    Could be `Bool` or `Str`. When defined trait will add a method to reset the attribute to uninitialzed state. This is not equivalent to *undefined* because, as was stated above, *Nil* is a valid value of initialized attribute.
 
     Similarly to *`predicate`*, when *True* the method name is formed with _clear-_ prefix followed by attribute's name. A `Str` value defines method name:
 
