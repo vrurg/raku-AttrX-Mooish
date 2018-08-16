@@ -100,12 +100,12 @@ subtest "Class Basics", {
     nok $inst.is-set-bar, "clearer did the job";
 
     my class Foo5 {
-        has $.bar is mooish(:lazy, :builder(-> $ {"block builder"}));
+        has $.bar-b is mooish(:lazy, :builder(-> $s,*% {"block builder"}));
         has $.baz is mooish(:lazy, :builder(method {"method builder"}));
     }
 
     $inst = Foo5.new;
-    is $inst.bar, "block builder", "block builder";
+    is $inst.bar-b, "block builder", "block builder";
     is $inst.baz, "method builder", "method builder";
 
     my class Foo6 {
@@ -320,7 +320,7 @@ subtest "Private", {
 }
 
 subtest "Triggers", {
-    plan 8;
+    plan 12;
     my $inst;
     my class Foo1 {
         has $.bar is rw is mooish(:trigger);
@@ -328,6 +328,10 @@ subtest "Triggers", {
         has $.foo is rw is mooish(:trigger(method ($value) {
             pass "in-place trigger";
             is $value, "foo value", "valid value passed to in-place";
+        }));
+        has $.fubar is rw is mooish(:trigger(-> $,$value,*% {
+            pass "pointy-block trigger";
+            is $value, "fubar value", "valid value passed to pointy block";
         }));
 
         method trigger-bar ( $value ) {
@@ -346,6 +350,7 @@ subtest "Triggers", {
     $inst.bar = "bar value";
     $inst.baz = "baz value";
     $inst.foo = "foo value";
+    $inst.fubar = "fubar value";
 
     my class Foo2 {
         has $.bar is rw is mooish(:lazy, :trigger);
@@ -356,23 +361,41 @@ subtest "Triggers", {
 
     $inst = Foo2.new;
     $inst.bar;
+
+    my class Foo3 {
+        has $.bar is rw is mooish(:lazy, :trigger);
+
+        method build-bar { "from builder" }
+        method trigger-bar ( $value, *%opt ) {
+            if $value ~~ "from builder" {
+                ok %opt<builder>, "builder option is set";
+            }
+            else {
+                nok %opt<builder>:exists, "no builder option";
+            }
+        }
+    }
+
+    $inst = Foo3.new;
+    $inst.bar;
+    $inst.bar = "not from builder";
 }
 
 subtest "Filtering", {
-    plan 10;
+    plan 12;
     my $inst;
 
     my class Foo1 {
         has $.bar is rw is mooish(:filter);
 
-        method filter-bar ( $value, :$attribute, *%params ) {
+        method filter-bar ( $value, :$attribute, *%opt ) {
             pass q<filter for attribute $.bar>;
             is $attribute, '$!bar', "filter attribute name";
             if $value == 1 {
-                nok %params<old-value>:exists, "no old value on first call";
+                nok %opt<old-value>:exists, "no old value on first call";
             } else {
-                ok %params<old-value>:exists, "have old value on first call";
-                is %params<old-value>, 1.5, "correct old value";
+                ok %opt<old-value>:exists, "have old value on first call";
+                is %opt<old-value>, 1.5, "correct old value";
             }
             $value + 0.5;
         }
@@ -384,16 +407,34 @@ subtest "Filtering", {
     $inst.bar = 2;
 
     my class Foo2 {
-        has $.bar is rw is mooish(:lazy(-> $ {pi}), :filter);
+        has $.bar is rw is mooish(:lazy(-> $,*% {pi}), :filter);
 
-        method filter-bar ($value, *%params) {
-            nok %params<old-value>:exists, "no old value after builder";
+        method filter-bar ($value, *%opt) {
+            nok %opt<old-value>:exists, "no old value after builder";
             $value / 2;
         }
     }
 
     $inst = Foo2.new;
     is $inst.bar, pi/2, "builder value filtered";
+
+    my class Foo3 {
+        has $.bar is rw is mooish(:lazy, :filter);
+
+        method build-bar { "from builder" }
+        method filter-bar ( $value, *%opt ) {
+            if $value ~~ "from builder" {
+                ok %opt<builder>, "builder option is set";
+            }
+            else {
+                nok %opt<builder>:exists, "no builder option";
+            }
+        }
+    }
+
+    $inst = Foo3.new;
+    $inst.bar;
+    $inst.bar = "not from builder";
 }
 
 done-testing;
