@@ -148,7 +148,7 @@ subtest "Chained", {
     }
 
     my class Bar1 is Foo1 {
-        has $.bar1 is mooish(:lazy(-> $ {"Bar1::bar1"}));
+        has $.bar1 is mooish(:lazy(-> $,*% {"Bar1::bar1"}));
         has $.bar2 is rw is mooish(:filter);
         method BUILDALL (|) { nextsame; } # A BUILDALL may break things sometime
 
