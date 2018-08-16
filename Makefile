@@ -52,7 +52,7 @@ build: meta
 	@echo "===> Installing dependencies"
 	@zef --deps-only install .
 
-release: build clean-repo release-test $(MOD_ARCH) clean-repo 
+release: build clean-repo release-test $(MOD_ARCH) 
 	@echo "===> Done releasing"
 
 meta: $(META)
