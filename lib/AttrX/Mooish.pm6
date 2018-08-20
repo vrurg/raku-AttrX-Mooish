@@ -414,15 +414,19 @@ my role AttrXMooishAttributeHOW {
 
         my $attr = self;
         my %helpers = 
-            clearer => method { $attr.clear-attr( self.WHICH ); },
-            predicate => method { so $attr.is-set( self.WHICH ); },
+            clearer => my method { $attr.clear-attr( self.WHICH ) },
+            predicate => my method { $attr.is-set( self.WHICH ) },
             ;
 
         for %helpers.keys -> $helper {
             my $helper-name = self!bool-str-meth-name( self."$helper"(), %opt2prefix{$helper} );
 
             X::Fatal.new( message => "Cannot install {$helper} {$helper-name}: method already defined").throw
-                if type.^lookup( $helper-name );
+                if type.^declares_method( $helper-name );
+
+            my &m = %helpers{$helper};
+            &m.set_name( $helper-name );
+            #note "HELPER:", %helpers{$helper}.name;
 
             if $.has_accessor { # I.e. – public?
                 type.^add_method( $helper-name, %helpers{$helper} );
