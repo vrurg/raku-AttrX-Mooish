@@ -414,15 +414,19 @@ my role AttrXMooishAttributeHOW {
 
         my $attr = self;
         my %helpers = 
-            clearer => method { $attr.clear-attr( self.WHICH ); },
-            predicate => method { so $attr.is-set( self.WHICH ); },
+            clearer => my method { $attr.clear-attr( self.WHICH ) },
+            predicate => my method { $attr.is-set( self.WHICH ) },
             ;
 
         for %helpers.keys -> $helper {
             my $helper-name = self!bool-str-meth-name( self."$helper"(), %opt2prefix{$helper} );
 
             X::Fatal.new( message => "Cannot install {$helper} {$helper-name}: method already defined").throw
-                if type.^lookup( $helper-name );
+                if type.^declares_method( $helper-name );
+
+            my &m = %helpers{$helper};
+            &m.set_name( $helper-name );
+            #note "HELPER:", %helpers{$helper}.name;
 
             if $.has_accessor { # I.e. – public?
                 type.^add_method( $helper-name, %helpers{$helper} );
@@ -470,10 +474,14 @@ my role AttrXMooishAttributeHOW {
         #note ">>> LAZIFYING ", $.name;
 
         my $default = self.get_value( instance );
-        my $initialized = $default ~~ Positional | Associative ?? $default.elems !! $default.defined;
+        my $initialized =  False;
+        given $default {
+            when Array | Hash { $initialized = so .elems; }
+            default { $initialized = .defined }
+        };
 
         if $initialized || $force-default {
-            #note "=== Using initial value ", $default;
+            #note "=== Using initial value ({$initialized}) ", $default;
             self.store-value( $obj-id, $default );
         }
         #note "OBJ: ", Dump( instance );
@@ -532,6 +540,7 @@ my role AttrXMooishAttributeHOW {
 
         return unless so $opt-value;
 
+        #note "&&& INVOKING {$option} on {$.name}";
 
         my @invoke-params = :attribute($.name), |@params;
         
@@ -544,9 +553,15 @@ my role AttrXMooishAttributeHOW {
                         unless %opt2prefix{$option};
                     $opt-value = "{%opt2prefix{$option}}-{$.base-name}";
                 }
-                $method = $.has_accessor ?? instance.^find_method($opt-value) !! type.^find_private_method($opt-value);
+                $method = $.has_accessor 
+                            ?? 
+                            instance.^find_method( $opt-value, :no_fallback(1) ) 
+                            !!
+                            type.^find_private_method( $opt-value );
+                #note "&&& ON INVOKING: found method ", $method.defined ;
                 unless so $method {
                     # If no method found by name die if strict is on
+                    #note "No method found for $option";
                     return unless $strict;
                     X::Method::NotFound.new(
                         method => $opt-value,
@@ -563,14 +578,14 @@ my role AttrXMooishAttributeHOW {
             }
         }
 
-        #note "INVOKING $method with ", @invoke-params.Capture;
+        #note "INVOKING {$method ~~ Code ?? $method.name !! $method} with ", @invoke-params.Capture;
         instance.$method(|(@invoke-params.Capture));
     }
 
     method build-attr ( Any \instance ) {
         my $obj-id = instance.WHICH;
         my $publicity = $.has_accessor ?? "public" !! "private";
-        #note "&&& KINDA BUILDING FOR $publicity {$.name} on $obj-id";
+        #note "&&& KINDA BUILDING FOR $publicity {$.name} on $obj-id (is-set:{self.is-set($obj-id)})";
         unless self.is-set( $obj-id ) {
             #note "&&& Calling builder {$!builder}";
             my $val = self.invoke-opt( instance, 'builder', :strict);

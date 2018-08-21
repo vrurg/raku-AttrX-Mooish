@@ -230,11 +230,20 @@ subtest "Validating values", {
 }
 
 subtest "Errors", {
-    plan 2;
+    plan 3;
     my $inst;
 
     throws-like q{my class Foo1 { has $.bar is mooish(:lazy(pi)); }}, 
             X::TypeCheck::MooishOption, "bad option value";
+
+    my class Foo2 {
+        has $.bar is mooish(:lazy);
+    }
+
+    throws-like { $inst = Foo2.new; $inst.bar; },
+        X::Method::NotFound,
+        message => q<No such method 'build-bar' for invocant of type 'Foo2'>,
+        "missing builder";
 
     my class Foo4 {
         has Str $.bar is rw is mooish(:lazy) where * ~~ /:i ^ a/;
@@ -247,7 +256,7 @@ subtest "Errors", {
         message => q<Type check failed in assignment to attribute $!bar; expected "<anon>" but got "Str">,
         "value from builder don't conform 'where' constraint";
 
-        CATCH { note "Got exception ", $_.WHO; $_.throw}
+        #CATCH { note "Got exception ", $_.WHO; $_.throw}
 }
 
 subtest "Lazy Chain", {
