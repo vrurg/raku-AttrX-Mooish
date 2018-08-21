@@ -24,5 +24,17 @@ $inst.bar = "a string value";
 $inst.bar = 42;
 $inst.bar = 314;
 
+my class Foo2 {
+    has BagHash $.baz is mooish(:lazy, :filter('my-filter'), :predicate);
+
+    method build-baz { <a b b c>.BagHash }
+    method my-filter ($val) { $val }
+}
+
+$inst = Foo2.new;
+nok $inst.has-baz, "baz is not inited yet";
+is $inst.baz, <a b b c>.BagHash, "baz built";
+ok $inst.has-baz, "baz is inited";
+
 done-testing;
 # vim: ft=perl6
