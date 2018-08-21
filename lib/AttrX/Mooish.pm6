@@ -552,9 +552,15 @@ my role AttrXMooishAttributeHOW {
                         unless %opt2prefix{$option};
                     $opt-value = "{%opt2prefix{$option}}-{$.base-name}";
                 }
-                $method = $.has_accessor ?? instance.^find_method($opt-value) !! type.^find_private_method($opt-value);
+                $method = $.has_accessor 
+                            ?? 
+                            instance.^find_method( $opt-value, :no_fallback(1) ) 
+                            !!
+                            type.^find_private_method( $opt-value );
+                #note "&&& ON INVOKING: found method ", $method.defined ;
                 unless so $method {
                     # If no method found by name die if strict is on
+                    #note "No method found for $option";
                     return unless $strict;
                     X::Method::NotFound.new(
                         method => $opt-value,
