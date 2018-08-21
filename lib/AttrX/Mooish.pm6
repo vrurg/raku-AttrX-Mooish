@@ -474,10 +474,14 @@ my role AttrXMooishAttributeHOW {
         #note ">>> LAZIFYING ", $.name;
 
         my $default = self.get_value( instance );
-        my $initialized = $default ~~ Positional | Associative ?? $default.elems !! $default.defined;
+        my $initialized =  False;
+        given $default {
+            when Array | Hash { $initialized = so .elems; }
+            default { $initialized = .defined }
+        };
 
         if $initialized || $force-default {
-            #note "=== Using initial value ", $default;
+            #note "=== Using initial value ({$initialized}) ", $default;
             self.store-value( $obj-id, $default );
         }
         #note "OBJ: ", Dump( instance );
