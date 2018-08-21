@@ -1,4 +1,4 @@
-unit module AttrX::Mooish:ver<0.2.5>:auth<github:vrurg>;
+unit module AttrX::Mooish:ver<0.2.6>:auth<github:vrurg>;
 #use Data::Dump;
 
 =begin pod
@@ -540,6 +540,7 @@ my role AttrXMooishAttributeHOW {
 
         return unless so $opt-value;
 
+        #note "&&& INVOKING {$option} on {$.name}";
 
         my @invoke-params = :attribute($.name), |@params;
         
@@ -577,14 +578,14 @@ my role AttrXMooishAttributeHOW {
             }
         }
 
-        #note "INVOKING $method with ", @invoke-params.Capture;
+        #note "INVOKING {$method ~~ Code ?? $method.name !! $method} with ", @invoke-params.Capture;
         instance.$method(|(@invoke-params.Capture));
     }
 
     method build-attr ( Any \instance ) {
         my $obj-id = instance.WHICH;
         my $publicity = $.has_accessor ?? "public" !! "private";
-        #note "&&& KINDA BUILDING FOR $publicity {$.name} on $obj-id";
+        #note "&&& KINDA BUILDING FOR $publicity {$.name} on $obj-id (is-set:{self.is-set($obj-id)})";
         unless self.is-set( $obj-id ) {
             #note "&&& Calling builder {$!builder}";
             my $val = self.invoke-opt( instance, 'builder', :strict);
