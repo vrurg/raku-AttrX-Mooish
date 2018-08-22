@@ -81,7 +81,7 @@ This section is inteded for beginners and could be skipped by experienced lazybo
 As always, more information could be found by Google. In few simple words: a lazy attribute is the one which gets its first value on demand, i.e. – on first read operation. Consider the following code:
 
     class Foo {
-        has $.bar is mooish(:lazy :predicate);
+        has $.bar is mooish(:lazy, :predicate);
 
         method build-bar { π }
     }
@@ -181,7 +181,7 @@ Trait parameters
 
     If parameter is `Str` then the string contains predicate method name:
 
-                has $.bar is mooish(:lazy :predicate<bar-is-ready>);
+                has $.bar is mooish(:lazy, :predicate<bar-is-ready>);
                 ...
                 method baz {
                     if self.bar-is-ready {

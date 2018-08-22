@@ -85,7 +85,7 @@ As always, more information could be found by Google. In few simple words: a laz
 first value on demand, i.e. – on first read operation. Consider the following code:
 
     class Foo {
-        has $.bar is mooish(:lazy :predicate);
+        has $.bar is mooish(:lazy, :predicate);
 
         method build-bar { π }
     }
@@ -202,7 +202,7 @@ L<#What is "lazy attribute"> section for example.
 If parameter is C<Str> then the string contains predicate method name:
 
 =begin code
-        has $.bar is mooish(:lazy :predicate<bar-is-ready>);
+        has $.bar is mooish(:lazy, :predicate<bar-is-ready>);
         ...
         method baz {
             if self.bar-is-ready {
@@ -419,6 +419,7 @@ my role AttrXMooishAttributeHOW {
             ;
 
         for %helpers.keys -> $helper {
+            next unless self."$helper"();
             my $helper-name = self!bool-str-meth-name( self."$helper"(), %opt2prefix{$helper} );
 
             X::Fatal.new( message => "Cannot install {$helper} {$helper-name}: method already defined").throw
