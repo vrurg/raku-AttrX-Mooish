@@ -1,4 +1,4 @@
-unit module AttrX::Mooish:ver<0.2.6>:auth<github:vrurg>;
+unit module AttrX::Mooish:ver<0.2.7>:auth<github:vrurg>;
 #use Data::Dump;
 
 =begin pod
