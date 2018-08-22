@@ -4,7 +4,7 @@ use AttrX::Mooish;
 my %inst-records;
 
 subtest "Class Basics", {
-    plan 22;
+    plan 23;
     my $inst;
 
     my class Foo1 {
@@ -67,17 +67,18 @@ subtest "Class Basics", {
     }
 
     my class Foo2 {
-        has $.bar is rw is mooish(:lazy, :clearer);
+        has $.barbar is rw is mooish(:lazy, :clearer, :predicate );
         has $.baz is rw;
 
-        method build-bar { "not from new" }
+        method build-barbar { "not from new" }
     }
 
-    $inst = Foo2.new( bar => "from new",  baz => "from NEW" );
+    $inst = Foo2.new( barbar => "from new",  baz => "from NEW" );
     is $inst.baz, "from NEW", "set from constructor";
-    is $inst.bar, "from new", "set from constructor";
-    $inst.clear-bar;
-    is $inst.bar, "not from new", "reset and set not from constructor parameters";
+    is $inst.barbar, "from new", "set from constructor";
+    ok $inst.has-barbar, "predicate on attribute from constructor";
+    $inst.clear-barbar;
+    is $inst.barbar, "not from new", "reset and set not from constructor parameters";
 
     my class Foo3 { 
         has $.bar is mooish(:lazy, builder => 'init-bar');
