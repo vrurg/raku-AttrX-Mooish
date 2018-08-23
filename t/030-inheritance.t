@@ -127,20 +127,21 @@ subtest "Private", {
 }
 
 subtest "Chained", {
-    plan 9;
+    plan 10;
     my $inst;
+
     my class Foo0 {
         has $.foo0;
     }
 
     my class Foo1 is Foo0 {
+        has $.skip-trigger is rw = True;
         has $.foo1 is rw is mooish(:lazy, :clearer, :predicate, :trigger);
         has $!foo2 is mooish(:lazy);
         has $.foo3 is mooish(:lazy('setup-foo3'));
-        has $.skip-trigger is rw = True;
 
         method build-foo1 { "Foo1::foo1" };
-        method trigger-foo1 ( $val ) { return if $.skip-trigger; is $val, "manual foo1", "trigger on Foo1::foo1" }
+        method trigger-foo1 ( $val, :$constructor = False ) { return if $.skip-trigger || $constructor; is $val, "manual foo1", "trigger on Foo1::foo1" }
         method !build-foo2 { "Foo1::foo2" };
         method get-foo2 { $!foo2 }
         method set-foo2 ( $val) { $!foo2 = $val }
@@ -174,9 +175,50 @@ subtest "Chained", {
     is $inst.bar2, "filtered-bar2(a string)", "\$.bar2 filter";
     is $inst.baz1, "Baz1::baz1", "\$.baz1 lazy init";
 
-    $inst = Baz1.new( foo1 => "foo1 from new", bar2 => "bar2 from new" );
+    $inst = Baz1.new( foo1 => "foo1 from new", bar2 => "bar2 from new", baz1 => "baz1 from new" );
     is $inst.foo1, "foo1 from new", "foo1 from constructor";
-    is $inst.bar2, "bar2 from new", "bar2 from constructor";
+    is $inst.bar2, "filtered-bar2(bar2 from new)", "bar2 from constructor";
+    is $inst.baz1, "baz1 from new", "baz1 from constructor";
+}
+
+subtest "Chained init and BUILD", {
+    plan 7;
+    my $inst;
+
+    my class Foo1 {
+        has $.foo1 is mooish(:predicate);
+        has $.foo2;
+    }
+
+    my class Bar1 is Foo1 {
+        has $.bar1 is mooish(:predicate);
+        has $.bar2;
+
+        submethod BUILD {
+            pass "BUILD is active";
+        }
+    }
+
+    my class Baz1 is Bar1 {
+        has $.baz1 is mooish(:predicate);
+        has $.baz2;
+    }
+
+    $inst = Baz1.new(
+        foo1 => "foo1 from new",
+        foo2 => "foo2 from new",
+        bar1 => "bar1 from new",
+        bar2 => "bar2 from new",
+        baz1 => "baz1 from new",
+        baz2 => "baz2 from new",
+    );
+
+    is $inst.foo1, "foo1 from new", "foo1 attribute ok";
+    is $inst.foo2, "foo2 from new", "foo2 attribute ok";
+    is $inst.bar1, Any, "bar1 attribute ok";
+    is $inst.bar2, Any, "bar2 attribute ok";
+    is $inst.baz1, "baz1 from new", "baz1 attribute ok";
+    is $inst.baz2, "baz2 from new", "baz2 attribute ok";
 }
 
 done-testing;

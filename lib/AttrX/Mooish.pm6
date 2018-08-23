@@ -464,28 +464,35 @@ my role AttrXMooishAttributeHOW {
     }
 
     # force-default is true if attribute is set in .new( ) call
-    method make-mooish ( Mu \instance, Bool $force-default ) {
+    method make-mooish ( Mu \instance, %attrinit ) {
         my $attr = self;
         my $obj-id = instance.WHICH;
         #note "Using obj ID:", $obj-id;
-        #note "VAR:", instance.VAR;
 
         return if so %attr-data{$obj-id}{$.name};
 
-        #note ">>> LAZIFYING ", $.name;
+        #note ">>> MOOIFYING ", $.name;
+        #note ">>> HAS INIT: ", %attrinit{$.base-name}:exists;
 
-        my $default = self.get_value( instance );
-        my $initialized =  False;
-        given $default {
-            when Array | Hash { $initialized = so .elems; }
-            default { $initialized = .defined }
-        };
-
-        if $initialized || $force-default {
-            #note "=== Using initial value ({$initialized}) ", $default;
-            self.store-value( $obj-id, $default );
+        my $from-init = %attrinit{$.base-name}:exists;
+        my $default = $from-init ?? %attrinit{$.base-name} !! self.get_value( instance );
+        my $initialized = $from-init;
+        #note "DEFAULT IS:", $default // $default.WHAT;
+        unless $initialized { # False means no constructor parameter for the attribute
+            given $default {
+                when Array | Hash { $initialized = so .elems; }
+                default { $initialized = .defined }
+            }
         }
-        #note "OBJ: ", Dump( instance );
+
+        if $initialized {
+            #note "=== Using initial value ({$initialized} // {$from-init}) ", $default;
+            my @params;
+            @params.append( {:constructor} ) if $from-init;
+            #note "INIT STORE PARAMS: {@params}";
+            self.store-with-cb( instance, $default, @params );
+        }
+
         self.set_value( instance, 
             Proxy.new(
                 FETCH => -> $ {
@@ -506,9 +513,11 @@ my role AttrXMooishAttributeHOW {
     }
 
     method store-with-cb ( Mu \instance, $value is rw, @params = () ) {
+        ##note "INVOKING {$.name} FILTER WITH {@params.perl}";
         self.invoke-filter( instance, $value, @params );
+        #note "STORING VALUE";
         self.store-value( instance.WHICH, $value );
-        #note "INVOKING {$.name} TRIGGER WITH {@invoke-params.perl}";
+        #note "INVOKING {$.name} TRIGGER WITH {@params.perl}";
         self.invoke-opt( instance, 'trigger', ( $value, |@params ), :strict ) if $.trigger;
     }
 
@@ -598,25 +607,6 @@ my role AttrXMooishAttributeHOW {
 
 my role AttrXMooishClassHOW {
 
-    method compose ( Mu \type ) {
-        state Bool $is-wrapped = False;
-        unless $is-wrapped {
-            $is-wrapped = True;
-            Mu.^find_method( 'new', :no_fallback(1) ).wrap(
-                my multi method new ( *%attrinit ) {
-                    my $inst = callsame;
-                    for $inst.^mro -> \type {
-                        if type.HOW ~~ AttrXMooishClassHOW {
-                            type.^on_create( $inst, %attrinit );
-                        }
-                    }
-                    $inst
-                }
-            );
-        }
-        nextsame;
-    }
-
     method add_method(Mu $obj, $name, $code_obj, :$nowrap=False) {
         #note "^^^ ADDING METHOD $name on {$obj.WHICH}";
         my $m = $code_obj;
@@ -645,37 +635,63 @@ my role AttrXMooishClassHOW {
             nextsame;
         };
 
+        my $has-build = type.^declares_method( 'BUILD' );
+        %wrap-methods<BUILD> = my submethod (*%attrinit) {
+            #note "&&& CUSTOM BUILD on {self.WHO} by {type.WHO}";
+            # Don't pass initial attributes if wrapping user's BUILD - i.e. we don't initialize from constructor
+            type.^on_create( self, $has-build ?? {} !! %attrinit );
+            when !$has-build {
+                # We would have to init all attributes from attrinit. Even those without the trait.
+                my $base-name;
+                for type.^attributes( :local(1) ).grep( {
+                    $_ !~~ AttrXMooishAttributeHOW
+                    && .has_accessor 
+                    && (%attrinit{$base-name = .name.substr(2)}:exists)
+                } ) -> $lattr {
+                    #note "--- INIT PUB ATTR $base-name";
+                    #note "WHO:", $lattr.WHO;
+                    my $val = %attrinit{$base-name};
+                    $lattr.set_value( self, $val );
+                }
+            }
+            nextsame;
+        }
+
         for %wrap-methods.keys -> $method-name {
             my $orig-method = type.^declares_method( $method-name );
+            my $my-method = %wrap-methods{$method-name};
+            $my-method.set_name( $method-name );
             if $orig-method {
-                type.^find_method($method-name, :no_fallback(1)).wrap( %wrap-methods{$method-name} );
+                #note "&&& WRAPPING $method-name";
+                type.^find_method($method-name, :no_fallback(1)).wrap( $my-method );
             }
             else {
-                self.add_method( type, $method-name, %wrap-methods{$method-name}, :nowrap );
+                #note "&&& ADDING $method-name";
+                self.add_method( type, $method-name, $my-method );
             }
         }
 
         type.^setup_finalization;
-        type.^compose_repr;
+        #type.^compose_repr;
         #note "+++ done installing stagers";
     }
 
     method create_BUILDPLAN ( Mu \type ) {
-        #note "+++ create_BUILDPLAN";
+        #note "+++ PREPARE {type.WHO}";
         self.install-stagers( type );
+        callsame;
         #note "+++ done create_BUILDPLAN";
-        nextsame;
     }
 
 
-    method on_create ( Mu \type, Mu \instance, Hash \attrinit ) {
+    method on_create ( Mu \type, Mu \instance, %attrinit ) {
         #note "ON CREATE";
 
         my @lazyAttrs = type.^attributes( :local(1) ).grep( AttrXMooishAttributeHOW );
 
         for @lazyAttrs -> $attr {
             #note "Found lazy attr {$attr.name} // {$attr.base-name}";
-            $attr.make-mooish( instance, attrinit{$attr.base-name}:exists );
+            $attr.make-mooish( instance, %attrinit );
         }
     }
 
@@ -685,10 +701,27 @@ my role AttrXMooishClassHOW {
     }
 }
 
+my role AttrXMooishRoleHOW {
+    method specialize(Mu \r, Mu:U \obj, *@pos_args, *%named_args) {
+        #note "*** Specializing role on {obj.WHO}";
+        #note "CLASS HAS THE ROLE:", obj.HOW ~~ AttrXMooishClassHOW;
+        obj.HOW does AttrXMooishClassHOW unless obj.HOW ~~ AttrXMooishClassHOW;
+        nextsame;
+    }
+}
+
 multi trait_mod:<is>( Attribute:D $attr, :$mooish! ) is export {
     $attr does AttrXMooishAttributeHOW;
-    #note "Applying for {$attr.name} to ", $*PACKAGE.WHO;
-    $*PACKAGE.HOW does AttrXMooishClassHOW unless $*PACKAGE.HOW ~~ AttrXMooishClassHOW;
+    #note "Applying for {$attr.name} to ", $*PACKAGE.WHO, " // ", $*PACKAGE.HOW;
+    #$*PACKAGE.HOW does AttrXMooishClassHOW unless $*PACKAGE.HOW ~~ AttrXMooishClassHOW;
+    given $*PACKAGE.HOW {
+        when Metamodel::ParametricRoleHOW {
+            $_ does AttrXMooishRoleHOW unless $_ ~~ AttrXMooishRoleHOW;
+        }
+        default {
+            $_ does AttrXMooishClassHOW unless $_ ~~ AttrXMooishClassHOW;
+        }
+    }
 
     my $opt-list;
 

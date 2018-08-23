@@ -66,14 +66,14 @@ subtest "Class Basics", {
         is $inst.build-count, 0, "reading from attribute still didn't use the builder";
     }
 
-    my class Foo2 {
+    my class Foo2C {
         has $.barbar is rw is mooish(:lazy, :clearer, :predicate );
         has $.baz is rw;
 
         method build-barbar { "not from new" }
     }
 
-    $inst = Foo2.new( barbar => "from new",  baz => "from NEW" );
+    $inst = Foo2C.new( barbar => "from new",  baz => "from NEW" );
     is $inst.baz, "from NEW", "set from constructor";
     is $inst.barbar, "from new", "set from constructor";
     ok $inst.has-barbar, "predicate on attribute from constructor";
@@ -392,7 +392,7 @@ subtest "Triggers", {
 }
 
 subtest "Filtering", {
-    plan 12;
+    plan 14;
     my $inst;
 
     my class Foo1 {
@@ -445,6 +445,35 @@ subtest "Filtering", {
     $inst = Foo3.new;
     $inst.bar;
     $inst.bar = "not from builder";
+
+    my class Foo4 {
+        has $.bar is rw is mooish(:filter, :predicate);
+        has $.from-new is rw;
+
+        submethod TWEAK {
+            ok self.has-bar, "predicate is ok";
+        }
+
+        method filter-bar ( $val ) {
+            $.from-new = $val ~~ "from constructor";
+        }
+    }
+
+    $inst = Foo4.new(bar => "from constructor");
+    ok $inst.from-new, "filtered from constuctor";
+}
+
+subtest "Constructor init", {
+    plan 2;
+    my $inst;
+    my class Foo1 {
+        has @.bar is mooish(:predicate);
+        has @.foo ;
+    }
+
+    $inst = Foo1.new( :bar(1,2,3), :foo(<a b c>) );
+    is-deeply $inst.bar, (1,2,3), 'mooish array attribute init from new';
+    is-deeply $inst.foo, <a b c>, 'non-mooish array attribute init from new';
 }
 
 done-testing;
