@@ -287,7 +287,7 @@ subtest "Lazy Chain", {
 }
 
 subtest "Private", {
-    plan 7;
+    plan 11;
     my $inst;
 
     my class Foo1 {
@@ -327,6 +327,36 @@ subtest "Private", {
 
     $inst = Foo2.new;
     $inst.run-test;
+
+    my class Foo3 {
+        has $.bar is mooish( :lazy("pub-build") );
+        has $!baz is mooish( :lazy("pub-build") );
+
+        method pub-build {
+            "default public"
+        }
+
+        method pvt-baz { $!baz }
+    }
+
+    $inst = Foo3.new;
+    is $inst.bar, "default public", "public attr with public builder";
+    is $inst.pvt-baz, "default public", "private attr with public builder";
+
+    my class Foo4 {
+        has $.bar is mooish( lazy=>"pvt-build" );
+        has $!baz is mooish( lazy=>"pvt-build" );
+
+        method !pvt-build {
+            "default private"
+        }
+
+        method pvt-baz { $!baz }
+    }
+
+    $inst = Foo4.new;
+    is $inst.bar, "default private", "public attr with private builder";
+    is $inst.pvt-baz, "default private", "private attr with private builder";
 }
 
 subtest "Triggers", {

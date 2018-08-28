@@ -263,10 +263,21 @@ Trigger method is being executed right after changing the attribute value. If th
 attribute then value will be the filtered one, not the initial.
 =end item
 
+=begin item
+I<C<composer>>
+
+This is a very specific option mostly useful until role C<COMPOSE> phaser is implemented. Method of this option is
+called upon object creation I<B<before>> its respective attribute is initialized. It's main difference from the
+C<builder> option is that it is executed always, similarly to object's C<BUILD> or C<TRIGGER> submethods.
+=end item
+
 =head2 Public/Private
 
 For all the trait parameters, if it is applied to a private attribute then all auto-generated methods will be private
-too. The call-back style methods like C<builder> are expected to be private as well. I.e.:
+too. 
+
+The call-back style options such as C<builder>, C<trigger>, C<filter> are expected to share the privace mode of their
+respective attribute:
 
 =begin code
     class Foo {
@@ -282,6 +293,26 @@ too. The call-back style methods like C<builder> are expected to be private as w
             "filtered $attribute: ($value)"
         }
     }
+=end code
+
+Though if a callback option is defined with method name instead of C<Bool> I<True> then if method wit the same privacy
+mode is not found then opposite mode would be tried before failing:
+
+=begin code
+    class Foo {
+        has $.bar is mooish( :trigger<on_change> );
+        has $!baz is mooish( :trigger<on_change> );
+        has $!fubar is mooish( :lazy<set-fubar> );
+
+        method !on_change ( $val ) { say "changed! ({$val})"; }
+        method set-baz { $!baz = "new pvt" }
+        method use-fubar { $!fubar }
+    }
+
+    $inst = Foo.new;
+    $inst.bar = "new";  # changed! (new)
+    $inst.set-baz;      # changed! (new pvt)
+    $inst.use-fubar;    # Dies with "No such private method '!set-fubar' for invocant of type 'Foo'" message
 =end code
 
 =head2 User method's (callbacks) options
@@ -379,6 +410,22 @@ class X::TypeCheck::MooishOption is X::TypeCheck {
 
 my %attr-data;
 
+#| PvtMode enum defines what privacy mode is used when looking for an option method:
+#| force: makes the method always private
+#| never: makes it always public
+#| as-attr: makes is strictly same as attribute privacy
+#| auto: when options is defined with method name string then uses attribute mode first; and uses opposite if not
+#|       found. Always uses attribute mode if defined as Bool
+enum PvtMode <pvmForce pvmNever pvmAsAttr pvmAuto>;
+
+my %opt2prefix = clearer => 'clear', 
+                 predicate => 'has',
+                 builder => 'build',
+                 trigger => 'trigger',
+                 filter => 'filter',
+                 composer => 'compose',
+                 ;
+
 my role AttrXMooishClassHOW { ... }
 
 my role AttrXMooishAttributeHOW {
@@ -389,16 +436,14 @@ my role AttrXMooishAttributeHOW {
     has $.predicate is rw = False;
     has $.trigger is rw = False;
     has $.filter is rw = False;
-
-    my %opt2prefix = clearer => 'clear', 
-                     predicate => 'has',
-                     builder => 'build',
-                     trigger => 'trigger',
-                     filter => 'filter',
-                     ;
+    has $.composer is rw = False;
 
     method !bool-str-meth-name( $opt, Str $prefix ) {
         $opt ~~ Bool ?? $prefix ~ '-' ~ $!base-name !! $opt;
+    }
+
+    method !opt2method( Str $oname ) {
+        self!bool-str-meth-name( self."$oname"(), %opt2prefix{$oname} );
     }
 
     method compose ( Mu \type ) {
@@ -420,7 +465,7 @@ my role AttrXMooishAttributeHOW {
 
         for %helpers.keys -> $helper {
             next unless self."$helper"();
-            my $helper-name = self!bool-str-meth-name( self."$helper"(), %opt2prefix{$helper} );
+            my $helper-name = self!opt2method( $helper );
 
             X::Fatal.new( message => "Cannot install {$helper} {$helper-name}: method already defined").throw
                 if type.^declares_method( $helper-name );
@@ -435,6 +480,8 @@ my role AttrXMooishAttributeHOW {
                 type.^add_private_method( $helper-name, %helpers{$helper} );
             }
         }
+
+        self.invoke-composer( type );
 
         #note "+++ done composing attribute {$.name}";
     }
@@ -544,7 +591,7 @@ my role AttrXMooishAttributeHOW {
         }
     }
 
-    method invoke-opt ( Any \instance, Str $option, @params = (), :$strict = False ) {
+    method invoke-opt ( Any \instance, Str $option, @params = (), :$strict = False, PvtMode :$private is copy = pvmAuto ) {
         my $opt-value = self."$option"();
         my \type = $.package;
 
@@ -556,18 +603,34 @@ my role AttrXMooishAttributeHOW {
         
         my $method;
 
+        sub get-method( $name, Bool $public ) {
+            $public ?? 
+                    instance.^find_method( $name, :no_fallback(1) ) 
+                    !!
+                    type.^find_private_method( $name )
+        }
+
         given $opt-value {
             when Str | Bool {
                 if $opt-value ~~ Bool {
                     die "Bug encountered: boolean option $option doesn't have a prefix assigned"
                         unless %opt2prefix{$option};
                     $opt-value = "{%opt2prefix{$option}}-{$.base-name}";
+                    # Bool-defined option must always have same privacy as attribute
+                    $private = pvmAsAttr if $private == pvmAuto;
                 }
-                $method = $.has_accessor 
-                            ?? 
-                            instance.^find_method( $opt-value, :no_fallback(1) ) 
-                            !!
-                            type.^find_private_method( $opt-value );
+                my $is-pub = $.has_accessor;
+                given $private {
+                    when pvmForce | pvmNever {
+                        $method = get-method( $opt-value, $is-pub = $_ == pvmNever );
+                    }
+                    when pvmAsAttr {
+                        $method = get-method( $opt-value, $.has_accessor );
+                    }
+                    when pvmAuto {
+                        $method = get-method( $opt-value, $.has_accessor ) // get-method( $opt-value, !$.has_accessor );
+                    }
+                }
                 #note "&&& ON INVOKING: found method ", $method.defined ;
                 unless so $method {
                     # If no method found by name die if strict is on
@@ -575,7 +638,7 @@ my role AttrXMooishAttributeHOW {
                     return unless $strict;
                     X::Method::NotFound.new(
                         method => $opt-value,
-                        private => !$.has_accessor,
+                        private =>!$is-pub,
                         typename => instance.WHO,
                     ).throw;
                 }
@@ -598,10 +661,24 @@ my role AttrXMooishAttributeHOW {
         #note "&&& KINDA BUILDING FOR $publicity {$.name} on $obj-id (is-set:{self.is-set($obj-id)})";
         unless self.is-set( $obj-id ) {
             #note "&&& Calling builder {$!builder}";
-            my $val = self.invoke-opt( instance, 'builder', :strict);
+            my $val = self.invoke-opt( instance, 'builder', :strict );
             self.store-with-cb( instance, $val, [ :builder ] );
             #note "Set ATTR";
         }
+    }
+
+    method invoke-composer ( Mu \type ) {
+        return unless $!composer;
+        #note "My type for composer: ", $.package;
+        my $comp-name = self!opt2method( 'composer' );
+        #note "Looking for method $comp-name";
+        my $composer = type.^find_private_method( $comp-name );
+        X::Method::NotFound.new(
+            method    => $comp-name,
+            private  => True,
+            typename => type.WHO,
+        ).throw unless $composer;
+        type.&$composer();
     }
 }
 
@@ -690,7 +767,7 @@ my role AttrXMooishClassHOW {
         my @lazyAttrs = type.^attributes( :local(1) ).grep( AttrXMooishAttributeHOW );
 
         for @lazyAttrs -> $attr {
-            #note "Found lazy attr {$attr.name} // {$attr.base-name}";
+            #note "Found lazy attr {$attr.name} // {$attr.HOW}";
             $attr.make-mooish( instance, %attrinit );
         }
     }
@@ -754,7 +831,7 @@ multi trait_mod:<is>( Attribute:D $attr, :$mooish! ) is export {
                     when 'builder' {
                         set-callable-opt( $option );
                     }
-                    when 'trigger' | 'filter'  {
+                    when 'trigger' | 'filter' | 'composer' {
                         $attr."$_"() = $option.value;
                         set-callable-opt( $option ) unless $option.value ~~ Bool;
                     }

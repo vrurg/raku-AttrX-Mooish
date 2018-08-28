@@ -220,10 +220,16 @@ Trait parameters
 
     Trigger method is being executed right after changing the attribute value. If there is a `filter` defined for the attribute then value will be the filtered one, not the initial.
 
+  * *`composer`*
+
+    This is a very specific option mostly useful until role `COMPOSE` phaser is implemented. Method of this option is called upon object creation ***before*** its respective attribute is initialized. It's main difference from the `builder` option is that it is executed always, similarly to object's `BUILD` or `TRIGGER` submethods.
+
 Public/Private
 --------------
 
-For all the trait parameters, if it is applied to a private attribute then all auto-generated methods will be private too. The call-back style methods like `builder` are expected to be private as well. I.e.:
+For all the trait parameters, if it is applied to a private attribute then all auto-generated methods will be private too. 
+
+The call-back style options such as `builder`, `trigger`, `filter` are expected to share the privace mode of their respective attribute:
 
         class Foo {
             has $!bar is rw is mooish(:lazy, :clearer<reset-bar>, :predicate, :filter<wrap-filter>);
@@ -238,6 +244,23 @@ For all the trait parameters, if it is applied to a private attribute then all a
                 "filtered $attribute: ($value)"
             }
         }
+
+Though if a callback option is defined with method name instead of `Bool` *True* then if method wit the same privacy mode is not found then opposite mode would be tried before failing:
+
+        class Foo {
+            has $.bar is mooish( :trigger<on_change> );
+            has $!baz is mooish( :trigger<on_change> );
+            has $!fubar is mooish( :lazy<set-fubar> );
+
+            method !on_change ( $val ) { say "changed! ({$val})"; }
+            method set-baz { $!baz = "new pvt" }
+            method use-fubar { $!fubar }
+        }
+
+        $inst = Foo.new;
+        $inst.bar = "new";  # changed! (new)
+        $inst.set-baz;      # changed! (new pvt)
+        $inst.use-fubar;    # Dies with "No such private method '!set-fubar' for invocant of type 'Foo'" message
 
 User method's (callbacks) options
 ---------------------------------
@@ -305,4 +328,8 @@ LICENSE
 Artistic License 2.0
 
 See the LICENSE file in this distribution.
+
+
+
+PvtMode enum defines what privacy mode is used when looking for an option method: force: makes the method always private never: makes it always public as-attr: makes is strictly same as attribute privacy auto: when options is defined with method name string then uses attribute mode first; and uses opposite if not found. Always uses attribute mode if defined as Bool
 
