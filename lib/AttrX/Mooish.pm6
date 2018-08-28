@@ -571,11 +571,12 @@ my role AttrXMooishAttributeHOW {
     method coerce-value ( $val ) {
         return $val unless $val.defined; # We only work with containers!
         my $attr-type = $.auto_viv_container.WHAT;
+        return $val if $attr-type === Any;
         if $attr-type.HOW.^isa( Metamodel::SubsetHOW ) {
             $attr-type = $attr-type.^refinee;
         }
         my $rval = $val;
-        if my $meth = $val.^find_method( $attr-type.WHO ) {
+        if my $meth = $val.^find_method( $attr-type.WHO, :no_fallback(1) ) {
             $rval = $val.&$meth();
             $rval.rethrow if $rval ~~ Failure;
         }
