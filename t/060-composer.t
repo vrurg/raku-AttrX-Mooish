@@ -49,4 +49,5 @@ ok Foo2.^can('bar-composed'), "bar composed method";
 is Foo2.foo-composed, "foo-composed method", "foo-composed method value";
 is Foo2.bar-composed, "bar is composed!", "bar-composed method value";
 
+done-testing;
 # vim: ft=perl6

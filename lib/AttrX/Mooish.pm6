@@ -568,7 +568,22 @@ my role AttrXMooishAttributeHOW {
         self.invoke-opt( instance, 'trigger', ( $value, |@params ), :strict ) if $.trigger;
     }
 
-    method store-value ( $obj-id, $value ) {
+    method coerce-value ( $val ) {
+        return $val unless $val.defined; # We only work with containers!
+        my $attr-type = $.auto_viv_container.WHAT;
+        if $attr-type.HOW.^isa( Metamodel::SubsetHOW ) {
+            $attr-type = $attr-type.^refinee;
+        }
+        my $rval = $val;
+        if my $meth = $val.^find_method( $attr-type.WHO ) {
+            $rval = $val.&$meth();
+            $rval.rethrow if $rval ~~ Failure;
+        }
+        $rval
+    }
+
+    method store-value ( $obj-id, $value is copy ) {
+        $value = self.coerce-value( $value );
         self.check-value( $value );
         #note "store-value for ", $obj-id;
         %attr-data{$obj-id}{$.name}<value> = $value;

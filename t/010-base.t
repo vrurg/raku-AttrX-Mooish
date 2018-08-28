@@ -197,8 +197,7 @@ subtest "Validating values", {
     lives-ok { $inst.bar = 31415926 }, "assignment of same types";
     lives-ok { $inst.bar = Nil }, "assignment of Nil";
     throws-like { $inst.bar = "abc" },
-                X::TypeCheck,
-                message => q{Type check failed in assignment to attribute $!bar; expected "Int" but got "Str"},
+                X::Str::Numeric,
                 "assignment to a different attribute type";
 
     my class Foo3 {
@@ -502,7 +501,7 @@ subtest "Constructor init", {
     }
 
     $inst = Foo1.new( :bar(1,2,3), :foo(<a b c>) );
-    is-deeply $inst.bar, (1,2,3), 'mooish array attribute init from new';
+    is-deeply $inst.bar, [1,2,3], 'mooish array attribute init from new';
     is-deeply $inst.foo, <a b c>, 'non-mooish array attribute init from new';
 }
 
