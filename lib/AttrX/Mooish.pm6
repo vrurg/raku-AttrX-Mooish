@@ -267,8 +267,7 @@ attribute then value will be the filtered one, not the initial.
 I<C<composer>>
 
 This is a very specific option mostly useful until role C<COMPOSE> phaser is implemented. Method of this option is
-called upon object creation I<B<before>> its respective attribute is initialized. It's main difference from the
-C<builder> option is that it is executed always, similarly to object's C<BUILD> or C<TRIGGER> submethods.
+called upon class composition time.
 =end item
 
 =head2 Public/Private

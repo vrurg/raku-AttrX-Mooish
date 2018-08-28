@@ -222,7 +222,7 @@ Trait parameters
 
   * *`composer`*
 
-    This is a very specific option mostly useful until role `COMPOSE` phaser is implemented. Method of this option is called upon object creation ***before*** its respective attribute is initialized. It's main difference from the `builder` option is that it is executed always, similarly to object's `BUILD` or `TRIGGER` submethods.
+    This is a very specific option mostly useful until role `COMPOSE` phaser is implemented. Method of this option is called upon class composition time.
 
 Public/Private
 --------------
