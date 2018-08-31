@@ -1,4 +1,4 @@
-unit module AttrX::Mooish:ver<0.4.901>:auth<github:vrurg>;
+unit module AttrX::Mooish:ver<0.4.902>:auth<github:vrurg>;
 #use Data::Dump;
 
 =begin pod
@@ -626,19 +626,9 @@ my role AttrXMooishAttributeHOW {
     method coerce-value ( $val ) {
         #note "coerce-value";
         return $val unless $val.defined; # We only work with containers!
-<<<<<<< HEAD
-        my $attr-type = $.auto_viv_container.WHAT;
-        return $val if $attr-type === Any;
-        if $attr-type.HOW.^isa( Metamodel::SubsetHOW ) {
-            $attr-type = $attr-type.^refinee;
-        }
-        my $rval = $val;
-        if my $meth = $val.^find_method( $attr-type.WHO, :no_fallback(1) ) {
-=======
         return $val if $!coerce-type === Any;
         my $rval = $val;
         if my $meth = $val.^find_method( $!coerce-method, :no_fallback(1) ) {
->>>>>>> v0.4
             $rval = $val.&$meth();
             $rval.rethrow if $rval ~~ Failure;
             #note ". coerced rval: {$rval.perl}";
