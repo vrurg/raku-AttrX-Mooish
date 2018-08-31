@@ -77,7 +77,7 @@ upload: release
 	@echo "===> Uploaded."
 
 clean:
-	@rm $(CLEAN_FILES)
+	@rm -f $(CLEAN_FILES)
 	@rm -rf $(CLEAN_DIRS)
 
 install: build

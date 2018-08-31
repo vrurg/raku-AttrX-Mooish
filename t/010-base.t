@@ -223,7 +223,7 @@ subtest "Validating values", {
     lives-ok { $inst.bar = "another value" }, "value assigned matches 'where' constraint";
     throws-like { $inst.bar = "not allowed" },
         X::TypeCheck,
-        message => q{Type check failed in assignment to attribute $!bar; expected "<anon>" but got "Str"},
+        message => q{Type check failed in assignment to attribute $!bar; expected <anon> but got Str ("not allowed")},
         "assignment of non-compliant value";
 
     #CATCH { note "Got exception ", $_.WHO; $_.throw}
@@ -253,7 +253,7 @@ subtest "Errors", {
 
     throws-like { $inst = Foo4.new; $inst.bar },
         X::TypeCheck,
-        message => q<Type check failed in assignment to attribute $!bar; expected "<anon>" but got "Str">,
+        message => q<Type check failed in assignment to attribute $!bar; expected <anon> but got Str ("default value")>,
         "value from builder don't conform 'where' constraint";
 
         #CATCH { note "Got exception ", $_.WHO; $_.throw}

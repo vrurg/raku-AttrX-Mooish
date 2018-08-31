@@ -222,7 +222,7 @@ Trait parameters
 
   * *`composer`*
 
-    This is a very specific option mostly useful until role `COMPOSE` phaser is implemented. Method of this option is called upon object creation ***before*** its respective attribute is initialized. It's main difference from the `builder` option is that it is executed always, similarly to object's `BUILD` or `TRIGGER` submethods.
+    This is a very specific option mostly useful until role `COMPOSE` phaser is implemented. Method of this option is called upon class composition time.
 
 Public/Private
 --------------
@@ -328,8 +328,4 @@ LICENSE
 Artistic License 2.0
 
 See the LICENSE file in this distribution.
-
-
-
-PvtMode enum defines what privacy mode is used when looking for an option method: force: makes the method always private never: makes it always public as-attr: makes is strictly same as attribute privacy auto: when options is defined with method name string then uses attribute mode first; and uses opposite if not found. Always uses attribute mode if defined as Bool
 
