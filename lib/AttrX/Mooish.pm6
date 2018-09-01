@@ -438,12 +438,12 @@ my role AttrXMooishAttributeHOW {
     has $.composer is rw = False;
 
     # This type is to coerce values into
-    has $!coerce-type;
+    has $.coerce-type is rw;
     # This type is to check (possibly – coerced) values against. The difference with coerce-type is that the latter
     # is a simple (kinda atomic) types like Int, Str, Array, Hash. Whereas check-type could be a subset. Though it
     # can't be a typed Array/Hash/etc.
-    has $!check-type;
-    has $!coerce-method;
+    has $.check-type is rw;
+    has $.coerce-method is rw;
 
     method !bool-str-meth-name( $opt, Str $prefix ) {
         $opt ~~ Bool ?? $prefix ~ '-' ~ $!base-name !! $opt;
@@ -488,36 +488,47 @@ my role AttrXMooishAttributeHOW {
             }
         }
 
+
+        self.setup-types;
+
         self.invoke-composer( type );
 
-        $!coerce-type = $.auto_viv_container.WHAT;
-        unless $!coerce-type === Any {
-            #note ". attribute type is {$.type.^name} // {$.type.HOW.^name}";
-            #note ". attribute container type is {$!coerce-type.^name} // {$!coerce-type.HOW.^name}";
-            #note ". . {$!coerce-type.HOW.^roles(:!local).map( { $_.^shortname } )}" if $!coerce-type.HOW.^isa(Metamodel::ClassHOW);
-            #note ". !coerce-type HOW is {$!coerce-type.HOW.^name} // is subset? ", $!coerce-type.HOW.^isa( Metamodel::SubsetHOW );
-            #note ". . . ", $!coerce-type.^parents( :local ).WHO;
-            #note "AV:", $.auto_viv_container.^find_method( 'of', no_fallback => 1 );
-            if $!coerce-type.HOW.^isa( Metamodel::SubsetHOW ) {
-                $!check-type = $!coerce-type; # Must check values against subset
-                $!coerce-type = $!coerce-type.^refinee;
-                #note ". final type: {$!coerce-type.^name}";
-            }
-            elsif $!coerce-type.HOW.^isa( Metamodel::DefiniteHOW ) {
-                $!coerce-type = $!coerce-type.^base_type;
-            }
-            elsif $.auto_viv_container.WHAT.^find_method( 'of' ) && $.auto_viv_container.of.^isa( Any ) {
-                #note ".... typed!";
-                $!coerce-type = $!coerce-type.^parents( :local )[0];
-                $!check-type = $!coerce-type; # Check values against base type.
-                #note ".... >>> ", $!coerce-type.WHO;
-            }
-            #note ". setting the corce-method {$!coerce-type.^shortname}";
-            $!coerce-method = ~$!coerce-type.WHO;
-            #note "COERCE-METHOD is ", $!coerce-method;
-        }
-
         #note "+++ done composing attribute {$.name}";
+    }
+
+    method setup-types () {
+        $!check-type =
+        $.coerce-type = $.auto_viv_container.WHAT;
+        unless $.coerce-type === Any {
+            #note ". attribute $.name";
+            #note ". attribute type is {$.type.^name} // {$.type.HOW.^name}";
+            #note ". attribute container type is {$.coerce-type.^name} // {$.coerce-type.HOW.^name}";
+            #note ". is subset: ", $.coerce-type.HOW.^isa( Metamodel::SubsetHOW );
+            #note ". . {$.coerce-type.HOW.^roles(:!local).map( { $_.^shortname } )}" if $.coerce-type.HOW.^isa(Metamodel::ClassHOW);
+            #note ". !coerce-type HOW is {$.coerce-type.HOW.^name} // is subset? ", $.coerce-type.HOW.^isa( Metamodel::SubsetHOW );
+            #note ". . . ", $.coerce-type.^parents( :local ).WHO;
+            #note "AV:", $.auto_viv_container.^find_method( 'of', no_fallback => 1 );
+            if $.coerce-type.HOW.^isa( Metamodel::SubsetHOW ) {
+                #note ". subset";
+                $!coerce-type = $.coerce-type.^refinee;
+                #note ". final type: {$.coerce-type.^name}";
+            }
+            elsif $.coerce-type.HOW.^isa( Metamodel::DefiniteHOW ) {
+                #note ". definite";
+                $!coerce-type = $.coerce-type.^base_type;
+            }
+            elsif $.auto_viv_container.WHAT.^find_method( 'of', :no_fallback(1) ) && $.auto_viv_container.of.^isa( Any ) {
+                #note ".... typed!";
+                $!coerce-type = $.coerce-type.^parents( :local )[0];
+                $!check-type = $.coerce-type; # Check values against base type.
+                #note ".... >>> ", $.coerce-type.WHO;
+            }
+            #note ". setting the corce-method {$.coerce-type.^shortname}";
+            $.coerce-method = ~$.coerce-type.WHO;
+            #note "COERCE-METHOD of $.name is ", $.coerce-method;
+        }
+        #note "COERCE TYPE of $.name is ", $.coerce-type.^name;
+        #note "CHECK  TYPE of $.name is ", $!check-type.^name;
     }
 
     # force-default is true if attribute is set in .new( ) call
@@ -549,6 +560,8 @@ my role AttrXMooishAttributeHOW {
             #note "INIT STORE PARAMS: {@params}";
             self.store-with-cb( instance, $default, @params );
         }
+
+        #self.setup-types;
 
         self.set_value( instance, 
             Proxy.new(
@@ -594,8 +607,8 @@ my role AttrXMooishAttributeHOW {
                 ).throw if $.type.^definite;
             }
         }
-        elsif $!coerce-type ~~ Iterable {
-            #note ". trying through append on iterable ", $!coerce-type.WHO;
+        elsif $.coerce-type ~~ Iterable {
+            #note ". trying through append on iterable ", $.coerce-type.WHO;
             # For Array/Hash
             my $cv = $.auto_viv_container.clone;
             #note "Appending to ", $cv.WHAT;
@@ -614,21 +627,23 @@ my role AttrXMooishAttributeHOW {
         }
         else {
             #note "VALUE: {$value.perl} // {$value.WHO}";
-            #note "TYPE:", $!coerce-type;
+            #note "TYPE:", $!check-type;
             X::TypeCheck.new(
                 :$operation,
                 got => $value,
                 expected => $.auto_viv_container.WHAT,
-             ).throw unless $value ~~ $.auto_viv_container.WHAT;
+             ).throw unless $value ~~ $!check-type;
         }
     }
 
     method coerce-value ( $val ) {
-        #note "coerce-value";
+        #note "coerce-value $.name {$val.perl}";
         return $val unless $val.defined; # We only work with containers!
-        return $val if $!coerce-type === Any;
+        #note ". defined";
+        #note ". coerce-type: ", $.coerce-type;
+        return $val if $.coerce-type === Any;
         my $rval = $val;
-        if my $meth = $val.^find_method( $!coerce-method, :no_fallback(1) ) {
+        if my $meth = $val.^find_method( $.coerce-method, :no_fallback(1) ) {
             $rval = $val.&$meth();
             $rval.rethrow if $rval ~~ Failure;
             #note ". coerced rval: {$rval.perl}";
