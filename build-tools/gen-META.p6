@@ -20,7 +20,7 @@ my $m = META6.new(
         source          => 'git://github.com/vrurg/Perl6-AttrX-Mooish.git',
     ),
     provides => {
-        'AttrX::Mooish' => 'lib/Attrx/Mooish.pm6',
+        'AttrX::Mooish' => 'lib/AttrX/Mooish.pm6',
     },
     license        => 'Artistic-2.0',
     production     => False,
