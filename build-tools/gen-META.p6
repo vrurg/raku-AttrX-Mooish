@@ -15,7 +15,7 @@ my $m = META6.new(
     tags           => <AttrX Moo Moose Mooish attribute mooish trait>,
     authors        => ['Vadim Belman <vrurg@cpan.org>'],
     auth           => 'github:vrurg',
-    source-urk     => 'git://github.com/vrurg/Perl6-AttrX-Mooish.git',
+    source-url     => 'git://github.com/vrurg/Perl6-AttrX-Mooish.git',
     support        => META6::Support.new(
         source          => 'git://github.com/vrurg/Perl6-AttrX-Mooish.git',
     ),
