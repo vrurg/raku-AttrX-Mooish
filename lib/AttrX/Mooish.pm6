@@ -567,7 +567,6 @@ my role AttrXMooishAttributeHOW {
 
         #self.setup-types;
 
-        self.set_value( instance, 
         use nqp;
         nqp::bindattr(nqp::decont(instance),$.package,$.name,
         #self.set_value( instance, 
