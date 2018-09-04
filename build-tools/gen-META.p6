@@ -15,12 +15,12 @@ my $m = META6.new(
     tags           => <AttrX Moo Moose Mooish attribute mooish trait>,
     authors        => ['Vadim Belman <vrurg@cpan.org>'],
     auth           => 'github:vrurg',
-    source-urk     => 'git://github.com/vrurg/Perl6-AttrX-Mooish.git',
+    source-url     => 'git://github.com/vrurg/Perl6-AttrX-Mooish.git',
     support        => META6::Support.new(
         source          => 'git://github.com/vrurg/Perl6-AttrX-Mooish.git',
     ),
     provides => {
-        'AttrX::Mooish' => 'lib/Attrx/Mooish.pm6',
+        'AttrX::Mooish' => 'lib/AttrX/Mooish.pm6',
     },
     license        => 'Artistic-2.0',
     production     => False,

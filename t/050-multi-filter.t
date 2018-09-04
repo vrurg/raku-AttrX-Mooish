@@ -33,7 +33,7 @@ my class Foo2 {
 
 $inst = Foo2.new;
 nok $inst.has-baz, "baz is not inited yet";
-is $inst.baz, <a b b c>.BagHash, "baz built";
+is-deeply $inst.baz, <a b b c>.BagHash, "baz built";
 ok $inst.has-baz, "baz is inited";
 
 done-testing;

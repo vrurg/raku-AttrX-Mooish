@@ -417,14 +417,6 @@ my %attr-data;
 #       found. Always uses attribute mode if defined as Bool
 enum PvtMode <pvmForce pvmNever pvmAsAttr pvmAuto>;
 
-my %opt2prefix = clearer => 'clear', 
-                 predicate => 'has',
-                 builder => 'build',
-                 trigger => 'trigger',
-                 filter => 'filter',
-                 composer => 'compose',
-                 ;
-
 my role AttrXMooishClassHOW { ... }
 
 my role AttrXMooishAttributeHOW {
@@ -445,11 +437,22 @@ my role AttrXMooishAttributeHOW {
     has $.check-type is rw;
     has $.coerce-method is rw;
 
+    my %opt2prefix = clearer => 'clear', 
+                     predicate => 'has',
+                     builder => 'build',
+                     trigger => 'trigger',
+                     filter => 'filter',
+                     composer => 'compose',
+                     ;
+
     method !bool-str-meth-name( $opt, Str $prefix ) {
+        #note "bool-str-meth-name: ", $prefix;
         $opt ~~ Bool ?? $prefix ~ '-' ~ $!base-name !! $opt;
     }
 
     method !opt2method( Str $oname ) {
+        #note "%opt2prefix: ", %opt2prefix;
+        #note "option name in opt2method: $oname // ", %opt2prefix{$oname};
         self!bool-str-meth-name( self."$oname"(), %opt2prefix{$oname} );
     }
 
@@ -472,6 +475,7 @@ my role AttrXMooishAttributeHOW {
 
         for %helpers.keys -> $helper {
             next unless self."$helper"();
+            #note "op2method for helper $helper";
             my $helper-name = self!opt2method( $helper );
 
             X::Fatal.new( message => "Cannot install {$helper} {$helper-name}: method already defined").throw
@@ -564,11 +568,19 @@ my role AttrXMooishAttributeHOW {
         #self.setup-types;
 
         self.set_value( instance, 
+        use nqp;
+        nqp::bindattr(nqp::decont(instance),$.package,$.name,
+        #self.set_value( instance, 
             Proxy.new(
                 FETCH => -> $ {
-                    #note "FETCH of {$attr.name} for ", $obj-id;
-                    self.build-attr( instance ) if so $.lazy;
-                    %attr-data{$obj-id}{$attr.name}<value>;
+                    my $val = Nil;
+                    #note "IS MOOISHED? ", %attr-data{$obj-id}{$attr.name}<mooished>;
+                    if %attr-data{$obj-id}{$attr.name}<mooished> {
+                        #note "FETCH of {$attr.name} for ", $obj-id, ~Backtrace.new.full;
+                        self.build-attr( instance ) if so $.lazy;
+                        $val = %attr-data{$obj-id}{$attr.name}<value>;
+                    }
+                    $val
                 },
                 STORE => -> $, $value is copy {
                     #note "STORE (", $obj-id, "): ", $value // '*undef*';
@@ -576,10 +588,11 @@ my role AttrXMooishAttributeHOW {
                 }
             )
         );
+
         #note "Storing value in global hash";
         #%attr-data{$obj-id}{$.name}<value> = $default;
-
-        #note "<<< DONE LAZIFYING ", $.name;
+        %attr-data{$obj-id}{$attr.name}<mooished> = True;
+        #note "<<< DONE MOOIFYING ", $.name;
     }
 
     method store-with-cb ( Mu \instance, $value is rw, @params = () ) {
@@ -664,7 +677,7 @@ my role AttrXMooishAttributeHOW {
     }
     
     method clear-attr ( $obj-id ) {
-        %attr-data{$obj-id}{$.name}:delete;
+        %attr-data{$obj-id}{$.name}<value>:delete;
     }
 
     method invoke-filter ( Mu \instance, $value is rw, @params = () ) {
