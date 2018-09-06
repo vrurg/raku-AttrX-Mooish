@@ -63,7 +63,7 @@ subtest "Basics", {
 }
 
 subtest "Typed", {
-    plan 2;
+    plan 8;
     my $inst;
 
     my class Foo1 {
@@ -75,12 +75,13 @@ subtest "Typed", {
 
     $inst = Foo1.new;
     $inst.bar = <a b c>;
-    is-deeply $inst.bar, [<a b c>], "valid coercion to typed array";
+    isa-ok $inst.bar, Array[Str], "attribute type preserved";
+    is-deeply $inst.bar.Array, [<a b c>], "valid coercion to parametrized array";
     throws-like { $inst.bar = 1, 2, 3 },
         X::TypeCheck,
         "assignment of list of integers fails type check";
+    is-deeply $inst.bar.Array, [<a b c>], "array attribute doesn't change after failed assignment";
 
-    #`[ Don't test hashes as type checking doesn't work for them in any more complicated situation than %h = {a=>1, b=>2}
     my class Foo2 {
         has Int %.bar is rw is mooish( :trigger );
 
@@ -90,10 +91,12 @@ subtest "Typed", {
     my Int %h;
     $inst = Foo2.new;
     $inst.bar = a=>1, b=>2;
-    note $inst.bar;
-    $inst.bar = a=>"str", b=>"2";
-    note $inst.bar;
-    ]
+    isa-ok $inst.bar, Hash[Int], "hash type preserved";
+    is-deeply $inst.bar, Hash[Int].new( 'a', 1, 'b', 2 ), "valid coercion to parametrized hash";
+    throws-like { $inst.bar = a=>"str", b=>"2" },
+        X::TypeCheck,
+        "assignment of pairs of Str values to Int hash fails type check";
+    is-deeply $inst.bar, Hash[Int].new( 'a', 1, 'b', 2 ), "hash attribute doesn't change after failed assignment";
 }
 
 done-testing;
