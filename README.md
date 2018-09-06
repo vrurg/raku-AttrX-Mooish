@@ -67,7 +67,7 @@ The above would generate a output similar to the following:
 DESCRIPTION
 ===========
 
-This module is aiming at providing some functionality we're all missing from Moo/Moose. For now it implements laziness with accompanying methods. But more may come in the future.
+This module is aiming at providing some functionality we're all missing from Moo/Moose. It implements laziness, accompanying methods and adds attribute value filter on top of what standard Moo/Moose provide.
 
 What makes this module different from previous versions one could find in the Perl6 modules repository is that it implements true laziness allowing *Nil* to be a first-class value of a lazy attribute. In other words, if you look at the [#SYNOPSIS](#SYNOPSIS) section, `$.bar3` value could randomly be either undefined or 3.1415926.
 
@@ -313,9 +313,11 @@ Note that use of this trait doesn't change attribute accessors. More than that, 
 CAVEATS
 =======
 
-This module is using manual type checking for attributes with constraints. This could result in outcome different from default Perl6 behaviour.
+This module is using manual type checking for attributes with constraints. This could result in outcome different from default Perl6 behaviour though all possible efforts were taken to reproduce the most common situations.
 
 Due to the magical nature of attribute behaviour conflicts with other traits are possible. None is known to the author yet.
+
+Internally `Proxy` is used as attribute container. It was told that the class has a number of unpleasant side effects including multiplication of FETCH operation. Though generally this bug is harmles it could be workarounded by assigning an attribute value to a temporary variable.
 
 AUTHOR
 ======

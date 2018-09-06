@@ -68,8 +68,8 @@ The above would generate a output similar to the following:
 
 =head1 DESCRIPTION
 
-This module is aiming at providing some functionality we're all missing from Moo/Moose. For now it implements laziness
-with accompanying methods. But more may come in the future.
+This module is aiming at providing some functionality we're all missing from Moo/Moose. It implements laziness,
+accompanying methods and adds attribute value filter on top of what standard Moo/Moose provide.
 
 What makes this module different from previous versions one could find in the Perl6 modules repository is that it
 implements true laziness allowing I<Nil> to be a first-class value of a lazy attribute. In other words, if you look at
@@ -380,10 +380,14 @@ attributes. Consider the C<$!bar2> attribute from L<#SYNOPSIS>.
 =head1 CAVEATS
 
 This module is using manual type checking for attributes with constraints. This could result in outcome different from
-default Perl6 behaviour.
+default Perl6 behaviour though all possible efforts were taken to reproduce the most common situations.
 
 Due to the magical nature of attribute behaviour conflicts with other traits are possible. None is known to the author
 yet.
+
+Internally C<Proxy> is used as attribute container. It was told that the class has a number of unpleasant side effects
+including multiplication of FETCH operation. Though generally this bug is harmles it could be workarounded by assigning
+an attribute value to a temporary variable.
 
 =head1 AUTHOR
 
@@ -421,6 +425,7 @@ my role AttrXMooishClassHOW { ... }
 
 my role AttrXMooishAttributeHOW {
     has $.base-name = self.name.substr(2);
+    has $.sigil = self.name.substr( 0, 1 );
     has $.lazy is rw = False;
     has $.builder is rw = 'build-' ~ $!base-name;
     has $.clearer is rw = False;
@@ -430,12 +435,12 @@ my role AttrXMooishAttributeHOW {
     has $.composer is rw = False;
 
     # This type is to coerce values into
-    has $.coerce-type is rw;
+    has $!coerce-type;
     # This type is to check (possibly – coerced) values against. The difference with coerce-type is that the latter
     # is a simple (kinda atomic) types like Int, Str, Array, Hash. Whereas check-type could be a subset. Though it
     # can't be a typed Array/Hash/etc.
-    has $.check-type is rw;
-    has $.coerce-method is rw;
+    has $!check-type;
+    has $!coerce-method;
 
     my %opt2prefix = clearer => 'clear', 
                      predicate => 'has',
@@ -501,9 +506,10 @@ my role AttrXMooishAttributeHOW {
     }
 
     method setup-types () {
+        #note "+++ setup-types";
         $!check-type =
-        $.coerce-type = $.auto_viv_container.WHAT;
-        unless $.coerce-type === Any {
+        $!coerce-type = $.auto_viv_container.WHAT;
+        unless $!coerce-type === Any {
             #note ". attribute $.name";
             #note ". attribute type is {$.type.^name} // {$.type.HOW.^name}";
             #note ". attribute container type is {$.coerce-type.^name} // {$.coerce-type.HOW.^name}";
@@ -512,23 +518,23 @@ my role AttrXMooishAttributeHOW {
             #note ". !coerce-type HOW is {$.coerce-type.HOW.^name} // is subset? ", $.coerce-type.HOW.^isa( Metamodel::SubsetHOW );
             #note ". . . ", $.coerce-type.^parents( :local ).WHO;
             #note "AV:", $.auto_viv_container.^find_method( 'of', no_fallback => 1 );
-            if $.coerce-type.HOW.^isa( Metamodel::SubsetHOW ) {
+            if $!coerce-type.HOW.^isa( Metamodel::SubsetHOW ) {
                 #note ". subset";
-                $!coerce-type = $.coerce-type.^refinee;
+                $!coerce-type = $!coerce-type.^refinee;
                 #note ". final type: {$.coerce-type.^name}";
             }
-            elsif $.coerce-type.HOW.^isa( Metamodel::DefiniteHOW ) {
+            elsif $!coerce-type.HOW.^isa( Metamodel::DefiniteHOW ) {
                 #note ". definite";
-                $!coerce-type = $.coerce-type.^base_type;
+                $!coerce-type = $!coerce-type.^base_type;
             }
             elsif $.auto_viv_container.WHAT.^find_method( 'of', :no_fallback(1) ) && $.auto_viv_container.of.^isa( Any ) {
                 #note ".... typed!";
-                $!coerce-type = $.coerce-type.^parents( :local )[0];
-                $!check-type = $.coerce-type; # Check values against base type.
+                $!coerce-type = $!coerce-type.^parents( :local )[0];
+                $!check-type = $!coerce-type; # Check values against base type.
                 #note ".... >>> ", $.coerce-type.WHO;
             }
             #note ". setting the corce-method {$.coerce-type.^shortname}";
-            $.coerce-method = ~$.coerce-type.WHO;
+            $!coerce-method = ~$!coerce-type.WHO;
             #note "COERCE-METHOD of $.name is ", $.coerce-method;
         }
         #note "COERCE TYPE of $.name is ", $.coerce-type.^name;
@@ -546,8 +552,8 @@ my role AttrXMooishAttributeHOW {
         #note ">>> MOOIFYING ", $.name;
         #note ">>> HAS INIT: ", %attrinit{$.base-name}:exists;
 
-        my $from-init = %attrinit{$.base-name}:exists;
-        my $default = $from-init ?? %attrinit{$.base-name} !! self.get_value( instance );
+        my $from-init = %attrinit{$!base-name}:exists;
+        my $default = $from-init ?? %attrinit{$!base-name} !! self.get_value( instance );
         my $initialized = $from-init;
         #note "DEFAULT IS:", $default // $default.WHAT;
         unless $initialized { # False means no constructor parameter for the attribute
@@ -576,7 +582,7 @@ my role AttrXMooishAttributeHOW {
                     #note "IS MOOISHED? ", %attr-data{$obj-id}{$attr.name}<mooished>;
                     if %attr-data{$obj-id}{$attr.name}<mooished> {
                         #note "FETCH of {$attr.name} for ", $obj-id, ~Backtrace.new.full;
-                        self.build-attr( instance ) if so $.lazy;
+                        self.build-attr( instance ) if so $!lazy;
                         $val = %attr-data{$obj-id}{$attr.name}<value>;
                     }
                     $val
@@ -600,7 +606,7 @@ my role AttrXMooishAttributeHOW {
         #note "STORING VALUE";
         self.store-value( instance.WHICH, $value );
         #note "INVOKING {$.name} TRIGGER WITH {@params.perl}";
-        self.invoke-opt( instance, 'trigger', ( $value, |@params ), :strict ) if $.trigger;
+        self.invoke-opt( instance, 'trigger', ( $value, |@params ), :strict ) if $!trigger;
     }
 
     method check-value ( $value ) {
@@ -619,23 +625,23 @@ my role AttrXMooishAttributeHOW {
                 ).throw if $.type.^definite;
             }
         }
-        elsif $.coerce-type ~~ Iterable {
-            #note ". trying through append on iterable ", $.coerce-type.WHO;
-            # For Array/Hash
-            my $cv = $.auto_viv_container.clone;
-            #note "Appending to ", $cv.WHAT;
-            #note "Appending from ", $value.WHAT;
-            given $cv {
-                when Array {
-                    $cv.append( |$value );
-                }
-                default {
-                    # XXX Unfortunately, type checking for Hashes doesn't work as expected. Leave it alone for now!
-                    #$cv.append( $value );
-                }
-            }
-            #note ">>", $cv;
-            #note ">>", $.auto_viv_container;
+        elsif $!coerce-type ~~ Iterable {
+            ##note ". trying through append on iterable ", $.coerce-type.WHO;
+            ## For Array/Hash
+            #my $cv = $.auto_viv_container.clone;
+            ##note "Appending to ", $cv.WHAT;
+            ##note "Appending from ", $value.WHAT;
+            #given $cv {
+            #    when Array {
+            #        $cv.append( |$value );
+            #    }
+            #    default {
+            #        # XXX Unfortunately, type checking for Hashes doesn't work as expected. Leave it alone for now!
+            #        #$cv.append( $value );
+            #    }
+            #}
+            ##note ">>", $cv;
+            ##note ">>", $.auto_viv_container;
         }
         else {
             #note "VALUE: {$value.perl} // {$value.WHO}";
@@ -653,9 +659,9 @@ my role AttrXMooishAttributeHOW {
         return $val unless $val.defined; # We only work with containers!
         #note ". defined";
         #note ". coerce-type: ", $.coerce-type;
-        return $val if $.coerce-type === Any;
+        return $val if $!coerce-type === Any;
         my $rval = $val;
-        if my $meth = $val.^find_method( $.coerce-method, :no_fallback(1) ) {
+        if my $meth = $val.^find_method( $!coerce-method, :no_fallback(1) ) {
             $rval = $val.&$meth();
             $rval.rethrow if $rval ~~ Failure;
             #note ". coerced rval: {$rval.perl}";
@@ -668,7 +674,29 @@ my role AttrXMooishAttributeHOW {
         $value = self.coerce-value( $value );
         self.check-value( $value );
         #note "store-value for ", $obj-id;
-        %attr-data{$obj-id}{$.name}<value> = $value;
+        # Hash/Array value
+        my $ha-value;
+        given $!sigil {
+            when '@' {
+                 $ha-value = $.auto_viv_container.clone.append( |$value );
+            }
+            when '%' {
+                $ha-value = $.auto_viv_container.clone;
+                if $value ~~ Positional {
+                    $ha-value.append( |$value );
+                } elsif $value ~~ Associative && $value.^can('pairs') {
+                    $ha-value.append( $value.pairs );
+                }
+                else {
+                    X::TypeCheck.new(
+                        :operation("assignment to attribute {$.name} (possibly a bug in {$?PACKAGE})"),
+                        :got($value),
+                        :expected(Map),
+                    ).throw;
+                }
+            }
+        }
+        %attr-data{$obj-id}{$.name}<value> = $ha-value // $value;
     }
 
     method is-set ( $obj-id) {
@@ -680,7 +708,7 @@ my role AttrXMooishAttributeHOW {
     }
 
     method invoke-filter ( Mu \instance, $value is rw, @params = () ) {
-        if $.filter {
+        if $!filter {
             my $obj-id = instance.WHICH;
             my @invoke-params = $value, |@params;
             @invoke-params.push( 'old-value' => %attr-data{$obj-id}{$.name}<value> ) if self.is-set( $obj-id );
@@ -712,7 +740,7 @@ my role AttrXMooishAttributeHOW {
                 if $opt-value ~~ Bool {
                     die "Bug encountered: boolean option $option doesn't have a prefix assigned"
                         unless %opt2prefix{$option};
-                    $opt-value = "{%opt2prefix{$option}}-{$.base-name}";
+                    $opt-value = "{%opt2prefix{$option}}-{$!base-name}";
                     # Bool-defined option must always have same privacy as attribute
                     $private = pvmAsAttr if $private == pvmAuto;
                 }
@@ -781,8 +809,14 @@ my role AttrXMooishAttributeHOW {
 
 my role AttrXMooishClassHOW {
 
+    method compose ( Mu \type ) {
+        #note "??? Compose on ", type.^name;
+        callsame;
+        #note "??? DONE compose on ", type.^name;
+    }
+
     method add_method(Mu $obj, $name, $code_obj, :$nowrap=False) {
-        #note "^^^ ADDING METHOD $name on {$obj.WHICH}";
+        #note "^^^ ADDING METHOD $name on {$obj.^name}";
         my $m = $code_obj;
         unless $nowrap {
             given $name {
@@ -796,6 +830,7 @@ my role AttrXMooishClassHOW {
                 }
             }
         }
+        #note "^^^ Done adding method $name";
         nextwith($obj, $name, $m);
     }
 
@@ -877,9 +912,10 @@ my role AttrXMooishClassHOW {
 
 my role AttrXMooishRoleHOW {
     method specialize(Mu \r, Mu:U \obj, *@pos_args, *%named_args) {
-        #note "*** Specializing role on {obj.WHO}";
+        #note "*** Specializing role {r.^name} on {obj.WHO}";
         #note "CLASS HAS THE ROLE:", obj.HOW ~~ AttrXMooishClassHOW;
         obj.HOW does AttrXMooishClassHOW unless obj.HOW ~~ AttrXMooishClassHOW;
+        #note "*** Done specializing";
         nextsame;
     }
 }
@@ -950,6 +986,8 @@ multi trait_mod:<is>( Attribute:D $attr, :$mooish! ) is export {
             }
         }
     }
+
+    #note "*** Done for {$attr.name} to ", $*PACKAGE.WHO, " // ", $*PACKAGE.HOW;
 }
 
 sub mooish-obj-count is export { %attr-data.keys.elems }

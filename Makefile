@@ -7,15 +7,7 @@ MOD_ARCH=$(MOD_DISTRO).tar.gz
 META=META6.json
 META_BUILDER=./build-tools/gen-META.p6
 
-DIST_FILES=LICENSE \
-			META6.json \
-			Makefile \
-			README.md \
-			lib/AttrX/Mooish.pm6 \
-			t/005-meta.t \
-			t/010-base.t \
-			t/020-role.t \
-			t/030-inheritance.t 
+DIST_FILES := $(git ls-files)
 
 CLEAN_FILES=$(MOD_NAME_PFX)-v*.tar.gz
 CLEAN_DIRS=lib/.precomp
@@ -48,14 +40,16 @@ release-test:
 clean-repo:
 	@git diff-index --quiet HEAD || (echo "*ERROR* Repository is not clean, commit your changes first!"; exit 1)
 
-build: meta
+build: meta readme
 	@echo "===> Installing dependencies"
 	@zef --deps-only install .
 
-release: build clean-repo release-test $(MOD_ARCH) 
+release: build clean-repo release-test archive
 	@echo "===> Done releasing"
 
 meta: $(META)
+
+archive: $(MOD_ARCH)
 
 $(MOD_ARCH): $(DIST_FILES)
 	@echo "===> Creating release archive" $(MOD_ARCH)
