@@ -7,7 +7,7 @@ MOD_ARCH=$(MOD_DISTRO).tar.gz
 META=META6.json
 META_BUILDER=./build-tools/gen-META.p6
 
-DIST_FILES=`git ls-files`
+DIST_FILES := $(git ls-files)
 
 CLEAN_FILES=$(MOD_NAME_PFX)-v*.tar.gz
 CLEAN_DIRS=lib/.precomp
@@ -44,10 +44,12 @@ build: meta readme
 	@echo "===> Installing dependencies"
 	@zef --deps-only install .
 
-release: build clean-repo release-test $(MOD_ARCH) 
+release: build clean-repo release-test archive
 	@echo "===> Done releasing"
 
 meta: $(META)
+
+archive: $(MOD_ARCH)
 
 $(MOD_ARCH): $(DIST_FILES)
 	@echo "===> Creating release archive" $(MOD_ARCH)
