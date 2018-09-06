@@ -40,7 +40,7 @@ release-test:
 clean-repo:
 	@git diff-index --quiet HEAD || (echo "*ERROR* Repository is not clean, commit your changes first!"; exit 1)
 
-build: meta
+build: meta readme
 	@echo "===> Installing dependencies"
 	@zef --deps-only install .
 
