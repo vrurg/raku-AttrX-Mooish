@@ -210,7 +210,7 @@ subtest "Validating values", {
     lives-ok { $inst.bar = "a string" }, "assignment of defined value";
     throws-like { $inst.bar = Nil },
                 X::TypeCheck,
-                message => q{Type check failed in assignment to attribute $!bar; expected "Str:D:D" but got "Nil"},
+                message => q{Type check failed in assignment to attribute $!bar; expected Str:D but got Any (Any)},
                 "assignment of Nil to a definite type attribute";
 
     my class Foo4 {

@@ -113,6 +113,52 @@ subtest "Require method", {
     is $inst.bar, "filtered-FooR2(fubar)", "role's requirement";
 }
 
+subtest "Private Methods", {
+    plan 6;
+    my $inst;
+
+    my role FooRole {
+        has %!foo is mooish(:lazy, :clearer);
+        has $.build-count = 0;
+
+        method !build-foo { $!build-count++; :a("private foo") }
+
+        method cleanup {
+            self!clear-foo;
+        }
+
+        method get-foo { %!foo }
+    }
+
+    my role BarRole does FooRole {
+        has $.bar is mooish(:lazy, :clearer);
+        method for-punning { "ok" }
+        method build-bar { "public bar" }
+    }
+
+    my role BazRole {
+        has $.baz is mooish(:lazy, :clearer);
+        method build-baz { "public baz" }
+    }
+
+    my class FooR1 does BarRole does BazRole {
+        method re-clean { self!clear-foo }
+    }
+
+    $inst = FooR1.new;
+
+    BarRole.for-punning;
+
+    is $inst.get-foo<a>, "private foo", "default build";
+    is $inst.build-count, 1, "build count is 2";
+    $inst.cleanup;
+    is $inst.get-foo<a>, "private foo", "build after role-initiated clear";
+    is $inst.build-count, 2, "build count is 2";
+    $inst.re-clean;
+    is $inst.get-foo<a>, "private foo", "build after class-initiated clear";
+    is $inst.build-count, 3, "build count is 3";
+}
+
 done-testing;
 
 # vim: ft=perl6

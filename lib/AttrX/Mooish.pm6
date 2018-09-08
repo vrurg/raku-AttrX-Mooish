@@ -421,9 +421,42 @@ my %attr-data;
 #       found. Always uses attribute mode if defined as Bool
 enum PvtMode <pvmForce pvmNever pvmAsAttr pvmAuto>;
 
-my role AttrXMooishClassHOW { ... }
+role AttrXMooishClassHOW { ... }
 
-my role AttrXMooishAttributeHOW {
+role AttrXMooishHelper {
+    method setup-helpers ( Mu \type, $attr ) {
+        #note "SETUP HELPERS ON ", type.^name, " // ", type.HOW.^name;
+            type.^add_private_method("gimme-{$attr.base-name}", method { "gimme for {$attr.base-name}" } );
+        my %helpers = 
+            :clearer( method { $attr.clear-attr( self.WHICH ) } ),
+            :predicate( method { $attr.is-set( self.WHICH ) } ),
+            ;
+
+        for %helpers.keys -> $helper {
+            next unless $attr."$helper"();
+            #note "op2method for helper $helper";
+            my $helper-name = $attr.opt2method( $helper );
+
+            X::Fatal.new( message => "Cannot install {$helper} {$helper-name}: method already defined").throw
+                if type.^declares_method( $helper-name );
+
+            my $m = %helpers{$helper};
+            $m.set_name( $helper-name );
+            #note "Installing helper $helper $helper-name on {type.^name} // {$m.WHICH}";
+            #note "HELPER:", %helpers{$helper}.name, " // ", $m.^can("CALL-ME"), " // ", $m.^name;
+
+            if $attr.has_accessor { # I.e. – public?
+                #note ". Installing public $helper-name";
+                type.^add_method( $helper-name, $m );
+            } else {
+                #note "! Installing private $helper-name";
+                type.^add_private_method( $helper-name, $m );
+            }
+        }
+    }
+}
+
+role AttrXMooishAttributeHOW {
     has $.base-name = self.name.substr(2);
     has $.sigil = self.name.substr( 0, 1 );
     has $.lazy is rw = False;
@@ -455,7 +488,7 @@ my role AttrXMooishAttributeHOW {
         $opt ~~ Bool ?? $prefix ~ '-' ~ $!base-name !! $opt;
     }
 
-    method !opt2method( Str $oname ) {
+    method opt2method( Str $oname ) {
         #note "%opt2prefix: ", %opt2prefix;
         #note "option name in opt2method: $oname // ", %opt2prefix{$oname};
         self!bool-str-meth-name( self."$oname"(), %opt2prefix{$oname} );
@@ -463,7 +496,8 @@ my role AttrXMooishAttributeHOW {
 
     method compose ( Mu \type ) {
 
-        #note "+++ composing {$.name} on {type.WHO} {type.WHICH}";
+        #note "+++ composing {$.name} on {type.^name} {type.HOW}";
+        #note "ATTR PACKAGE:", $.package.^name;
 
         unless type.HOW ~~ AttrXMooishClassHOW {
             #note "Installing AttrXMooishClassHOW on {type.WHICH}";
@@ -471,32 +505,6 @@ my role AttrXMooishAttributeHOW {
         }
 
         callsame;
-
-        my $attr = self;
-        my %helpers = 
-            clearer => my method { $attr.clear-attr( self.WHICH ) },
-            predicate => my method { $attr.is-set( self.WHICH ) },
-            ;
-
-        for %helpers.keys -> $helper {
-            next unless self."$helper"();
-            #note "op2method for helper $helper";
-            my $helper-name = self!opt2method( $helper );
-
-            X::Fatal.new( message => "Cannot install {$helper} {$helper-name}: method already defined").throw
-                if type.^declares_method( $helper-name );
-
-            my &m = %helpers{$helper};
-            &m.set_name( $helper-name );
-            #note "HELPER:", %helpers{$helper}.name;
-
-            if $.has_accessor { # I.e. – public?
-                type.^add_method( $helper-name, %helpers{$helper} );
-            } else {
-                type.^add_private_method( $helper-name, %helpers{$helper} );
-            }
-        }
-
 
         self.setup-types;
 
@@ -620,8 +628,8 @@ my role AttrXMooishAttributeHOW {
                 #note "Type {$.type.^definite ?? "IS" !! "ISN'T"} definite";
                 X::TypeCheck.new(
                     :$operation,
-                    got => 'Nil',
-                    expected => "{$.type.^name}:D",
+                    got => $value,
+                    expected => $.type,
                 ).throw if $.type.^definite;
             }
         }
@@ -704,6 +712,7 @@ my role AttrXMooishAttributeHOW {
     }
     
     method clear-attr ( $obj-id ) {
+        #note "Clearing {$.name} on $obj-id";
         %attr-data{$obj-id}{$.name}<value>:delete;
     }
 
@@ -795,7 +804,7 @@ my role AttrXMooishAttributeHOW {
     method invoke-composer ( Mu \type ) {
         return unless $!composer;
         #note "My type for composer: ", $.package;
-        my $comp-name = self!opt2method( 'composer' );
+        my $comp-name = self.opt2method( 'composer' );
         #note "Looking for method $comp-name";
         my $composer = type.^find_private_method( $comp-name );
         X::Method::NotFound.new(
@@ -807,12 +816,14 @@ my role AttrXMooishAttributeHOW {
     }
 }
 
-my role AttrXMooishClassHOW {
+role AttrXMooishClassHOW does AttrXMooishHelper {
 
     method compose ( Mu \type ) {
         #note "??? Compose on ", type.^name;
-        callsame;
-        #note "??? DONE compose on ", type.^name;
+        for type.^attributes.grep( AttrXMooishAttributeHOW ) -> $attr {
+            self.setup-helpers( type, $attr );
+        }
+        nextsame;
     }
 
     method add_method(Mu $obj, $name, $code_obj, :$nowrap=False) {
@@ -910,7 +921,15 @@ my role AttrXMooishClassHOW {
     }
 }
 
-my role AttrXMooishRoleHOW {
+role AttrXMooishRoleHOW does AttrXMooishHelper {
+    method compose (Mu \type) {
+        #note "COMPOSING ROLE ", type.^name, " // ", type.HOW.^name;
+        for type.^attributes.grep( AttrXMooishAttributeHOW ) -> $attr {
+            self.setup-helpers( type, $attr );
+        }
+        nextsame
+    }
+
     method specialize(Mu \r, Mu:U \obj, *@pos_args, *%named_args) {
         #note "*** Specializing role {r.^name} on {obj.WHO}";
         #note "CLASS HAS THE ROLE:", obj.HOW ~~ AttrXMooishClassHOW;
@@ -970,6 +989,7 @@ multi trait_mod:<is>( Attribute:D $attr, :$mooish! ) is export {
                     }
                     when 'clearer' | 'predicate' {
                         my $opt = $_;
+
                         given $option{$opt} {
                             X::Fatal.new( message => "Unsupported {$opt} type of {.WHAT} for attribute {$attr.name}; can only be Bool or Str" ).throw
                                 unless $_ ~~ Bool | Str;
