@@ -1,4 +1,4 @@
-unit module AttrX::Mooish:ver<0.4.8>:auth<github:vrurg>;
+unit module AttrX::Mooish:ver<0.4.9>:auth<github:vrurg>;
 #use Data::Dump;
 
 =begin pod
@@ -378,9 +378,6 @@ Note that use of this trait doesn't change attribute accessors. More than that, 
 attributes. Consider the C<$!bar2> attribute from L<#SYNOPSIS>.
 
 =head1 CAVEATS
-
-This module is using manual type checking for attributes with constraints. This could result in outcome different from
-default Perl6 behaviour though all possible efforts were taken to reproduce the most common situations.
 
 Due to the magical nature of attribute behaviour conflicts with other traits are possible. None is known to the author
 yet.
