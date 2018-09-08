@@ -197,7 +197,7 @@ subtest "Validating values", {
     lives-ok { $inst.bar = 31415926 }, "assignment of same types";
     lives-ok { $inst.bar = Nil }, "assignment of Nil";
     throws-like { $inst.bar = "abc" },
-                X::Str::Numeric,
+                X::TypeCheck::Assignment,
                 "assignment to a different attribute type";
 
     my class Foo3 {
@@ -210,7 +210,7 @@ subtest "Validating values", {
     lives-ok { $inst.bar = "a string" }, "assignment of defined value";
     throws-like { $inst.bar = Nil },
                 X::TypeCheck,
-                message => q{Type check failed in assignment to attribute $!bar; expected Str:D but got Any (Any)},
+                message => q{Type check failed in assignment to $!bar; expected type Str:D cannot be itself (perhaps Nil was assigned to a :D which had no default?)},
                 "assignment of Nil to a definite type attribute";
 
     my class Foo4 {
@@ -223,7 +223,7 @@ subtest "Validating values", {
     lives-ok { $inst.bar = "another value" }, "value assigned matches 'where' constraint";
     throws-like { $inst.bar = "not allowed" },
         X::TypeCheck,
-        message => q{Type check failed in assignment to attribute $!bar; expected <anon> but got Str ("not allowed")},
+        message => q{Type check failed in assignment to $!bar; expected <anon> but got Str ("not allowed")},
         "assignment of non-compliant value";
 
     #CATCH { note "Got exception ", $_.WHO; $_.throw}
@@ -253,7 +253,7 @@ subtest "Errors", {
 
     throws-like { $inst = Foo4.new; $inst.bar },
         X::TypeCheck,
-        message => q<Type check failed in assignment to attribute $!bar; expected <anon> but got Str ("default value")>,
+        message => q<Type check failed in assignment to $!bar; expected <anon> but got Str ("default value")>,
         "value from builder don't conform 'where' constraint";
 
         #CATCH { note "Got exception ", $_.WHO; $_.throw}

@@ -379,9 +379,6 @@ attributes. Consider the C<$!bar2> attribute from L<#SYNOPSIS>.
 
 =head1 CAVEATS
 
-This module is using manual type checking for attributes with constraints. This could result in outcome different from
-default Perl6 behaviour though all possible efforts were taken to reproduce the most common situations.
-
 Due to the magical nature of attribute behaviour conflicts with other traits are possible. None is known to the author
 yet.
 
@@ -467,14 +464,6 @@ role AttrXMooishAttributeHOW {
     has $.filter is rw = False;
     has $.composer is rw = False;
 
-    # This type is to coerce values into
-    has $!coerce-type;
-    # This type is to check (possibly – coerced) values against. The difference with coerce-type is that the latter
-    # is a simple (kinda atomic) types like Int, Str, Array, Hash. Whereas check-type could be a subset. Though it
-    # can't be a typed Array/Hash/etc.
-    has $!check-type;
-    has $!coerce-method;
-
     my %opt2prefix = clearer => 'clear', 
                      predicate => 'has',
                      builder => 'build',
@@ -506,47 +495,9 @@ role AttrXMooishAttributeHOW {
 
         callsame;
 
-        self.setup-types;
-
         self.invoke-composer( type );
 
         #note "+++ done composing attribute {$.name}";
-    }
-
-    method setup-types () {
-        #note "+++ setup-types";
-        $!check-type =
-        $!coerce-type = $.auto_viv_container.WHAT;
-        unless $!coerce-type === Any {
-            #note ". attribute $.name";
-            #note ". attribute type is {$.type.^name} // {$.type.HOW.^name}";
-            #note ". attribute container type is {$.coerce-type.^name} // {$.coerce-type.HOW.^name}";
-            #note ". is subset: ", $.coerce-type.HOW.^isa( Metamodel::SubsetHOW );
-            #note ". . {$.coerce-type.HOW.^roles(:!local).map( { $_.^shortname } )}" if $.coerce-type.HOW.^isa(Metamodel::ClassHOW);
-            #note ". !coerce-type HOW is {$.coerce-type.HOW.^name} // is subset? ", $.coerce-type.HOW.^isa( Metamodel::SubsetHOW );
-            #note ". . . ", $.coerce-type.^parents( :local ).WHO;
-            #note "AV:", $.auto_viv_container.^find_method( 'of', no_fallback => 1 );
-            if $!coerce-type.HOW.^isa( Metamodel::SubsetHOW ) {
-                #note ". subset";
-                $!coerce-type = $!coerce-type.^refinee;
-                #note ". final type: {$.coerce-type.^name}";
-            }
-            elsif $!coerce-type.HOW.^isa( Metamodel::DefiniteHOW ) {
-                #note ". definite";
-                $!coerce-type = $!coerce-type.^base_type;
-            }
-            elsif $.auto_viv_container.WHAT.^find_method( 'of', :no_fallback(1) ) && $.auto_viv_container.of.^isa( Any ) {
-                #note ".... typed!";
-                $!coerce-type = $!coerce-type.^parents( :local )[0];
-                $!check-type = $!coerce-type; # Check values against base type.
-                #note ".... >>> ", $.coerce-type.WHO;
-            }
-            #note ". setting the corce-method {$.coerce-type.^shortname}";
-            $!coerce-method = ~$!coerce-type.WHO;
-            #note "COERCE-METHOD of $.name is ", $.coerce-method;
-        }
-        #note "COERCE TYPE of $.name is ", $.coerce-type.^name;
-        #note "CHECK  TYPE of $.name is ", $!check-type.^name;
     }
 
     # force-default is true if attribute is set in .new( ) call
@@ -578,8 +529,6 @@ role AttrXMooishAttributeHOW {
             #note "INIT STORE PARAMS: {@params}";
             self.store-with-cb( instance, $default, @params );
         }
-
-        #self.setup-types;
 
         use nqp;
         nqp::bindattr(nqp::decont(instance),$.package,$.name,
@@ -617,94 +566,35 @@ role AttrXMooishAttributeHOW {
         self.invoke-opt( instance, 'trigger', ( $value, |@params ), :strict ) if $!trigger;
     }
 
-    method check-value ( $value ) {
-        #note "CHECKING VALUE:", $value;
-        my $operation = "assignment to attribute {$.name}";
-        #note "VAL DEF:", $value.defined;
-        if !$value.defined {
-            #note "undefined value";
-            if $.type.HOW ~~ Metamodel::DefiniteHOW {
-                #note "Type with definite HOW";
-                #note "Type {$.type.^definite ?? "IS" !! "ISN'T"} definite";
-                X::TypeCheck.new(
-                    :$operation,
-                    got => $value,
-                    expected => $.type,
-                ).throw if $.type.^definite;
-            }
-        }
-        elsif $!coerce-type ~~ Iterable {
-            ##note ". trying through append on iterable ", $.coerce-type.WHO;
-            ## For Array/Hash
-            #my $cv = $.auto_viv_container.clone;
-            ##note "Appending to ", $cv.WHAT;
-            ##note "Appending from ", $value.WHAT;
-            #given $cv {
-            #    when Array {
-            #        $cv.append( |$value );
-            #    }
-            #    default {
-            #        # XXX Unfortunately, type checking for Hashes doesn't work as expected. Leave it alone for now!
-            #        #$cv.append( $value );
-            #    }
-            #}
-            ##note ">>", $cv;
-            ##note ">>", $.auto_viv_container;
-        }
-        else {
-            #note "VALUE: {$value.perl} // {$value.WHO}";
-            #note "TYPE:", $!check-type;
-            X::TypeCheck.new(
-                :$operation,
-                got => $value,
-                expected => $.auto_viv_container.WHAT,
-             ).throw unless $value ~~ $!check-type;
-        }
-    }
-
-    method coerce-value ( $val ) {
-        #note "coerce-value $.name {$val.perl}";
-        return $val unless $val.defined; # We only work with containers!
-        #note ". defined";
-        #note ". coerce-type: ", $.coerce-type;
-        return $val if $!coerce-type === Any;
-        my $rval = $val;
-        if my $meth = $val.^find_method( $!coerce-method, :no_fallback(1) ) {
-            $rval = $val.&$meth();
-            $rval.rethrow if $rval ~~ Failure;
-            #note ". coerced rval: {$rval.perl}";
-        }
-        $rval
-    }
-
     method store-value ( $obj-id, $value is copy ) {
         #note ". storing into {$.name}";
-        $value = self.coerce-value( $value );
-        self.check-value( $value );
         #note "store-value for ", $obj-id;
-        # Hash/Array value
-        my $ha-value;
-        given $!sigil {
-            when '@' {
-                 $ha-value = $.auto_viv_container.clone.append( |$value );
-            }
-            when '%' {
-                $ha-value = $.auto_viv_container.clone;
-                if $value ~~ Positional {
-                    $ha-value.append( |$value );
-                } elsif $value ~~ Associative && $value.^can('pairs') {
-                    $ha-value.append( $value.pairs );
+
+        use nqp;
+        %attr-data{$obj-id}{$.name}<value> = 
+            gather {
+                given $!sigil {
+                    when '$' {
+                        my $v := nqp::clone($.auto_viv_container.VAR);
+                        take $v = $value;
+                    }
+                    when '@' {
+                        my @a := nqp::clone($.auto_viv_container.VAR);
+                        take @a = |$value;
+                    }
+                    when '%' {
+                        my %h := nqp::clone($.auto_viv_container.VAR);
+                        take %h = $value;
+                    }
+                    when '&' {
+                        my &m := nqp::clone($.auto_viv_container.VAR);
+                        take &m = $value;
+                    }
+                    default {
+                        die "AttrX::Mooish can't handle «$_» sigil";
+                    }
                 }
-                else {
-                    X::TypeCheck.new(
-                        :operation("assignment to attribute {$.name} (possibly a bug in {$?PACKAGE})"),
-                        :got($value),
-                        :expected(Map),
-                    ).throw;
-                }
-            }
-        }
-        %attr-data{$obj-id}{$.name}<value> = $ha-value // $value;
+            }.head;
     }
 
     method is-set ( $obj-id) {

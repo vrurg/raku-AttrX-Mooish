@@ -4,11 +4,10 @@ use AttrX::Mooish;
 plan 2;
 
 subtest "Basics", {
-    plan 10;
+    plan 7;
     my $inst;
 
     my class Foo1 {
-        has Int $.foo is mooish( :lazy ) where * < 42;
         has %.bar is mooish( :lazy );
         has $.baz is mooish( :lazy );
         has @.fubar is mooish( :lazy );
@@ -16,10 +15,6 @@ subtest "Basics", {
         method build-bar {
             my @p = a=>1, b=>2;
             @p
-        }
-
-        method build-foo {
-            "12";
         }
 
         method build-baz { pi }
@@ -32,9 +27,6 @@ subtest "Basics", {
     $inst = Foo1.new;
     is $inst.baz.WHAT, Num, "Any-typed have type from builder";
     is $inst.baz, pi, "Any-typed attribute value";
-
-    is $inst.foo.WHAT, Int, "Right type";
-    is $inst.foo, 12, "Str -> Int";
 
     is $inst.bar.WHAT, Hash, "associative attribute is hash";
     is-deeply $inst.bar, {a=>1, b=>2}, "associative attribute value";
@@ -51,14 +43,11 @@ subtest "Basics", {
         }
     }
 
-    $inst = Foo2.new( initial => "42" );
-    is $inst.foo, 42, "subset is ok from initial conforming string value";
-
     throws-like {
             $inst = Foo2.new( initial => 43.1 );
             $inst.foo;
         }, X::TypeCheck,
-        message => q<Type check failed in assignment to attribute $!foo; expected <anon> but got Int (43)>,
+        message => q<Type check failed in assignment to $!foo; expected <anon> but got Rat (43.1)>,
         "subset fails as expected from initial bad string value";
 }
 

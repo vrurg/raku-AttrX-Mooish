@@ -313,8 +313,6 @@ Note that use of this trait doesn't change attribute accessors. More than that, 
 CAVEATS
 =======
 
-This module is using manual type checking for attributes with constraints. This could result in outcome different from default Perl6 behaviour though all possible efforts were taken to reproduce the most common situations.
-
 Due to the magical nature of attribute behaviour conflicts with other traits are possible. None is known to the author yet.
 
 Internally `Proxy` is used as attribute container. It was told that the class has a number of unpleasant side effects including multiplication of FETCH operation. Though generally this bug is harmles it could be workarounded by assigning an attribute value to a temporary variable.
