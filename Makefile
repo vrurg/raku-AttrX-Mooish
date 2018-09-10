@@ -47,7 +47,10 @@ build: meta readme
 release: build clean-repo release-test archive
 	@echo "===> Done releasing"
 
-meta: $(META)
+meta6_mod:
+	@zef locate META6 2>&1 >/dev/null || (echo "===> Installing META6"; zef install META6)
+
+meta: meta6_mod $(META)
 
 archive: $(MOD_ARCH)
 
@@ -62,7 +65,8 @@ $(MOD_ARCH): $(DIST_FILES)
 
 $(META): $(META_BUILDER) $(MAIN_MOD)
 	@echo "===> Generating $(META)"
-	@$(META_BUILDER) >$(META)
+	@$(META_BUILDER) >$(META).out && cp $(META).out $(META)
+	@rm $(META).out
 
 upload: release
 	@echo "===> Uploading to CPAN"
