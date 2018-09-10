@@ -509,13 +509,14 @@ role AttrXMooishAttributeHOW {
         return if so %attr-data{$obj-id}{$.name};
 
         #note ">>> MOOIFYING ", $.name;
-        #note ">>> HAS INIT: ", %attrinit{$.base-name}:exists;
+        #note ">>> HAS INIT: ", %attrinit;
 
         my $from-init = %attrinit{$!base-name}:exists;
         my $default = $from-init ?? %attrinit{$!base-name} !! self.get_value( instance );
         my $initialized = $from-init;
         #note "DEFAULT IS:", $default // $default.WHAT;
         unless $initialized { # False means no constructor parameter for the attribute
+            #note ". No $.name constructor parameter on $obj-id, checking default {$default // '(Nil)'}";
             given $default {
                 when Array | Hash { $initialized = so .elems; }
                 default { $initialized = .defined }
@@ -535,12 +536,21 @@ role AttrXMooishAttributeHOW {
         #self.set_value( instance, 
             Proxy.new(
                 FETCH => -> $ {
-                    my $val = Nil;
+                    my $val;
+                    given $!sigil {
+                        when '$' | '&' {
+                            use nqp;
+                            $val = nqp::clone($.auto_viv_container.VAR);
+                        }
+                        default {
+                            $val = $.auto_viv_container.clone;
+                        }
+                    }
                     #note "IS MOOISHED? ", %attr-data{$obj-id}{$attr.name}<mooished>;
                     if %attr-data{$obj-id}{$attr.name}<mooished> {
                         #note "FETCH of {$attr.name} for ", $obj-id, ~Backtrace.new.full;
                         self.build-attr( instance ) if so $!lazy;
-                        $val = %attr-data{$obj-id}{$attr.name}<value>;
+                        $val = %attr-data{$obj-id}{$attr.name}<value> if self.is-set( $obj-id );
                     }
                     $val
                 },
@@ -579,11 +589,11 @@ role AttrXMooishAttributeHOW {
                         take $v = $value;
                     }
                     when '@' {
-                        my @a := nqp::clone($.auto_viv_container.VAR);
+                        my @a := $.auto_viv_container.clone;
                         take @a = |$value;
                     }
                     when '%' {
-                        my %h := nqp::clone($.auto_viv_container.VAR);
+                        my %h := $.auto_viv_container.clone;
                         take %h = $value;
                     }
                     when '&' {
@@ -598,6 +608,7 @@ role AttrXMooishAttributeHOW {
     }
 
     method is-set ( $obj-id) {
+        #note ". IS-SET( $obj-id ) on {$.name}: ", %attr-data{$obj-id}{$.name};
         %attr-data{$obj-id}{$.name}<value>:exists;
     }
     

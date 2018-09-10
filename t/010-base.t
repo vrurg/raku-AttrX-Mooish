@@ -33,7 +33,7 @@ subtest "Class Basics", {
     is mooish-obj-count, 2, "2 used slots correspond to attribute count";
 
     $inst = Foo1.new;
-    for 1..2000 {
+    for 1..20 {
         my $v = $inst.bar;
     }
     is $inst.build-count, 1, "attribute build is executed only once";
@@ -121,6 +121,51 @@ subtest "Class Basics", {
     $inst = Foo6.new;
     is $inst.bar, "init-bar builder", "builder name defined in :lazy";
     is $inst.baz, "lazy builder", ":lazy defined callable builder";
+}
+
+subtest "Attr value resetting", {
+    plan 19;
+    # Testing for a bug where attribute values were preserved in new class instances via accidental preserving of
+    # .auto_viv_container
+    my $inst;
+
+    my class Foo1 {
+        has @.foo is rw is mooish(:predicate);
+        has Num %.bar is rw is mooish(:predicate);
+        has Str $.baz is rw is mooish(:predicate);
+        has &.fubar is rw is mooish(:predicate);
+        has @.arr;
+        has Num %.h;
+        has Str $.scalar;
+        has &.code;
+    }
+
+    $inst = Foo1.new;
+    isa-ok $inst.foo, $inst.arr.WHAT, "initial array attribute type";
+    isa-ok $inst.bar, $inst.h.WHAT, "initial (parametrized) hash attribute type";
+    isa-ok $inst.baz, $inst.scalar.WHAT, "initial (parametrized) scalar attribute type";
+    ok $inst.fubar.WHAT ~~ $inst.code.WHAT, "initial callable attribute type";
+    $inst.foo = <Слава Україні!>;
+    $inst.bar = a=>pi, b=>e;
+    $inst.baz = "згинь, потворо!";
+    my $sub = sub { "та до дідька" };
+    $inst.fubar = $sub;
+    is-deeply $inst.foo, [<Слава Україні!>], "array assigned";
+    is-deeply $inst.bar.Map, %( a=>pi, b=>e ).Map, "hash assigned";
+    is $inst.baz, "згинь, потворо!", "scalar assigned";
+    ok $inst.fubar === $sub, "callable assigned";
+    isa-ok $inst.foo, $inst.arr, "array attribute type preserved";
+    isa-ok $inst.bar, $inst.h, "(parametrized) hash attribute type preserved";
+    isa-ok $inst.baz, $inst.scalar, "(parametrized) scalar attribute type preserved";
+    $inst = Foo1.new;
+    isa-ok $inst.foo, $inst.arr.WHAT, "re-create: array attribute type preserved";
+    isa-ok $inst.bar, $inst.h.WHAT, "re-create: (parametrized) hash attribute type preserved";
+    isa-ok $inst.baz, $inst.scalar.WHAT, "re-create: (parametrized) scalar attribute type preserved";
+    ok $inst.fubar.WHAT ~~ $inst.code.WHAT, "re-create: callable attribute type preserved";
+    is-deeply $inst.foo, [], "array attribute is empty";
+    is-deeply $inst.bar.Map, %( ).Map, "hash attribute is empty";
+    nok $inst.baz.defined, "scalar is undefined";
+    nok $inst.fubar.defined, "callable is undefined";
 }
 
 subtest "Arrays", {
