@@ -144,7 +144,7 @@ subtest "Attr value resetting", {
     isa-ok $inst.foo, $inst.arr.WHAT, "initial array attribute type";
     isa-ok $inst.bar, $inst.h.WHAT, "initial (parametrized) hash attribute type";
     isa-ok $inst.baz, $inst.scalar.WHAT, "initial (parametrized) scalar attribute type";
-    ok $inst.fubar.WHAT ~~ $inst.code.WHAT, "initial callable attribute type";
+    ok ($inst.fubar.WHAT === $inst.code.WHAT), "initial callable attribute type";
     $inst.foo = <Слава Україні!>;
     $inst.bar = a=>pi, b=>e;
     $inst.baz = "згинь, потворо!";
@@ -161,7 +161,7 @@ subtest "Attr value resetting", {
     isa-ok $inst.foo, $inst.arr.WHAT, "re-create: array attribute type preserved";
     isa-ok $inst.bar, $inst.h.WHAT, "re-create: (parametrized) hash attribute type preserved";
     isa-ok $inst.baz, $inst.scalar.WHAT, "re-create: (parametrized) scalar attribute type preserved";
-    ok $inst.fubar.WHAT ~~ $inst.code.WHAT, "re-create: callable attribute type preserved";
+    ok ($inst.fubar.WHAT === $inst.code.WHAT), "re-create: callable attribute type preserved";
     is-deeply $inst.foo, [], "array attribute is empty";
     is-deeply $inst.bar.Map, %( ).Map, "hash attribute is empty";
     nok $inst.baz.defined, "scalar is undefined";
