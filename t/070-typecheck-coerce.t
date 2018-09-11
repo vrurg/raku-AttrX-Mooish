@@ -52,15 +52,27 @@ subtest "Basics", {
 }
 
 subtest "Typed", {
-    plan 8;
+    plan 11;
     my $inst;
 
     my class Foo1 {
-        has Str @.bar is rw is mooish( :trigger );
+        has Str @.bar is rw is mooish( :lazy, :trigger );
+        has List $!baz is mooish(:lazy);
 
-        method trigger-bar ( $val ) {
+        method build-bar { ["a", "b", "c"] }
+        method trigger-bar ( $val ) { }
+        method !build-baz { 
+            <a b c d>
+        }
+
+        method test-baz {
+            is-deeply $!baz, <a b c d>, "read-only \$!baz built";
         }
     }
+
+    $inst = Foo1.new;
+    is $inst.bar.WHAT, Array[Str], "parametrized array type is preserved by build";
+    is-deeply $inst.bar.Array, ["a", "b", "c"], "coercion to parameterized array in build";
 
     $inst = Foo1.new;
     $inst.bar = <a b c>;
@@ -70,6 +82,7 @@ subtest "Typed", {
         X::TypeCheck,
         "assignment of list of integers fails type check";
     is-deeply $inst.bar.Array, [<a b c>], "array attribute doesn't change after failed assignment";
+    $inst.test-baz;
 
     my class Foo2 {
         has Int %.bar is rw is mooish( :trigger );

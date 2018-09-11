@@ -26,7 +26,7 @@ README.html: $(MAIN_MOD)
 	@echo "===> Generating $@"
 	@perl6 --doc=HTML $^ >$@
 
-test:
+test: 
 	@prove -l --exec "perl6 -Ilib" -r t
 
 author-test:
@@ -40,7 +40,9 @@ release-test:
 clean-repo:
 	@git diff-index --quiet HEAD || (echo "*ERROR* Repository is not clean, commit your changes first!"; exit 1)
 
-build: meta readme
+build: depends readme
+
+depends: meta
 	@echo "===> Installing dependencies"
 	@zef --deps-only install .
 

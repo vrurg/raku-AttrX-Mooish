@@ -585,7 +585,13 @@ role AttrXMooishAttributeHOW {
             gather {
                 given $!sigil {
                     when '$' {
-                        my $v := nqp::clone($.auto_viv_container.VAR);
+                        # Do it via nqp because I didn't find any syntax-based way to properly clone a Scalar container
+                        # as such.
+                        my $v := nqp::create(Scalar);
+                        nqp::bindattr($v, Scalar, '$!descriptor', 
+                            nqp::getattr(self, Attribute, '$!container_descriptor')
+                        );
+                        $v = $value;
                         take $v = $value;
                     }
                     when '@' {
