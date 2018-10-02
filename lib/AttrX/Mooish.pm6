@@ -421,7 +421,7 @@ enum PvtMode <pvmForce pvmNever pvmAsAttr pvmAuto>;
 role AttrXMooishClassHOW { ... }
 
 role AttrXMooishHelper {
-    method setup-helpers ( Mu \type, $attr ) {
+    method setup-helpers ( Mu \type, $attr ) is hidden-from-backtrace {
         #note "SETUP HELPERS ON ", type.^name, " // ", type.HOW.^name;
             type.^add_private_method("gimme-{$attr.base-name}", method { "gimme for {$attr.base-name}" } );
         my %helpers = 
@@ -472,18 +472,18 @@ role AttrXMooishAttributeHOW {
                      composer => 'compose',
                      ;
 
-    method !bool-str-meth-name( $opt, Str $prefix ) {
+    method !bool-str-meth-name( $opt, Str $prefix ) is hidden-from-backtrace {
         #note "bool-str-meth-name: ", $prefix;
         $opt ~~ Bool ?? $prefix ~ '-' ~ $!base-name !! $opt;
     }
 
-    method opt2method( Str $oname ) {
+    method opt2method( Str $oname ) is hidden-from-backtrace {
         #note "%opt2prefix: ", %opt2prefix;
         #note "option name in opt2method: $oname // ", %opt2prefix{$oname};
         self!bool-str-meth-name( self."$oname"(), %opt2prefix{$oname} );
     }
 
-    method compose ( Mu \type ) {
+    method compose ( Mu \type ) is hidden-from-backtrace {
 
         #note "+++ composing {$.name} on {type.^name} {type.HOW}";
         #note "ATTR PACKAGE:", $.package.^name;
@@ -501,7 +501,7 @@ role AttrXMooishAttributeHOW {
     }
 
     # force-default is true if attribute is set in .new( ) call
-    method make-mooish ( Mu \instance, %attrinit ) {
+    method make-mooish ( Mu \instance, %attrinit ) is hidden-from-backtrace {
         my $attr = self;
         my $obj-id = instance.WHICH;
         #note "Using obj ID:", $obj-id;
@@ -536,6 +536,7 @@ role AttrXMooishAttributeHOW {
         #self.set_value( instance, 
             Proxy.new(
                 FETCH => -> $ {
+                    #note "FETCHING";
                     my $val;
                     given $!sigil {
                         when '$' | '&' {
@@ -567,8 +568,8 @@ role AttrXMooishAttributeHOW {
         #note "<<< DONE MOOIFYING ", $.name;
     }
 
-    method store-with-cb ( Mu \instance, $value is rw, @params = () ) {
-        ##note "INVOKING {$.name} FILTER WITH {@params.perl}";
+    method store-with-cb ( Mu \instance, $value is rw, @params = () ) is hidden-from-backtrace {
+        #note "INVOKING {$.name} FILTER WITH {@params.perl}";
         self.invoke-filter( instance, $value, @params );
         #note "STORING VALUE";
         self.store-value( instance.WHICH, $value );
@@ -576,7 +577,7 @@ role AttrXMooishAttributeHOW {
         self.invoke-opt( instance, 'trigger', ( $value, |@params ), :strict ) if $!trigger;
     }
 
-    method store-value ( $obj-id, $value is copy ) {
+    method store-value ( $obj-id, $value is copy ) is hidden-from-backtrace {
         #note ". storing into {$.name}";
         #note "store-value for ", $obj-id;
 
@@ -591,11 +592,12 @@ role AttrXMooishAttributeHOW {
                         nqp::bindattr($v, Scalar, '$!descriptor', 
                             nqp::getattr(self, Attribute, '$!container_descriptor')
                         );
-                        $v = $value;
                         take $v = $value;
                     }
                     when '@' {
+                        #note "ASSIGN TO POSITIONAL";
                         my @a := $.auto_viv_container.clone;
+                        #note $value.perl;
                         take @a = |$value;
                     }
                     when '%' {
@@ -613,17 +615,17 @@ role AttrXMooishAttributeHOW {
             }.head;
     }
 
-    method is-set ( $obj-id) {
+    method is-set ( $obj-id) is hidden-from-backtrace {
         #note ". IS-SET( $obj-id ) on {$.name}: ", %attr-data{$obj-id}{$.name};
         %attr-data{$obj-id}{$.name}<value>:exists;
     }
     
-    method clear-attr ( $obj-id ) {
+    method clear-attr ( $obj-id ) is hidden-from-backtrace {
         #note "Clearing {$.name} on $obj-id";
         %attr-data{$obj-id}{$.name}<value>:delete;
     }
 
-    method invoke-filter ( Mu \instance, $value is rw, @params = () ) {
+    method invoke-filter ( Mu \instance, $value is rw, @params = () ) is hidden-from-backtrace {
         if $!filter {
             my $obj-id = instance.WHICH;
             my @invoke-params = $value, |@params;
@@ -632,7 +634,9 @@ role AttrXMooishAttributeHOW {
         }
     }
 
-    method invoke-opt ( Any \instance, Str $option, @params = (), :$strict = False, PvtMode :$private is copy = pvmAuto ) {
+    method invoke-opt (
+        Any \instance, Str $option, @params = (), :$strict = False, PvtMode :$private is copy = pvmAuto 
+    ) is hidden-from-backtrace {
         my $opt-value = self."$option"();
         my \type = $.package;
 
@@ -696,9 +700,9 @@ role AttrXMooishAttributeHOW {
         instance.$method(|(@invoke-params.Capture));
     }
 
-    method build-attr ( Any \instance ) {
+    method build-attr ( Any \instance ) is hidden-from-backtrace {
         my $obj-id = instance.WHICH;
-        my $publicity = $.has_accessor ?? "public" !! "private";
+        #my $publicity = $.has_accessor ?? "public" !! "private";
         #note "&&& KINDA BUILDING FOR $publicity {$.name} on $obj-id (is-set:{self.is-set($obj-id)})";
         unless self.is-set( $obj-id ) {
             #note "&&& Calling builder {$!builder}";
@@ -708,7 +712,7 @@ role AttrXMooishAttributeHOW {
         }
     }
 
-    method invoke-composer ( Mu \type ) {
+    method invoke-composer ( Mu \type ) is hidden-from-backtrace {
         return unless $!composer;
         #note "My type for composer: ", $.package;
         my $comp-name = self.opt2method( 'composer' );
@@ -725,7 +729,7 @@ role AttrXMooishAttributeHOW {
 
 role AttrXMooishClassHOW does AttrXMooishHelper {
 
-    method compose ( Mu \type ) {
+    method compose ( Mu \type ) is hidden-from-backtrace {
         #note "??? Compose on ", type.^name;
         for type.^attributes.grep( AttrXMooishAttributeHOW ) -> $attr {
             self.setup-helpers( type, $attr );
@@ -733,7 +737,7 @@ role AttrXMooishClassHOW does AttrXMooishHelper {
         nextsame;
     }
 
-    method add_method(Mu $obj, $name, $code_obj, :$nowrap=False) {
+    method add_method(Mu $obj, $name, $code_obj, :$nowrap=False) is hidden-from-backtrace {
         #note "^^^ ADDING METHOD $name on {$obj.^name}";
         my $m = $code_obj;
         unless $nowrap {
@@ -752,7 +756,7 @@ role AttrXMooishClassHOW does AttrXMooishHelper {
         nextwith($obj, $name, $m);
     }
 
-    method install-stagers ( Mu \type ) {
+    method install-stagers ( Mu \type ) is hidden-from-backtrace {
         #note "+++ INSTALLING STAGERS {type.WHO} {type.HOW}";
         my %wrap-methods;
         
@@ -803,7 +807,7 @@ role AttrXMooishClassHOW does AttrXMooishHelper {
         #note "+++ done installing stagers";
     }
 
-    method create_BUILDPLAN ( Mu \type ) {
+    method create_BUILDPLAN ( Mu \type ) is hidden-from-backtrace {
         #note "+++ PREPARE {type.WHO}";
         self.install-stagers( type );
         callsame;
@@ -811,7 +815,7 @@ role AttrXMooishClassHOW does AttrXMooishHelper {
     }
 
 
-    method on_create ( Mu \type, Mu \instance, %attrinit ) {
+    method on_create ( Mu \type, Mu \instance, %attrinit ) is hidden-from-backtrace {
         #note "ON CREATE";
 
         my @lazyAttrs = type.^attributes( :local(1) ).grep( AttrXMooishAttributeHOW );
@@ -829,7 +833,7 @@ role AttrXMooishClassHOW does AttrXMooishHelper {
 }
 
 role AttrXMooishRoleHOW does AttrXMooishHelper {
-    method compose (Mu \type) {
+    method compose (Mu \type) is hidden-from-backtrace {
         #note "COMPOSING ROLE ", type.^name, " // ", type.HOW.^name;
         for type.^attributes.grep( AttrXMooishAttributeHOW ) -> $attr {
             self.setup-helpers( type, $attr );
@@ -837,7 +841,7 @@ role AttrXMooishRoleHOW does AttrXMooishHelper {
         nextsame
     }
 
-    method specialize(Mu \r, Mu:U \obj, *@pos_args, *%named_args) {
+    method specialize(Mu \r, Mu:U \obj, *@pos_args, *%named_args) is hidden-from-backtrace {
         #note "*** Specializing role {r.^name} on {obj.WHO}";
         #note "CLASS HAS THE ROLE:", obj.HOW ~~ AttrXMooishClassHOW;
         obj.HOW does AttrXMooishClassHOW unless obj.HOW ~~ AttrXMooishClassHOW;

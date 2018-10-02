@@ -1,9 +1,15 @@
 use Test;
 use AttrX::Mooish;
 
+plan 7;
+
 my $inst;
 my class Foo1 {
-    has $.bar is rw is mooish(:filter);
+    has $.bar is rw is mooish(:lazy, :filter);
+
+    method build-bar {
+        pi
+    }
 
     multi method filter-bar ( Str $val ) {
         is $val, "a string value", "string value method";
@@ -16,9 +22,15 @@ my class Foo1 {
     multi method filter-bar ( Int $val ) {
         is $val, 42, "integer value method";
     }
+
+    multi method filter-bar ( Num $val ) {
+        is $val, pi, "Num value from builder";
+    }
 }
 
 $inst = Foo1.new;
+
+$inst.bar;
 
 $inst.bar = "a string value";
 $inst.bar = 42;
