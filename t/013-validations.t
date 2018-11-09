@@ -43,7 +43,6 @@ $inst = Foo3.new;
 lives-ok { $inst.bar = "a string" }, "assignment of defined value";
 throws-like { $inst.bar = Nil },
 X::TypeCheck,
-message => q{Type check failed in assignment to $!bar; expected type Str:D cannot be itself (perhaps Nil was assigned to a :D which had no default?)},
 "assignment of Nil to a definite type attribute";
 
 my class Foo4 {
