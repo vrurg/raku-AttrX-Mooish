@@ -1,5 +1,6 @@
-unit module AttrX::Mooish:ver<0.4.912>:auth<github:vrurg>;
+unit module AttrX::Mooish:ver<0.4.913>:auth<github:vrurg>;
 #use Data::Dump;
+use nqp;
 
 =begin pod
 =head1 NAME
@@ -17,7 +18,7 @@ C<AttrX::Mooish> - extend attributes with ideas from Moo/Moose (laziness!)
         method build-bar1 {
             "lazy init value"
         }
-        
+
         method !build-bar2 {
             "this is private mana!"
         }
@@ -104,7 +105,7 @@ is detected:
     class Monitor {
         has $.notifier;
         has $!failed-object;
-       
+
         submethod BUILD {
             $!notifier = Notifier.new;
         }
@@ -140,7 +141,7 @@ requires them. This way overall responsiveness of a program could be significall
 long once a user would experience many short delays which sometimes are even hard to impossible to be aware of.
 
 Laziness has another interesting application in the area of taking care of attribute dependency. Say, C<$.bar1> value
-depend on C<$.bar2>, which, in turn, depends either on C<$.bar3> or C<$.bar4>. In this case instead of manually defining 
+depend on C<$.bar2>, which, in turn, depends either on C<$.bar3> or C<$.bar4>. In this case instead of manually defining
 the order of initialization in a C<BUILD> submethod, we just have the following code in our attribute builders:
 
     method build-bar2 {
@@ -259,7 +260,7 @@ value as first positional parameter and named parameter C<attribute> with full a
 parameter are C<Bool>, C<Str>, C<Callable>. All values are treated similarly to the C<builder> parameter except that
 prefix 'I<trigger->' is used when value is I<True>.
 
-Trigger method is being executed right after changing the attribute value. If there is a C<filter> defined for the 
+Trigger method is being executed right after changing the attribute value. If there is a C<filter> defined for the
 attribute then value will be the filtered one, not the initial.
 =end item
 
@@ -273,7 +274,7 @@ called upon class composition time.
 =head2 Public/Private
 
 For all the trait parameters, if it is applied to a private attribute then all auto-generated methods will be private
-too. 
+too.
 
 The call-back style options such as C<builder>, C<trigger>, C<filter> are expected to share the privace mode of their
 respective attribute:
@@ -347,7 +348,7 @@ doesn't work for pointy blocks where anonymous slurpy hash would be required:
 
 =begin code
     class Foo {
-        has $.bar is rw is mooish(:trigger(-> $, $val, *% {...})); 
+        has $.bar is rw is mooish(:trigger(-> $, $val, *% {...}));
     }
 =end code
 
@@ -374,8 +375,23 @@ Set for C<filter> only. See its description above.
 
 =head2 Some magic
 
-Note that use of this trait doesn't change attribute accessors. More than that, accessors are not required for private 
+Note that use of this trait doesn't change attribute accessors. More than that, accessors are not required for private
 attributes. Consider the C<$!bar2> attribute from L<#SYNOPSIS>.
+
+=head2 Performance
+
+Module versions prior to v0.5.0 were pretty much costly perfomance-wise. This was happening due to use of C<Proxy> to
+handle all attribute read/writes. Since v0.5.0 only the first read/write operation would be handled by this module
+unless  C<filter> or C<trigger> parameters are used. When C<AttrX::Mooish> is assured that the attribute is properly
+initialized it steps aside and lets the Perl6 core to do its job without intervention.
+
+The only exception takes place if C<clearer> parameter is used and C«clear-<attribute>» method is called. In this case
+the attribute state is reverted back to uninitialized state and C<Proxy> is getting installed again – until the next
+read/write operation.
+
+C<filter> and C<trigger> are exceptional here because they require permanent monitoring of attribute operations making
+it effectively impossible to drop C<Proxy>. For this reason use of these parameters must be very carefully considered
+and highly discouraged for any code where performance is of the high precedence.
 
 =head1 CAVEATS
 
@@ -422,11 +438,21 @@ role AttrXMooishClassHOW { ... }
 
 role AttrXMooishHelper {
     method setup-helpers ( Mu \type, $attr ) is hidden-from-backtrace {
-        #note "SETUP HELPERS ON ", type.^name, " // ", type.HOW.^name;
-            type.^add_private_method("gimme-{$attr.base-name}", method { "gimme for {$attr.base-name}" } );
-        my %helpers = 
-            :clearer( method { $attr.clear-attr( self.WHICH ) } ),
-            :predicate( method { $attr.is-set( self.WHICH ) } ),
+        # note "SETUP HELPERS ON ", type.^name, " // ", type.HOW.^name;
+        # note " .. for attr ", $attr.name;
+        type.^add_private_method("gimme-{$attr.base-name}", method { "gimme for {$attr.base-name}" } );
+        my %helpers =
+            :clearer( my method {
+                my $obj-id = self.WHICH;
+                # Can't use $attr to call bind-proxy upon if the original attribute belongs to a role. In this case it's
+                # .package is not defined.
+                # Metamodel::GenericHOW only happens for role attributes
+                my $attr-obj = $attr.package.HOW ~~ Metamodel::GenericHOW ??
+                                        self.^get_attribute_for_usage($attr.name) !! $attr;
+                $attr-obj.bind-proxy( self, $obj-id );
+                $attr.clear-attr( $obj-id )
+             } ),
+            :predicate( my method { $attr.is-set( self.WHICH ) } ),
             ;
 
         for %helpers.keys -> $helper {
@@ -464,7 +490,7 @@ role AttrXMooishAttributeHOW {
     has $.filter is rw = False;
     has $.composer is rw = False;
 
-    my %opt2prefix = clearer => 'clear', 
+    my %opt2prefix = clearer => 'clear',
                      predicate => 'has',
                      builder => 'build',
                      trigger => 'trigger',
@@ -509,14 +535,15 @@ role AttrXMooishAttributeHOW {
         return if so %attr-data{$obj-id}{$.name};
 
         #note ">>> MOOIFYING ", $.name;
-        #note ">>> HAS INIT: ", %attrinit;
+        # note ">>> HAS INIT: ", %attrinit;
 
         my $from-init = %attrinit{$!base-name}:exists;
+        # note "=== Taking $!base-name from init? $from-init";
         my $default = $from-init ?? %attrinit{$!base-name} !! self.get_value( instance );
         my $initialized = $from-init;
-        #note "DEFAULT IS:", $default // $default.WHAT;
+        # note "DEFAULT IS:", $default // $default.WHAT;
         unless $initialized { # False means no constructor parameter for the attribute
-            #note ". No $.name constructor parameter on $obj-id, checking default {$default // '(Nil)'}";
+            # note ". No $.name constructor parameter on $obj-id, checking default {$default // '(Nil)'}";
             given $default {
                 when Array | Hash { $initialized = so .elems; }
                 default { $initialized = .defined }
@@ -527,99 +554,120 @@ role AttrXMooishAttributeHOW {
             #note "=== Using initial value ({$initialized} // {$from-init}) ", $default;
             my @params;
             @params.append( {:constructor} ) if $from-init;
-            #note "INIT STORE PARAMS: {@params}";
+            # note "INIT STORE PARAMS: {@params}";
             self.store-with-cb( instance, $default, @params );
         }
 
-        use nqp;
+        %attr-data{$obj-id}{$attr.name}<bound> = False;
+        self.bind-proxy( instance, $obj-id );
+
+        # note "Setting mooished";
+        #%attr-data{$obj-id}{$.name}<value> = $default;
+        %attr-data{$obj-id}{$attr.name}<mooished> = True;
+        # note "<<< DONE MOOIFYING ", $.name;
+    }
+
+    method bind-proxy ( Mu \instance, $obj-id ) is hidden-from-backtrace {
+        my $attr = self;
+        return if %attr-data{$obj-id}{$attr.name}<bound>;
+
+        # note "++++ BINDING PROXY TO ", $.name;
+
         nqp::bindattr(nqp::decont(instance),$.package,$.name,
-        #self.set_value( instance, 
             Proxy.new(
                 FETCH => -> $ {
                     #note "FETCHING";
                     my $val;
                     given $!sigil {
                         when '$' | '&' {
-                            use nqp;
                             $val = nqp::clone($.auto_viv_container.VAR);
                         }
                         default {
-                            $val = $.auto_viv_container.clone;
+                            $val := $.auto_viv_container.clone;
                         }
                     }
-                    #note "IS MOOISHED? ", %attr-data{$obj-id}{$attr.name}<mooished>;
+                    # note "IS MOOISHED? ", ? %attr-data{$obj-id}{$attr.name}<mooished>;
                     if %attr-data{$obj-id}{$attr.name}<mooished> {
-                        #note "FETCH of {$attr.name} for ", $obj-id, ~Backtrace.new.full;
-                        self.build-attr( instance ) if so $!lazy;
-                        $val = %attr-data{$obj-id}{$attr.name}<value> if self.is-set( $obj-id );
+                        # note "FETCH of {$attr.name} for ", $obj-id, ~Backtrace.new.full;
+                        self.build-attr( instance ) if ? $!lazy;
+                        $val := %attr-data{$obj-id}{$attr.name}<value> if self.is-set( $obj-id );
+                        # note "Fetched value for {$.name}: ", $val.VAR.^name, " // ", $val.perl;
+                        # Once read and built, mooishing is not needed unless filter or trigger are set; and until
+                        # clearer is called.
+                        self.unbind-proxy( instance, $obj-id, $val );
                     }
                     $val
                 },
                 STORE => -> $, $value is copy {
-                    #note "STORE (", $obj-id, "): ", $value // '*undef*';
                     self.store-with-cb( instance, $value );
                 }
             )
         );
 
-        #note "Storing value in global hash";
-        #%attr-data{$obj-id}{$.name}<value> = $default;
-        %attr-data{$obj-id}{$attr.name}<mooished> = True;
-        #note "<<< DONE MOOIFYING ", $.name;
+        %attr-data{$obj-id}{$.name}<bound> = True;
+    }
+
+    method unbind-proxy ( Mu \instance, $obj-id, $val is raw ) {
+        unless $!filter or $!trigger or !%attr-data{$obj-id}{$.name}<bound> {
+            # note "---- UNBINDING ATTR {$.name} INTO VALUE ($val // {$val.VAR.^name} // {$val.VAR.of.^name})";
+            nqp::bindattr( nqp::decont(instance), $.package, $.name, $val );
+            %attr-data{$obj-id}{$.name}<bound> = False;
+        }
     }
 
     method store-with-cb ( Mu \instance, $value is rw, @params = () ) is hidden-from-backtrace {
         #note "INVOKING {$.name} FILTER WITH {@params.perl}";
-        self.invoke-filter( instance, $value, @params );
-        #note "STORING VALUE";
-        self.store-value( instance.WHICH, $value );
+        self.invoke-filter( instance, $value, @params ) if $!filter;
+        # note "STORING VALUE: ($value)";
+        self.store-value( instance, instance.WHICH, $value );
         #note "INVOKING {$.name} TRIGGER WITH {@params.perl}";
         self.invoke-opt( instance, 'trigger', ( $value, |@params ), :strict ) if $!trigger;
     }
 
-    method store-value ( $obj-id, $value is copy ) is hidden-from-backtrace {
+    # store-value would return the value stored.
+    method store-value ( Mu \instance, $obj-id, $value is copy ) is raw is hidden-from-backtrace {
         #note ". storing into {$.name}";
         #note "store-value for ", $obj-id;
 
-        use nqp;
-        %attr-data{$obj-id}{$.name}<value> = 
-            gather {
-                given $!sigil {
-                    when '$' {
-                        # Do it via nqp because I didn't find any syntax-based way to properly clone a Scalar container
-                        # as such.
-                        my $v := nqp::create(Scalar);
-                        nqp::bindattr($v, Scalar, '$!descriptor', 
-                            nqp::getattr(self, Attribute, '$!container_descriptor')
-                        );
-                        take $v = $value;
-                    }
-                    when '@' {
-                        #note "ASSIGN TO POSITIONAL";
-                        my @a := $.auto_viv_container.clone;
-                        #note $value.perl;
-                        take @a = |$value;
-                    }
-                    when '%' {
-                        my %h := $.auto_viv_container.clone;
-                        take %h = $value;
-                    }
-                    when '&' {
-                        my &m := nqp::clone($.auto_viv_container.VAR);
-                        take &m = $value;
-                    }
-                    default {
-                        die "AttrX::Mooish can't handle «$_» sigil";
-                    }
-                }
-            }.head;
+        my $rc;
+        given $!sigil {
+            when '$' {
+                # Do it via nqp because I didn't find any syntax-based way to properly clone a Scalar container
+                # as such.
+                my $v := nqp::create(Scalar);
+                nqp::bindattr($v, Scalar, '$!descriptor',
+                    nqp::getattr(self, Attribute, '$!container_descriptor')
+                );
+                $rc := $v = $value;
+            }
+            when '@' {
+                #note "ASSIGN TO POSITIONAL";
+                my @a := $.auto_viv_container.clone;
+                #note $value.perl;
+                $rc := @a = |$value;
+            }
+            when '%' {
+                my %h := $.auto_viv_container.clone;
+                $rc := %h = $value;
+            }
+            when '&' {
+                my &m := nqp::clone($.auto_viv_container.VAR);
+                $rc := &m = $value;
+            }
+            default {
+                die "AttrX::Mooish can't handle «$_» sigil";
+            }
+        }
+        %attr-data{$obj-id}{$.name}<value> = $rc;
+        # note "Stored into hash: $rc";
+        self.unbind-proxy( instance, $obj-id, $rc );
     }
 
     method is-set ( $obj-id) is hidden-from-backtrace {
         #note ". IS-SET( $obj-id ) on {$.name}: ", %attr-data{$obj-id}{$.name};
         %attr-data{$obj-id}{$.name}<value>:exists;
     }
-    
+
     method clear-attr ( $obj-id ) is hidden-from-backtrace {
         #note "Clearing {$.name} on $obj-id";
         %attr-data{$obj-id}{$.name}<value>:delete;
@@ -635,22 +683,22 @@ role AttrXMooishAttributeHOW {
     }
 
     method invoke-opt (
-        Any \instance, Str $option, @params = (), :$strict = False, PvtMode :$private is copy = pvmAuto 
-    ) is hidden-from-backtrace {
+                Any \instance, Str $option, @params = (), :$strict = False, PvtMode :$private is copy = pvmAuto
+            ) is hidden-from-backtrace {
         my $opt-value = self."$option"();
         my \type = $.package;
 
         return unless so $opt-value;
 
-        #note "&&& INVOKING {$option} on {$.name}";
+        # note "&&& INVOKING {$option} on {$.name}";
 
         my @invoke-params = :attribute($.name), |@params;
-        
+
         my $method;
 
         sub get-method( $name, Bool $public ) {
-            $public ?? 
-                    instance.^find_method( $name, :no_fallback(1) ) 
+            $public ??
+                    instance.^find_method( $name, :no_fallback(1) )
                     !!
                     type.^find_private_method( $name )
         }
@@ -759,7 +807,7 @@ role AttrXMooishClassHOW does AttrXMooishHelper {
     method install-stagers ( Mu \type ) is hidden-from-backtrace {
         #note "+++ INSTALLING STAGERS {type.WHO} {type.HOW}";
         my %wrap-methods;
-        
+
         %wrap-methods<DESTROY> = my submethod DESTROY {
             #note "&&& AUTOGEN DESTROY on {self.WHICH}";
             %attr-data{self.WHICH}:delete;
@@ -776,7 +824,7 @@ role AttrXMooishClassHOW does AttrXMooishHelper {
                 my $base-name;
                 for type.^attributes( :local(1) ).grep( {
                     $_ !~~ AttrXMooishAttributeHOW
-                    && .has_accessor 
+                    && .has_accessor
                     && (%attrinit{$base-name = .name.substr(2)}:exists)
                 } ) -> $lattr {
                     #note "--- INIT PUB ATTR $base-name";
@@ -921,7 +969,10 @@ multi trait_mod:<is>( Attribute:D $attr, :$mooish! ) is export {
     #note "*** Done for {$attr.name} to ", $*PACKAGE.WHO, " // ", $*PACKAGE.HOW;
 }
 
-sub mooish-obj-count is export { %attr-data.keys.elems }
+sub mooish-obj-count is export {
+    # note %attr-data.keys;
+    %attr-data.keys.elems
+ }
 
 # Copyright (c) 2018, Vadim Belman <vrurg@cpan.org>
 #

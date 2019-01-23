@@ -1,6 +1,8 @@
 use Test;
 use AttrX::Mooish;
 
+plan 1;
+
 subtest "Triggers", {
     plan 12;
     my $inst;

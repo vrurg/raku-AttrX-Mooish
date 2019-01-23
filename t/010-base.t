@@ -1,6 +1,10 @@
 use Test;
 use AttrX::Mooish;
 
+plan 4;
+
+my $author-testing = ? %*ENV<AUTHOR_TESTING>;
+
 my %inst-records;
 
 subtest "Class Basics" => {
@@ -30,21 +34,31 @@ subtest "Class Basics" => {
     nok $inst.bar.defined, "Nil value assigned";
 
     # So far, two object, one lazy attribute was initialized per each object.
-    is mooish-obj-count, 2, "2 used slots correspond to attribute count";
-
-    $inst = Foo1.new;
-    for 1..20 {
-        my $v = $inst.bar;
+    if $author-testing {
+        is mooish-obj-count, 2, "2 used slots correspond to attribute count";
     }
-    is $inst.build-count, 1, "attribute build is executed only once";
-    is mooish-obj-count, 3, "3 used slots correspond to attribute count";
+    else {
+        skip "author testing only", 1;
+    }
 
-    for 1..20000 {
         $inst = Foo1.new;
-        my $v = $inst.bar;
-    }
+        for 1..20 {
+            my $v = $inst.bar;
+        }
+        is $inst.build-count, 1, "attribute build is executed only once";
+    if $author-testing {
+        is mooish-obj-count, 3, "3 used slots correspond to attribute count";
 
-    is mooish-obj-count, %inst-records.keys.elems, "used slots correspond to number of objects survived GC";
+        for 1..20000 {
+            $inst = Foo1.new;
+            my $v = $inst.bar;
+        }
+
+        is mooish-obj-count, %inst-records.keys.elems, "used slots correspond to number of objects survived GC";
+    }
+    else {
+        skip "author testing only", 2;
+    }
 
     subtest "Clearer/prefix", {
         plan 4;
@@ -80,7 +94,7 @@ subtest "Class Basics" => {
     $inst.clear-barbar;
     is $inst.barbar, "not from new", "reset and set not from constructor parameters";
 
-    my class Foo3 { 
+    my class Foo3 {
         has $.bar is mooish(:lazy, builder => 'init-bar');
         method init-bar { "from init-bar" }
     }
@@ -177,7 +191,7 @@ subtest "Lazy Chain", {
         has $.baz is rw is mooish(:lazy);
 
         method build-bar { "foo bar" }
-        method build-baz { "({$!bar}) and baz" } 
+        method build-baz { "({$!bar}) and baz" }
     }
 
     $inst = Foo1.new;

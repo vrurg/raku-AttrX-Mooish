@@ -1,6 +1,10 @@
 use Test;
 use AttrX::Mooish;
 
+plan 3;
+
+my $author-testing = ? %*ENV<AUTHOR_TESTING>;
+
 my %inst-records;
 
 subtest "Role Basics", {
@@ -34,8 +38,13 @@ subtest "Role Basics", {
     # Test if we occasionally use same back store for attributes
     is $inst2.bar, "is bar", "second object attribute unchanged";
 
-    # So far, two object, one lazy attribute was initialized per each object.
-    is mooish-obj-count, 2, "2 used slots correspond to attribute count";
+    if $author-testing {
+        # So far, two object, one lazy attribute was initialized per each object.
+        is mooish-obj-count, 2, "2 used slots correspond to attribute count";
+    }
+    else {
+        skip "author testing only", 1;
+    }
     # Self-check the test
     is %inst-records.keys.elems, 2, "two control instance records found";
 
@@ -45,14 +54,19 @@ subtest "Role Basics", {
     }
 
     is $inst.build-count, 1, "initialized only once";
-    is mooish-obj-count, 3, "3 used slots correspond to attribute count";
+    if $author-testing {
+        is mooish-obj-count, 3, "3 used slots correspond to attribute count";
 
-    for 1..20000 {
-        $inst = FooR1.new;
-        my $v = $inst.bar;
+        for 1..20000 {
+            $inst = FooR1.new;
+            my $v = $inst.bar;
+        }
+
+        is mooish-obj-count, %inst-records.keys.elems, "used slots correspond to number of objects survived GC";
     }
-
-    is mooish-obj-count, %inst-records.keys.elems, "used slots correspond to number of objects survived GC";
+    else {
+        skip "author testing only", 2;
+    }
 
     $inst.bar = "something different";
     is $inst.bar, "something different", "set before clear";
@@ -77,7 +91,7 @@ subtest "Role Basics", {
     $inst.clear-bar;
     is $inst.bar, "not from new", "reset and set not from constructor parameters";
 
-    my role FooRole3 { 
+    my role FooRole3 {
         has $.bar is mooish(:lazy, builder => 'init-bar');
         method init-bar { "from init-bar" }
     }
@@ -98,9 +112,9 @@ subtest "Require method", {
         method filter-bar {...}
     }
 
-    throws-like 
-        q<my class FooR1 does FooRole1 { }>, 
-        X::AdHoc, 
+    throws-like
+        q<my class FooR1 does FooRole1 { }>,
+        X::AdHoc,
         message => q<Method 'filter-bar' must be implemented by FooR1 because it is required by roles: FooRole1.>,
         "cannot compose without required method";
 

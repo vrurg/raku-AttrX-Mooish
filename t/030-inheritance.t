@@ -1,6 +1,10 @@
 use Test;
 use AttrX::Mooish;
 
+plan 6;
+
+my $author-testing = ? %*ENV<AUTHOR_TESTING>;
+
 my %inst-records;
 
 subtest "Inheritance basics", {
@@ -31,22 +35,32 @@ subtest "Inheritance basics", {
     is $inst.bar, "foo-bar-baz", "set manually ok";
     is $inst2.bar, pi, "second object attribute unchanged";
 
-    # So far, two object, one lazy attribute was initialized per each object.
-    is mooish-obj-count, 2, "2 used slots correspond to attribute count";
+    if $author-testing {
+        # So far, two object, one lazy attribute was initialized per each object.
+        is mooish-obj-count, 2, "2 used slots correspond to attribute count";
+    }
+    else {
+        skip "author testing only", 1;
+    }
 
     $inst = Foo1.new;
     for 1..2000 {
         my $v = $inst.bar;
     }
     is $inst.build-count, 1, "attribute build is executed only once";
-    is mooish-obj-count, 3, "3 used slots correspond to attribute count";
+    if $author-testing {
+        is mooish-obj-count, 3, "3 used slots correspond to attribute count";
 
-    for 1..20000 {
-        $inst = Foo1.new;
-        my $v = $inst.bar;
+        for 1..20000 {
+            $inst = Foo1.new;
+            my $v = $inst.bar;
+        }
+
+        is mooish-obj-count, %inst-records.keys.elems, "used slots correspond to number of objects survived GC";
     }
-
-    is mooish-obj-count, %inst-records.keys.elems, "used slots correspond to number of objects survived GC";
+    else {
+        skip "author testing only", 2;
+    }
 
     $inst.bar = "something different";
     is $inst.bar, "something different", "set before clear";
@@ -70,7 +84,7 @@ subtest "Inheritance basics", {
     $inst.clear-bar;
     is $inst.bar, "not from new", "reset and set not from constructor parameters";
 
-    class Bar3 { 
+    class Bar3 {
         has $.bar is mooish(:lazy, builder => 'init-bar');
         method init-bar { "from init-bar" }
     }
@@ -179,6 +193,33 @@ subtest "Chained", {
     is $inst.foo1, "foo1 from new", "foo1 from constructor";
     is $inst.bar2, "filtered-bar2(bar2 from new)", "bar2 from constructor";
     is $inst.baz1, "baz1 from new", "baz1 from constructor";
+}
+
+subtest "Chained with role", {
+    plan 2;
+    my $inst;
+
+    my role FooRole {
+        has $.foo is rw is mooish(:lazy);
+
+        method build-foo { "this is foo from builder" };
+    }
+
+    my class Foo1 does FooRole {
+        has $.foo1 is rw is mooish(:lazy);
+        method build-foo1 { "this is foo1 from builder" };
+    }
+
+    my class Bar1 is Foo1 {
+        has $.bar1 is rw is mooish(:lazy);
+        method build-bar1 { "this is bar1 from builder" };
+    }
+
+    $inst =  Bar1.new;
+    is $inst.foo, "this is foo from builder", "attribute from role is built";
+
+    $inst = Bar1.new( foo => "foo from new" );
+    is $inst.foo, "foo from new", "attribute from role inited by new";
 }
 
 subtest "Chained init and BUILD", {

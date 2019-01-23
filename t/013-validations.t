@@ -14,8 +14,8 @@ my class Foo1 {
 
 $inst = Foo1.new;
 lives-ok { $inst.bar = "Fine" }, "assignment to RW attribute";
-throws-like { $inst.baz = "Bad"; }, 
-X::Assignment::RO, 
+throws-like { $inst.baz = "Bad"; },
+X::Assignment::RO,
 message => 'Cannot modify an immutable Str (is baz)',
 "assignment to RO attribute failes";
 
@@ -30,8 +30,8 @@ $inst = Foo2.new;
 lives-ok { $inst.bar = 31415926 }, "assignment of same types";
 lives-ok { $inst.bar = Nil }, "assignment of Nil";
 throws-like { $inst.bar = "abc" },
-X::TypeCheck::Assignment,
-"assignment to a different attribute type";
+            X::TypeCheck::Assignment,
+            "assignment to a different attribute type";
 
 my class Foo3 {
     has Str:D $.bar is rw is mooish(:lazy) = "";
