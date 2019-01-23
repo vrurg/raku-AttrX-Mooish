@@ -15,7 +15,7 @@ SYNOPSIS
         method build-bar1 {
             "lazy init value"
         }
-        
+
         method !build-bar2 {
             "this is private mana!"
         }
@@ -69,7 +69,7 @@ DESCRIPTION
 
 This module is aiming at providing some functionality we're all missing from Moo/Moose. It implements laziness, accompanying methods and adds attribute value filter on top of what standard Moo/Moose provide.
 
-What makes this module different from previous versions one could find in the Perl6 modules repository is that it implements true laziness allowing *Nil* to be a first-class value of a lazy attribute. In other words, if you look at the [#SYNOPSIS](#SYNOPSIS) section, `$.bar3` value could randomly be either undefined or 3.1415926.
+What makes this module different from previous versions one could find in the Perl6 modules repository is that it implements true laziness allowing *Nil* to be a first-class value of a lazy attribute. In other words, if you look at the [SYNOPSIS](#SYNOPSIS) section, `$.bar3` value could randomly be either undefined or 3.1415926.
 
 Laziness for beginners
 ----------------------
@@ -98,7 +98,7 @@ Laziness becomes very handy in cases where intializing an attribute is very expe
     class Monitor {
         has $.notifier;
         has $!failed-object;
-       
+
         submethod BUILD {
             $!notifier = Notifier.new;
         }
@@ -143,7 +143,7 @@ This module would take care of the rest.
 USAGE
 =====
 
-The [#SYNOPSIS](#SYNOPSIS) is a very good example of how to use the trait `mooish`.
+The [SYNOPSIS](#SYNOPSIS) is a very good example of how to use the trait `mooish`.
 
 Trait parameters
 ----------------
@@ -177,7 +177,7 @@ Trait parameters
 
     Could be `Bool` or `Str`. When defined trait will add a method to determine if attribute is set or not. Note that it doesn't matter wether it was set with a builder or by an assignment.
 
-    If parameter is `Bool` *True* then method name is made of attribute name prefixed with _has-_. See [#What is "lazy attribute"](#What is "lazy attribute") section for example.
+    If parameter is `Bool` *True* then method name is made of attribute name prefixed with _has-_. See [What is "lazy attribute"](#What is "lazy attribute") section for example.
 
     If parameter is `Str` then the string contains predicate method name:
 
@@ -227,7 +227,7 @@ Trait parameters
 Public/Private
 --------------
 
-For all the trait parameters, if it is applied to a private attribute then all auto-generated methods will be private too. 
+For all the trait parameters, if it is applied to a private attribute then all auto-generated methods will be private too.
 
 The call-back style options such as `builder`, `trigger`, `filter` are expected to share the privace mode of their respective attribute:
 
@@ -288,7 +288,7 @@ User defined (callback-type) methods receive additional named parameters (option
 **NOTE:** If a method doesn't care about named parameters it may only have positional arguments in its signature. This doesn't work for pointy blocks where anonymous slurpy hash would be required:
 
         class Foo {
-            has $.bar is rw is mooish(:trigger(-> $, $val, *% {...})); 
+            has $.bar is rw is mooish(:trigger(-> $, $val, *% {...}));
         }
 
 ### Options
@@ -308,7 +308,16 @@ User defined (callback-type) methods receive additional named parameters (option
 Some magic
 ----------
 
-Note that use of this trait doesn't change attribute accessors. More than that, accessors are not required for private attributes. Consider the `$!bar2` attribute from [#SYNOPSIS](#SYNOPSIS).
+Note that use of this trait doesn't change attribute accessors. More than that, accessors are not required for private attributes. Consider the `$!bar2` attribute from [SYNOPSIS](#SYNOPSIS).
+
+Performance
+-----------
+
+Module versions prior to v0.5.0 were pretty much costly perfomance-wise. This was happening due to use of `Proxy` to handle all attribute read/writes. Since v0.5.0 only the first read/write operation would be handled by this module unless `filter` or `trigger` parameters are used. When `AttrX::Mooish` is assured that the attribute is properly initialized it steps aside and lets the Perl6 core to do its job without intervention.
+
+The only exception takes place if `clearer` parameter is used and `clear-<attribute>` method is called. In this case the attribute state is reverted back to uninitialized state and `Proxy` is getting installed again – until the next read/write operation.
+
+`filter` and `trigger` are exceptional here because they require permanent monitoring of attribute operations making it effectively impossible to drop `Proxy`. For this reason use of these parameters must be very carefully considered and highly discouraged for any code where performance is of the high precedence.
 
 CAVEATS
 =======
