@@ -220,6 +220,38 @@ Trait parameters
 
     Trigger method is being executed right after changing the attribute value. If there is a `filter` defined for the attribute then value will be the filtered one, not the initial.
 
+  * *`alias`, `aliases`, `init-arg`, `init-args`*
+
+    Those are four different names for the same parameter which allows defining attribute aliases. So, whereas Internally you would have single container for an attribute that container would be accessible via different names. And it means not only attribute accessors but also clearer and predicate methods:
+
+        class Foo {
+            has $.bar is rw is mooish(:clearer, :lazy, :aliases<fubar baz>);
+
+            method build-bar { "The Answer" }
+        }
+
+        my $inst = Foo.new( fubar => 42 );
+        say $inst.bar; # 42
+        $inst.clear-baz;
+        say $inst.bar; # The Answer
+        $inst.fubar = pi;
+        say $inst.baz; # 3.1415926
+
+    Aliases are not applicable to methods called by the module like builders, triggers, etc.
+
+  * *`no-init`*
+
+    This parameter will prevent the attribute from being initialized by the constructor:
+
+        class Foo {
+            has $.bar is mooish(:lazy, :no-init);
+
+            method build-bar { 42 }
+        }
+
+        my $inst = Foo.new( bar => "wrong answer" );
+        note $inst.bar; # 42
+
   * *`composer`*
 
     This is a very specific option mostly useful until role `COMPOSE` phaser is implemented. Method of this option is called upon class composition time.
