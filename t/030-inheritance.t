@@ -15,11 +15,11 @@ subtest "Inheritance basics", {
         has $.initial is default(pi);
         has $.bar is rw is mooish(:lazy, :clearer, :predicate);
         has Int $.build-count = 0;
-        submethod BUILD { %inst-records{self.WHICH} = True; }
+        submethod TWEAK (|) { %inst-records{self.WHICH} = True; }
         submethod DESTROY { %inst-records{self.WHICH}:delete; }
         method build-bar { $!build-count++; $!initial }
         method direct-access { $!bar }
-    }
+    };
 
     my class Foo1 is Bar1 {
         has $.fu;
@@ -165,7 +165,7 @@ subtest "Chained", {
     my class Bar1 is Foo1 {
         has $.bar1 is mooish(:lazy(-> $,*% {"Bar1::bar1"}));
         has $.bar2 is rw is mooish(:filter);
-        method BUILDALL (|) { nextsame; } # A BUILDALL may break things sometime
+        method BUILDALL (|) { nextsame } # A BUILDALL may break things sometime
 
         method filter-bar2 ( $val ) { "filtered-bar2({$val})" }
     }

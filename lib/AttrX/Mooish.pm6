@@ -265,6 +265,45 @@ attribute then value will be the filtered one, not the initial.
 =end item
 
 =begin item
+I<C<alias>, C<aliases>, C<init-arg>, C<init-args>>
+
+Those are four different names for the same parameter which allows defining attribute aliases. So, whereas Internally
+you would have single container for an attribute that container would be accessible via different names. And it means
+not only attribute accessors but also clearer and predicate methods:
+
+    class Foo {
+        has $.bar is rw is mooish(:clearer, :lazy, :aliases<fubar baz>);
+
+        method build-bar { "The Answer" }
+    }
+
+    my $inst = Foo.new( fubar => 42 );
+    say $inst.bar; # 42
+    $inst.clear-baz;
+    say $inst.bar; # The Answer
+    $inst.fubar = pi;
+    say $inst.baz; # 3.1415926
+
+Aliases are not applicable to methods called by the module like builders, triggers, etc.
+=end item
+
+=begin item
+I<C<no-init>>
+
+This parameter will prevent the attribute from being initialized by the constructor:
+
+
+    class Foo {
+        has $.bar is mooish(:lazy, :no-init);
+
+        method build-bar { 42 }
+    }
+
+    my $inst = Foo.new( bar => "wrong answer" );
+    note $inst.bar; # 42
+=end item
+
+=begin item
 I<C<composer>>
 
 This is a very specific option mostly useful until role C<COMPOSE> phaser is implemented. Method of this option is
@@ -440,48 +479,92 @@ role AttrXMooishHelper {
     method setup-helpers ( Mu \type, $attr ) is hidden-from-backtrace {
         # note "SETUP HELPERS ON ", type.^name, " // ", type.HOW.^name;
         # note " .. for attr ", $attr.name;
-        type.^add_private_method("gimme-{$attr.base-name}", method { "gimme for {$attr.base-name}" } );
         my %helpers =
             :clearer( my method {
                 my $obj-id = self.WHICH;
                 # Can't use $attr to call bind-proxy upon if the original attribute belongs to a role. In this case it's
                 # .package is not defined.
                 # Metamodel::GenericHOW only happens for role attributes
+                # note "THIS IS CLEARER for {$attr.name}";
                 my $attr-obj = $attr.package.HOW ~~ Metamodel::GenericHOW ??
-                                        self.^get_attribute_for_usage($attr.name) !! $attr;
+                                        (
+                                            ( try { self.^get_attribute_for_usage($attr.name) } )
+                                            || self.^attributes.grep({ $_.name eq $attr.name }).first
+                                        )
+                                        !! $attr;
                 $attr-obj.bind-proxy( self, $obj-id );
                 $attr.clear-attr( $obj-id )
              } ),
             :predicate( my method { $attr.is-set( self.WHICH ) } ),
             ;
 
+        my @aliases = $attr.base-name, |$attr.init-args;
+
         for %helpers.keys -> $helper {
-            next unless $attr."$helper"();
+            next unless $attr."$helper"(); # Don't generate if attribute isn't set
             #note "op2method for helper $helper";
-            my $helper-name = $attr.opt2method( $helper );
+            for @aliases -> $base-name {
+                my $helper-name = $attr.opt2method( $helper, :$base-name  );
 
-            X::Fatal.new( message => "Cannot install {$helper} {$helper-name}: method already defined").throw
-                if type.^declares_method( $helper-name );
+                X::Fatal.new( message => "Cannot install {$helper} {$helper-name}: method already defined").throw
+                    if type.^declares_method( $helper-name );
 
-            my $m = %helpers{$helper};
-            $m.set_name( $helper-name );
-            #note "Installing helper $helper $helper-name on {type.^name} // {$m.WHICH}";
-            #note "HELPER:", %helpers{$helper}.name, " // ", $m.^can("CALL-ME"), " // ", $m.^name;
+                my $m = %helpers{$helper};
+                $m.set_name( $helper-name );
+                #note "Installing helper $helper $helper-name on {type.^name} // {$m.WHICH}";
+                #note "HELPER:", %helpers{$helper}.name, " // ", $m.^can("CALL-ME"), " // ", $m.^name;
 
-            if $attr.has_accessor { # I.e. – public?
-                #note ". Installing public $helper-name";
-                type.^add_method( $helper-name, $m );
-            } else {
-                #note "! Installing private $helper-name";
-                type.^add_private_method( $helper-name, $m );
+                if $attr.has_accessor { # I.e. – public?
+                    #note ". Installing public $helper-name";
+                    type.^add_method( $helper-name, $m );
+                } else {
+                    #note "! Installing private $helper-name";
+                    type.^add_private_method( $helper-name, $m );
+                }
             }
         }
     }
 }
 
+my sub typecheck-attr-value ( $attr is raw, $value ) is raw is hidden-from-backtrace {
+    my $rc;
+    given $attr.name.substr(0,1) {      # Take sigil from attribute name
+        when '$' {
+            # Do it via nqp because I didn't find any syntax-based way to properly clone a Scalar container
+            # as such.
+            my $v := nqp::create(Scalar);
+            nqp::bindattr($v, Scalar, '$!descriptor',
+                nqp::getattr(nqp::decont($attr), Attribute, '$!container_descriptor')
+            );
+            # note "SCALAR OF ", $v.VAR.of;
+            $rc := $v = $value;
+        }
+        when '@' {
+            #note "ASSIGN TO POSITIONAL";
+            my @a := $attr.auto_viv_container.clone;
+            #note $value.perl;
+            $rc := @a = |$value;
+        }
+        when '%' {
+            my %h := $attr.auto_viv_container.clone;
+            $rc := %h = $value;
+        }
+        when '&' {
+            my &m := nqp::clone($attr.auto_viv_container.VAR);
+            $rc := &m = $value;
+        }
+        default {
+            die "AttrX::Mooish can't handle «$_» sigil";
+        }
+    }
+    # note "=== RC: ", $rc.VAR.^name, " // ", $rc.VAR.of;
+    $rc
+}
+
 role AttrXMooishAttributeHOW {
     has $.base-name = self.name.substr(2);
     has $.sigil = self.name.substr( 0, 1 );
+    has $.always-bind = False;
     has $.lazy is rw = False;
     has $.builder is rw = 'build-' ~ $!base-name;
     has $.clearer is rw = False;
@@ -489,6 +572,8 @@ role AttrXMooishAttributeHOW {
     has $.trigger is rw = False;
     has $.filter is rw = False;
     has $.composer is rw = False;
+    has $.no-init is rw = False;
+    has @.init-args;
 
     my %opt2prefix = clearer => 'clear',
                      predicate => 'has',
@@ -498,25 +583,35 @@ role AttrXMooishAttributeHOW {
                      composer => 'compose',
                      ;
 
-    method !bool-str-meth-name( $opt, Str $prefix ) is hidden-from-backtrace {
+    method !bool-str-meth-name( $opt, Str $prefix, Str :$base-name? ) is hidden-from-backtrace {
         #note "bool-str-meth-name: ", $prefix;
-        $opt ~~ Bool ?? $prefix ~ '-' ~ $!base-name !! $opt;
+        $opt ~~ Bool ?? $prefix ~ '-' ~ ( $base-name // $!base-name ) !! $opt;
     }
 
-    method opt2method( Str $oname ) is hidden-from-backtrace {
+    method opt2method( Str $oname, Str :$base-name? ) is hidden-from-backtrace {
         #note "%opt2prefix: ", %opt2prefix;
         #note "option name in opt2method: $oname // ", %opt2prefix{$oname};
-        self!bool-str-meth-name( self."$oname"(), %opt2prefix{$oname} );
+        self!bool-str-meth-name( self."$oname"(), %opt2prefix{$oname}, :$base-name );
     }
 
-    method compose ( Mu \type ) is hidden-from-backtrace {
+    method compose ( Mu \type, :$compiler_services ) is hidden-from-backtrace {
 
-        #note "+++ composing {$.name} on {type.^name} {type.HOW}";
-        #note "ATTR PACKAGE:", $.package.^name;
+        # note "+++ composing {$.name} on {type.^name} {type.HOW}";
+        # note "ATTR PACKAGE:", $.package.^name;
+
+        $!always-bind = $!filter || $!trigger;
 
         unless type.HOW ~~ AttrXMooishClassHOW {
             #note "Installing AttrXMooishClassHOW on {type.WHICH}";
             type.HOW does AttrXMooishClassHOW;
+        }
+
+        for @!init-args -> $alias {
+            # note "GEN ACCESSOR $alias for {$.name} on {type.^name}";
+            my $meth := $compiler_services.generate_accessor(
+                $alias, nqp::decont(type), $.name, nqp::decont( $.type ), $.rw ?? 1 !! 0
+            );
+            type.^add_method( $alias, $meth );
         }
 
         callsame;
@@ -534,13 +629,13 @@ role AttrXMooishAttributeHOW {
 
         return if so %attr-data{$obj-id}{$.name};
 
-        #note ">>> MOOIFYING ", $.name;
+        # note ">>> MOOIFYING ", $.name;
         # note ">>> HAS INIT: ", %attrinit;
 
-        my $from-init = %attrinit{$!base-name}:exists;
-        # note "=== Taking $!base-name from init? $from-init";
-        my $default = $from-init ?? %attrinit{$!base-name} !! self.get_value( instance );
-        my $initialized = $from-init;
+        my $init-key = $.no-init ?? Nil !! ($!base-name, |@!init-args).grep( { %attrinit{$_}:exists } ).head;
+        # note "=== Taking $!base-name from init? ", ? $init-key;
+        my $initialized = ? $init-key;
+        my $default = $initialized ?? %attrinit{$init-key} !! self.get_value( instance );
         # note "DEFAULT IS:", $default // $default.WHAT;
         unless $initialized { # False means no constructor parameter for the attribute
             # note ". No $.name constructor parameter on $obj-id, checking default {$default // '(Nil)'}";
@@ -550,16 +645,16 @@ role AttrXMooishAttributeHOW {
             }
         }
 
+        %attr-data{$obj-id}{$attr.name}<bound> = False;
+        self.bind-proxy( instance, $obj-id );
+
         if $initialized {
             #note "=== Using initial value ({$initialized} // {$from-init}) ", $default;
             my @params;
-            @params.append( {:constructor} ) if $from-init;
+            @params.append( {:constructor} ) if $init-key;
             # note "INIT STORE PARAMS: {@params}";
             self.store-with-cb( instance, $default, @params );
         }
-
-        %attr-data{$obj-id}{$attr.name}<bound> = False;
-        self.bind-proxy( instance, $obj-id );
 
         # note "Setting mooished";
         #%attr-data{$obj-id}{$.name}<value> = $default;
@@ -608,7 +703,7 @@ role AttrXMooishAttributeHOW {
     }
 
     method unbind-proxy ( Mu \instance, $obj-id, $val is raw ) {
-        unless $!filter or $!trigger or !%attr-data{$obj-id}{$.name}<bound> {
+        unless $!always-bind or !%attr-data{$obj-id}{$.name}<bound> {
             # note "---- UNBINDING ATTR {$.name} INTO VALUE ($val // {$val.VAR.^name} // {$val.VAR.of.^name})";
             nqp::bindattr( nqp::decont(instance), $.package, $.name, $val );
             %attr-data{$obj-id}{$.name}<bound> = False;
@@ -625,42 +720,19 @@ role AttrXMooishAttributeHOW {
     }
 
     # store-value would return the value stored.
-    method store-value ( Mu \instance, $obj-id, $value is copy ) is raw is hidden-from-backtrace {
-        #note ". storing into {$.name}";
-        #note "store-value for ", $obj-id;
-
-        my $rc;
-        given $!sigil {
-            when '$' {
-                # Do it via nqp because I didn't find any syntax-based way to properly clone a Scalar container
-                # as such.
-                my $v := nqp::create(Scalar);
-                nqp::bindattr($v, Scalar, '$!descriptor',
-                    nqp::getattr(self, Attribute, '$!container_descriptor')
-                );
-                $rc := $v = $value;
-            }
-            when '@' {
-                #note "ASSIGN TO POSITIONAL";
-                my @a := $.auto_viv_container.clone;
-                #note $value.perl;
-                $rc := @a = |$value;
-            }
-            when '%' {
-                my %h := $.auto_viv_container.clone;
-                $rc := %h = $value;
-            }
-            when '&' {
-                my &m := nqp::clone($.auto_viv_container.VAR);
-                $rc := &m = $value;
-            }
-            default {
-                die "AttrX::Mooish can't handle «$_» sigil";
-            }
-        }
-        %attr-data{$obj-id}{$.name}<value> = $rc;
-        # note "Stored into hash: $rc";
-        self.unbind-proxy( instance, $obj-id, $rc );
+    method store-value ( Mu \instance, $obj-id, $value is copy ) is hidden-from-backtrace {
+        # note ". storing into {$.name} // ";
+        # note "store-value for ", $obj-id;
+        %attr-data{$obj-id}{$.name}<value> := typecheck-attr-value( self, $value );
+        # note "=== VALUE IN THE HASH: ",
+        #             %attr-data{$obj-id}{$.name}<value>.VAR.^name,
+        #             " // ",
+        #             %attr-data{$obj-id}{$.name}<value>.VAR.of;
+        self.unbind-proxy(
+            instance,
+            $obj-id,
+            %attr-data{$obj-id}{$.name}<value>
+        );
     }
 
     method is-set ( $obj-id) is hidden-from-backtrace {
@@ -669,7 +741,7 @@ role AttrXMooishAttributeHOW {
     }
 
     method clear-attr ( $obj-id ) is hidden-from-backtrace {
-        #note "Clearing {$.name} on $obj-id";
+        # note "Clearing {$.name} on $obj-id";
         %attr-data{$obj-id}{$.name}<value>:delete;
     }
 
@@ -750,8 +822,8 @@ role AttrXMooishAttributeHOW {
 
     method build-attr ( Any \instance ) is hidden-from-backtrace {
         my $obj-id = instance.WHICH;
-        #my $publicity = $.has_accessor ?? "public" !! "private";
-        #note "&&& KINDA BUILDING FOR $publicity {$.name} on $obj-id (is-set:{self.is-set($obj-id)})";
+        my $publicity = $.has_accessor ?? "public" !! "private";
+        # note "&&& KINDA BUILDING FOR $publicity {$.name} on $obj-id (is-set:{self.is-set($obj-id)})";
         unless self.is-set( $obj-id ) {
             #note "&&& Calling builder {$!builder}";
             my $val = self.invoke-opt( instance, 'builder', :strict );
@@ -776,61 +848,69 @@ role AttrXMooishAttributeHOW {
 }
 
 role AttrXMooishClassHOW does AttrXMooishHelper {
+    has %!init-arg-cache;
 
-    method compose ( Mu \type ) is hidden-from-backtrace {
-        #note "??? Compose on ", type.^name;
+    method compose ( Mu \type, :$compiler_services ) is hidden-from-backtrace {
         for type.^attributes.grep( AttrXMooishAttributeHOW ) -> $attr {
             self.setup-helpers( type, $attr );
         }
+        # note "+++ done composing {type.^name}";
         nextsame;
     }
 
-    method add_method(Mu $obj, $name, $code_obj, :$nowrap=False) is hidden-from-backtrace {
-        #note "^^^ ADDING METHOD $name on {$obj.^name}";
+    method on_DESTROY ($object) {
+        %attr-data{self.WHICH}:delete;
+    }
+
+    method add_method(Mu \type, $name, $code_obj, :$nowrap=False) is hidden-from-backtrace {
+        # note "^^^ ADDING METHOD $name on {$obj.^name} defined:{?$obj.?defined} // $nowrap";
         my $m = $code_obj;
         unless $nowrap {
             given $name {
                 when <DESTROY> {
                     #note "^^^ WRAPPING DESTROY";
                     $m = my submethod DESTROY {
-                        #note "&&& AUTOGEN DESTROY on {self.WHICH}";
-                        %attr-data{self.WHICH}:delete;
+                        # note "&&& REPLACED DESTROY on {self.WHICH} // {self.HOW.^name}";
+                        self.HOW.on_DESTROY( self );
                         self.&$code_obj;
                     }
                 }
             }
         }
         #note "^^^ Done adding method $name";
-        nextwith($obj, $name, $m);
+        nextwith(type, $name, $m);
     }
 
     method install-stagers ( Mu \type ) is hidden-from-backtrace {
-        #note "+++ INSTALLING STAGERS {type.WHO} {type.HOW}";
+        # note "+++ INSTALLING STAGERS {type.WHO} {type.HOW}";
         my %wrap-methods;
 
-        %wrap-methods<DESTROY> = my submethod DESTROY {
-            #note "&&& AUTOGEN DESTROY on {self.WHICH}";
-            %attr-data{self.WHICH}:delete;
+        %wrap-methods<DESTROY> = my submethod {
+            # note "&&& INSTALLED DESTROY on {self.WHICH} // {self.HOW.^name}";
+            self.HOW.on_DESTROY( self );
             nextsame;
         };
 
         my $has-build = type.^declares_method( 'BUILD' );
+        my $iarg-cache := %!init-arg-cache;
         %wrap-methods<BUILD> = my submethod (*%attrinit) {
-            #note "&&& CUSTOM BUILD on {self.WHO} by {type.WHO}";
+            # note "&&& CUSTOM BUILD on {self.WHO} by {type.WHO} // has-build:{$has-build}";
             # Don't pass initial attributes if wrapping user's BUILD - i.e. we don't initialize from constructor
             type.^on_create( self, $has-build ?? {} !! %attrinit );
+
             when !$has-build {
-                # We would have to init all attributes from attrinit. Even those without the trait.
+                # We would have to init all non-mooished attributes from attrinit.
                 my $base-name;
+                # note "ATTRINIT: ", %attrinit;
                 for type.^attributes( :local(1) ).grep( {
                     $_ !~~ AttrXMooishAttributeHOW
                     && .has_accessor
                     && (%attrinit{$base-name = .name.substr(2)}:exists)
                 } ) -> $lattr {
-                    #note "--- INIT PUB ATTR $base-name";
+                    # note "--- INIT PUB ATTR $base-name // ", $lattr.^name;
                     #note "WHO:", $lattr.WHO;
-                    my $val = %attrinit{$base-name};
-                    $lattr.set_value( self, $val );
+                    # my $val = %attrinit{$base-name};
+                    $lattr.set_value( self, typecheck-attr-value( $lattr, %attrinit{$base-name} ) );
                 }
             }
             nextsame;
@@ -841,11 +921,11 @@ role AttrXMooishClassHOW does AttrXMooishHelper {
             my $my-method = %wrap-methods{$method-name};
             $my-method.set_name( $method-name );
             if $orig-method {
-                #note "&&& WRAPPING $method-name";
+                # note "&&& WRAPPING $method-name";
                 type.^find_method($method-name, :no_fallback(1)).wrap( $my-method );
             }
             else {
-                #note "&&& ADDING $method-name";
+                # note "&&& ADDING $method-name on {type.^name}";
                 self.add_method( type, $method-name, $my-method );
             }
         }
@@ -862,14 +942,14 @@ role AttrXMooishClassHOW does AttrXMooishHelper {
         #note "+++ done create_BUILDPLAN";
     }
 
-
     method on_create ( Mu \type, Mu \instance, %attrinit ) is hidden-from-backtrace {
         #note "ON CREATE";
 
         my @lazyAttrs = type.^attributes( :local(1) ).grep( AttrXMooishAttributeHOW );
 
         for @lazyAttrs -> $attr {
-            #note "Found lazy attr {$attr.name} // {$attr.HOW}";
+            # note "Found lazy attr {$attr.name} // {$attr.HOW} // ", $attr.init-args, " --> ", $attr.init-args.elems;
+            %!init-arg-cache{ $attr.name } = $attr if $attr.init-args.elems > 0;
             $attr.make-mooish( instance, %attrinit );
         }
     }
@@ -881,11 +961,12 @@ role AttrXMooishClassHOW does AttrXMooishHelper {
 }
 
 role AttrXMooishRoleHOW does AttrXMooishHelper {
-    method compose (Mu \type) is hidden-from-backtrace {
-        #note "COMPOSING ROLE ", type.^name, " // ", type.HOW.^name;
+    method compose (Mu \type, :$compiler_services ) is hidden-from-backtrace {
+        # note "COMPOSING ROLE ", type.^name, " // ", type.HOW.^name, " // ", ? $compiler_services;
         for type.^attributes.grep( AttrXMooishAttributeHOW ) -> $attr {
             self.setup-helpers( type, $attr );
         }
+        # note "+++ done composing {type.^name}";
         nextsame
     }
 
@@ -900,7 +981,7 @@ role AttrXMooishRoleHOW does AttrXMooishHelper {
 
 multi trait_mod:<is>( Attribute:D $attr, :$mooish! ) is export {
     $attr does AttrXMooishAttributeHOW;
-    #note "Applying for {$attr.name} to ", $*PACKAGE.WHO, " // ", $*PACKAGE.HOW;
+    # note "Applying for {$attr.name} to ", $*PACKAGE.WHO, " // ", $*PACKAGE.HOW;
     #$*PACKAGE.HOW does AttrXMooishClassHOW unless $*PACKAGE.HOW ~~ AttrXMooishClassHOW;
     given $*PACKAGE.HOW {
         when Metamodel::ParametricRoleHOW {
@@ -953,6 +1034,16 @@ multi trait_mod:<is>( Attribute:D $attr, :$mooish! ) is export {
                             X::Fatal.new( message => "Unsupported {$opt} type of {.WHAT} for attribute {$attr.name}; can only be Bool or Str" ).throw
                                 unless $_ ~~ Bool | Str;
                             $attr."$opt"() = $_;
+                        }
+                    }
+                    when 'no-init' {
+                        $attr.no-init = ? $option.value;
+                    }
+                    when 'init-arg' | 'alias' | 'init-args' | 'aliases' {
+                        given $option{$_} {
+                            X::Fatal.new( message => "Unsupported {$_} type of {.WHAT} for attribute {$attr.name}; can only be Str or Positional" ).throw
+                                unless $_ ~~ Str | Positional;
+                            $attr.init-args.append: $_<>;
                         }
                     }
                     default {

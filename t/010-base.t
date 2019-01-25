@@ -218,7 +218,7 @@ subtest "Constructor init", {
 
     $inst = Foo1.new( :bar(1,2,3), :foo(<a b c>) );
     is-deeply $inst.bar, [1,2,3], 'mooish array attribute init from new';
-    is-deeply $inst.foo, <a b c>, 'non-mooish array attribute init from new';
+    is-deeply $inst.foo, [<a b c>], 'non-mooish array attribute init from new';
 }
 
 done-testing;
