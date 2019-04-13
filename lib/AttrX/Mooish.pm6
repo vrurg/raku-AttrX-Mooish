@@ -882,13 +882,14 @@ role AttrXMooishClassHOW does AttrXMooishHelper {
     method add_method(Mu \type, $name, $code_obj, :$nowrap=False) is hidden-from-backtrace {
         # note "^^^ ADDING METHOD $name on {$obj.^name} defined:{?$obj.?defined} // $nowrap";
         my $m = $code_obj;
+        my $meta := self;
         unless $nowrap {
             given $name {
                 when <DESTROY> {
                     #note "^^^ WRAPPING DESTROY";
                     $m = my submethod DESTROY {
                         # note "&&& REPLACED DESTROY on {self.WHICH} // {self.HOW.^name}";
-                        self.HOW.on_DESTROY( self );
+                        $meta.on_DESTROY( self );
                         self.&$code_obj;
                     }
                 }
@@ -902,9 +903,10 @@ role AttrXMooishClassHOW does AttrXMooishHelper {
         # note "+++ INSTALLING STAGERS {type.WHO} {type.HOW}";
         my %wrap-methods;
 
+        my $meta := self;
         %wrap-methods<DESTROY> = my submethod {
             # note "&&& INSTALLED DESTROY on {self.WHICH} // {self.HOW.^name}";
-            self.HOW.on_DESTROY( self );
+            $meta.on_DESTROY( self );
             nextsame;
         };
 
