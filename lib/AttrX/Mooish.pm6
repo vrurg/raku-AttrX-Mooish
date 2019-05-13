@@ -464,6 +464,7 @@ class X::TypeCheck::MooishOption is X::TypeCheck {
 }
 
 my %attr-data;
+my Lock $adl .= new;
 
 # PvtMode enum defines what privacy mode is used when looking for an option method:
 # force: makes the method always private
@@ -482,7 +483,7 @@ role AttrXMooishHelper {
         my %helpers =
             :clearer( my method {
                 my $obj-id = self.WHICH;
-                # Can't use $attr to call bind-proxy upon if the original attribute belongs to a role. In this case it's
+                # Can't use $attr to call bind-proxy upon if the original attribute belongs to a role. In this case its
                 # .package is not defined.
                 # Metamodel::GenericHOW only happens for role attributes
                 # note "THIS IS CLEARER for {$attr.name}";
@@ -495,7 +496,7 @@ role AttrXMooishHelper {
                 $attr-obj.bind-proxy( self, $obj-id );
                 $attr.clear-attr( $obj-id )
              } ),
-            :predicate( my method { $attr.is-set( self.WHICH ) } ),
+            :predicate( my method   { $attr.is-set( self.WHICH ) } ),
             ;
 
         my @aliases = $attr.base-name, |$attr.init-args;
@@ -625,11 +626,14 @@ role AttrXMooishAttributeHOW {
     method make-mooish ( Mu \instance, %attrinit ) is hidden-from-backtrace {
         my $attr = self;
         my $obj-id = instance.WHICH;
-        #note "Using obj ID:", $obj-id;
+        note ">>> MOOIFYING ", $.name, " on ", $obj-id;
+
+        if so %attr-data{$obj-id}{$.name} {
+            note "*** WARNING *** OBJECT $obj-id ALREADY EXISTS"
+        }
 
         return if so %attr-data{$obj-id}{$.name};
 
-        # note ">>> MOOIFYING ", $.name;
         # note ">>> HAS INIT: ", %attrinit;
 
         my $init-key = $.no-init ?? Nil !! ($!base-name, |@!init-args).grep( { %attrinit{$_}:exists } ).head;
@@ -645,7 +649,9 @@ role AttrXMooishAttributeHOW {
             }
         }
 
-        %attr-data{$obj-id}{$attr.name}<bound> = False;
+        $adl.protect: {
+            %attr-data{$obj-id}{$attr.name}<bound> = False;
+        };
         self.bind-proxy( instance, $obj-id );
 
         if $initialized {
@@ -658,7 +664,9 @@ role AttrXMooishAttributeHOW {
 
         # note "Setting mooished";
         #%attr-data{$obj-id}{$.name}<value> = $default;
-        %attr-data{$obj-id}{$attr.name}<mooished> = True;
+        $adl.protect: {
+            %attr-data{$obj-id}{$attr.name}<mooished> = True;
+        }
         # note "<<< DONE MOOIFYING ", $.name;
     }
 
@@ -699,14 +707,18 @@ role AttrXMooishAttributeHOW {
             )
         );
 
-        %attr-data{$obj-id}{$.name}<bound> = True;
+        $adl.protect: {
+            %attr-data{$obj-id}{$.name}<bound> = True;
+        }
     }
 
     method unbind-proxy ( Mu \instance, $obj-id, $val is raw ) {
         unless $!always-bind or !%attr-data{$obj-id}{$.name}<bound> {
             # note "---- UNBINDING ATTR {$.name} INTO VALUE ($val // {$val.VAR.^name} // {$val.VAR.of.^name})";
             nqp::bindattr( nqp::decont(instance), $.package, $.name, $val );
-            %attr-data{$obj-id}{$.name}<bound> = False;
+            $adl.protect: {
+                %attr-data{$obj-id}{$.name}<bound> = False;
+            }
         }
     }
 
@@ -724,21 +736,23 @@ role AttrXMooishAttributeHOW {
         # note ". storing into {$.name} // ";
         # note "store-value for ", $obj-id;
 
-        if %attr-data{$obj-id}{$.name}<value>:exists {
-            given $!sigil {
-                when '$' | '&' {
-                    nqp::p6assign(%attr-data{$obj-id}{$.name}<value>, $value);
-                }
-                when '@' | '%' {
-                    %attr-data{$obj-id}{$.name}<value>.STORE(nqp::decont($value));
-                }
-                default {
-                    die "AttrX::Mooish can't handle «$_» sigil";
-                }
+        $adl.protect: {
+            if %attr-data{$obj-id}{$.name}<value>:exists {
+                    given $!sigil {
+                        when '$' | '&' {
+                                nqp::p6assign(%attr-data{$obj-id}{$.name}<value>, $value);
+                        }
+                        when '@' | '%' {
+                            %attr-data{$obj-id}{$.name}<value>.STORE(nqp::decont($value));
+                        }
+                        default {
+                            die "AttrX::Mooish can't handle «$_» sigil";
+                        }
+                    }
             }
-        }
-        else {
-            %attr-data{$obj-id}{$.name}<value> := typecheck-attr-value( self, $value );
+            else {
+                %attr-data{$obj-id}{$.name}<value> := typecheck-attr-value( self, $value );
+            }
         }
 
         # note "=== VALUE IN THE HASH: ",
@@ -876,19 +890,23 @@ role AttrXMooishClassHOW does AttrXMooishHelper {
     }
 
     method on_DESTROY ($object) {
-        %attr-data{self.WHICH}:delete;
+        $adl.protect: {
+            note "&&& WIPING OUT ALL DATA FOR ", $object.WHICH;
+            %attr-data{$object.WHICH}:delete;
+        }
     }
 
     method add_method(Mu \type, $name, $code_obj, :$nowrap=False) is hidden-from-backtrace {
         # note "^^^ ADDING METHOD $name on {$obj.^name} defined:{?$obj.?defined} // $nowrap";
         my $m = $code_obj;
+        my $how = self;
         unless $nowrap {
             given $name {
                 when <DESTROY> {
                     #note "^^^ WRAPPING DESTROY";
                     $m = my submethod DESTROY {
                         # note "&&& REPLACED DESTROY on {self.WHICH} // {self.HOW.^name}";
-                        self.HOW.on_DESTROY( self );
+                        $how.on_DESTROY( self );
                         self.&$code_obj;
                     }
                 }
@@ -901,10 +919,11 @@ role AttrXMooishClassHOW does AttrXMooishHelper {
     method install-stagers ( Mu \type ) is hidden-from-backtrace {
         # note "+++ INSTALLING STAGERS {type.WHO} {type.HOW}";
         my %wrap-methods;
+        my $how = self;
 
         %wrap-methods<DESTROY> = my submethod {
             # note "&&& INSTALLED DESTROY on {self.WHICH} // {self.HOW.^name}";
-            self.HOW.on_DESTROY( self );
+            $how.on_DESTROY( self );
             nextsame;
         };
 
@@ -913,6 +932,7 @@ role AttrXMooishClassHOW does AttrXMooishHelper {
         %wrap-methods<BUILD> = my submethod (*%attrinit) {
             # note "&&& CUSTOM BUILD on {self.WHO} by {type.WHO} // has-build:{$has-build}";
             # Don't pass initial attributes if wrapping user's BUILD - i.e. we don't initialize from constructor
+            # note "BUILD ON ", self.WHICH;
             type.^on_create( self, $has-build ?? {} !! %attrinit );
 
             when !$has-build {
@@ -943,7 +963,7 @@ role AttrXMooishClassHOW does AttrXMooishHelper {
             }
             else {
                 # note "&&& ADDING $method-name on {type.^name}";
-                self.add_method( type, $method-name, $my-method );
+                self.add_method( type, $method-name, $my-method, :nowrap );
             }
         }
 
@@ -960,13 +980,21 @@ role AttrXMooishClassHOW does AttrXMooishHelper {
     }
 
     method on_create ( Mu \type, Mu \instance, %attrinit ) is hidden-from-backtrace {
-        #note "ON CREATE";
+        # note "ON CREATE, self: ", self.WHICH;
+
+        state $init-lock = Lock.new;
 
         my @lazyAttrs = type.^attributes( :local(1) ).grep( AttrXMooishAttributeHOW );
 
+        $init-lock.protect: {
+            for @lazyAttrs -> $attr {
+                # note "Found lazy attr {$attr.name} // {$attr.HOW} // ", $attr.init-args, " --> ", $attr.init-args.elems;
+                next unless %!init-arg-cache{ $attr.name }:exists;
+                %!init-arg-cache{ $attr.name } = $attr if $attr.init-args.elems > 0;
+            }
+        }
+
         for @lazyAttrs -> $attr {
-            # note "Found lazy attr {$attr.name} // {$attr.HOW} // ", $attr.init-args, " --> ", $attr.init-args.elems;
-            %!init-arg-cache{ $attr.name } = $attr if $attr.init-args.elems > 0;
             $attr.make-mooish( instance, %attrinit );
         }
     }

@@ -7,6 +7,11 @@ MOD_ARCH=$(MOD_DISTRO).tar.gz
 META=META6.json
 META_BUILDER=./build-tools/gen-META.p6
 
+PROVE_CMD=prove6
+PROVE_FLAGS=-l
+TEST_DIRS=t
+PROVE=$(PROVE_CMD) $(PROVE_FLAGS) $(TEST_DIRS)
+
 DIST_FILES := $(git ls-files)
 
 CLEAN_FILES=$(MOD_NAME_PFX)-v*.tar.gz
@@ -27,15 +32,15 @@ README.html: $(MAIN_MOD)
 	@perl6 --doc=HTML $^ >$@
 
 test: 
-	@prove -l --exec "perl6 -Ilib" -r t
+	@$(PROVE)
 
 author-test:
 	@echo "===> Author testing"
-	@AUTHOR_TESTING=1 prove -l --exec "perl6 -Ilib" -r t
+	@AUTHOR_TESTING=1 $(PROVE)
 
 release-test:
 	@echo "===> Release testing"
-	@RELEASE_TESTING=1 prove -l --exec "perl6 -Ilib" -r t
+	@RELEASE_TESTING=1 $(PROVE)
 
 clean-repo:
 	@git diff-index --quiet HEAD || (echo "*ERROR* Repository is not clean, commit your changes first!"; exit 1)
