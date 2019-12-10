@@ -453,6 +453,11 @@ See the LICENSE file in this distribution.
 
 =end pod
 
+CHECK {
+    die "Rakudo of at least v2019.11 required to run this version of " ~ ::?PACKAGE.^name
+        unless $*PERL.compiler.version >= v2019.11;
+}
+
 class X::Fatal is Exception {
     #has Str $.message is rw;
 }
