@@ -1,4 +1,4 @@
-unit module AttrX::Mooish:ver<0.6.903>:auth<github:vrurg>;
+unit module AttrX::Mooish:ver<0.7.900>:auth<github:vrurg>;
 #use Data::Dump;
 use nqp;
 
