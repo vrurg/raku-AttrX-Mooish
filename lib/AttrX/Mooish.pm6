@@ -1,4 +1,4 @@
-unit module AttrX::Mooish:ver<0.6.902>:auth<github:vrurg>;
+unit module AttrX::Mooish:ver<0.6.903>:auth<github:vrurg>;
 #use Data::Dump;
 use nqp;
 
@@ -72,7 +72,7 @@ The above would generate a output similar to the following:
 This module is aiming at providing some functionality we're all missing from Moo/Moose. It implements laziness,
 accompanying methods and adds attribute value filter on top of what standard Moo/Moose provide.
 
-What makes this module different from previous versions one could find in the Perl6 modules repository is that it
+What makes this module different from previous versions one could find in the Raku modules repository is that it
 implements true laziness allowing I<Nil> to be a first-class value of a lazy attribute. In other words, if you look at
 the L<#SYNOPSIS> section, C<$.bar3> value could randomly be either undefined or 3.1415926.
 
@@ -422,7 +422,7 @@ attributes. Consider the C<$!bar2> attribute from L<#SYNOPSIS>.
 Module versions prior to v0.5.0 were pretty much costly perfomance-wise. This was happening due to use of C<Proxy> to
 handle all attribute read/writes. Since v0.5.0 only the first read/write operation would be handled by this module
 unless  C<filter> or C<trigger> parameters are used. When C<AttrX::Mooish> is assured that the attribute is properly
-initialized it steps aside and lets the Perl6 core to do its job without intervention.
+initialized it steps aside and lets the Raku core to do its job without intervention.
 
 The only exception takes place if C<clearer> parameter is used and C«clear-<attribute>» method is called. In this case
 the attribute state is reverted back to uninitialized state and C<Proxy> is getting installed again – until the next
