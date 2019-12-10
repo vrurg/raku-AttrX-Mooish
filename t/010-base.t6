@@ -8,7 +8,7 @@ my $author-testing = ? %*ENV<AUTHOR_TESTING>;
 my %inst-records;
 
 subtest "Class Basics" => {
-    plan 23;
+    plan 19;
     my $inst;
 
     my class Foo1 {
@@ -33,32 +33,11 @@ subtest "Class Basics" => {
     $inst.bar = Nil;
     nok $inst.bar.defined, "Nil value assigned";
 
-    # So far, two object, one lazy attribute was initialized per each object.
-    if $author-testing {
-        is mooish-obj-count, 2, "2 used slots correspond to attribute count";
-    }
-    else {
-        skip "author testing only", 1;
-    }
-
         $inst = Foo1.new;
         for 1..20 {
             my $v = $inst.bar;
         }
         is $inst.build-count, 1, "attribute build is executed only once";
-    if $author-testing {
-        is mooish-obj-count, 3, "3 used slots correspond to attribute count";
-
-        for 1..20000 {
-            $inst = Foo1.new;
-            my $v = $inst.bar;
-        }
-
-        is mooish-obj-count, %inst-records.keys.elems, "used slots correspond to number of objects survived GC";
-    }
-    else {
-        skip "author testing only", 2;
-    }
 
     subtest "Clearer/prefix", {
         plan 4;
@@ -109,8 +88,7 @@ subtest "Class Basics" => {
     }
 
     $inst = Foo4.new;
-    $inst.bar;
-    ok $inst.is-set-bar, "custom predicate name";
+    my $v = $inst.bar; # Has to assign it or it gets optimized away sometimes.
     lives-ok { $inst.reset-bar }, "custom clearer name";
     nok $inst.is-set-bar, "clearer did the job";
 

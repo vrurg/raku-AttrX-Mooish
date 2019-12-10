@@ -1,8 +1,6 @@
 use Test;
 use AttrX::Mooish;
 
-my $author-testing = ? %*ENV<AUTHOR_TESTING>;
-
 class Foo {
     has $.a is rw is mooish(:clearer, :lazy, :init-arg<a1 a2>);
     has $.n is mooish(:lazy, :init-arg<n1>, :no-init);

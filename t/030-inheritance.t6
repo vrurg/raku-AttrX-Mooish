@@ -8,7 +8,7 @@ my $author-testing = ? %*ENV<AUTHOR_TESTING>;
 my %inst-records;
 
 subtest "Inheritance basics", {
-    plan 16;
+    plan 13;
     my $inst;
 
     class Bar1 {
@@ -35,32 +35,11 @@ subtest "Inheritance basics", {
     is $inst.bar, "foo-bar-baz", "set manually ok";
     is $inst2.bar, pi, "second object attribute unchanged";
 
-    if $author-testing {
-        # So far, two object, one lazy attribute was initialized per each object.
-        is mooish-obj-count, 2, "2 used slots correspond to attribute count";
-    }
-    else {
-        skip "author testing only", 1;
-    }
-
     $inst = Foo1.new;
     for 1..2000 {
         my $v = $inst.bar;
     }
     is $inst.build-count, 1, "attribute build is executed only once";
-    if $author-testing {
-        is mooish-obj-count, 3, "3 used slots correspond to attribute count";
-
-        for 1..20000 {
-            $inst = Foo1.new;
-            my $v = $inst.bar;
-        }
-
-        is mooish-obj-count, %inst-records.keys.elems, "used slots correspond to number of objects survived GC";
-    }
-    else {
-        skip "author testing only", 2;
-    }
 
     $inst.bar = "something different";
     is $inst.bar, "something different", "set before clear";
