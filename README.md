@@ -69,7 +69,7 @@ DESCRIPTION
 
 This module is aiming at providing some functionality we're all missing from Moo/Moose. It implements laziness, accompanying methods and adds attribute value filter on top of what standard Moo/Moose provide.
 
-What makes this module different from previous versions one could find in the Perl6 modules repository is that it implements true laziness allowing *Nil* to be a first-class value of a lazy attribute. In other words, if you look at the [SYNOPSIS](#SYNOPSIS) section, `$.bar3` value could randomly be either undefined or 3.1415926.
+What makes this module different from previous versions one could find in the Raku modules repository is that it implements true laziness allowing *Nil* to be a first-class value of a lazy attribute. In other words, if you look at the [SYNOPSIS](#SYNOPSIS) section, `$.bar3` value could randomly be either undefined or 3.1415926.
 
 Laziness for beginners
 ----------------------
@@ -345,7 +345,7 @@ Note that use of this trait doesn't change attribute accessors. More than that, 
 Performance
 -----------
 
-Module versions prior to v0.5.0 were pretty much costly perfomance-wise. This was happening due to use of `Proxy` to handle all attribute read/writes. Since v0.5.0 only the first read/write operation would be handled by this module unless `filter` or `trigger` parameters are used. When `AttrX::Mooish` is assured that the attribute is properly initialized it steps aside and lets the Perl6 core to do its job without intervention.
+Module versions prior to v0.5.0 were pretty much costly perfomance-wise. This was happening due to use of `Proxy` to handle all attribute read/writes. Since v0.5.0 only the first read/write operation would be handled by this module unless `filter` or `trigger` parameters are used. When `AttrX::Mooish` is assured that the attribute is properly initialized it steps aside and lets the Raku core to do its job without intervention.
 
 The only exception takes place if `clearer` parameter is used and `clear-<attribute>` method is called. In this case the attribute state is reverted back to uninitialized state and `Proxy` is getting installed again – until the next read/write operation.
 
