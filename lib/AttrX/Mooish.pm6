@@ -620,8 +620,10 @@ role AttrXMooishAttributeHOW {
     }
 
     method compose ( Mu \type, :$compiler_services ) is hidden-from-backtrace {
+        # note "+++ composing {$.name} on {type.^name} {type.HOW}, was composed? ", $composed;
+        # $!composed is a recent addition on Attribute object.
+        return if try nqp::getattr_i(self, Attribute, '$!composed');
 
-        # note "+++ composing {$.name} on {type.^name} {type.HOW}";
         # note "ATTR PACKAGE:", $.package.^name;
 
         $!always-bind = $!filter || $!trigger;
@@ -646,7 +648,6 @@ role AttrXMooishAttributeHOW {
         #note "+++ done composing attribute {$.name}";
     }
 
-    # force-default is true if attribute is set in .new( ) call
     method make-mooish ( Mu \instance, %attrinit ) is hidden-from-backtrace {
         my $attr = self;
         my Mu $attr-var := nqp::getattr(nqp::decont(instance), $.package, $.name).VAR;
@@ -1008,7 +1009,7 @@ role AttrXMooishRoleHOW does AttrXMooishHelper {
     }
 
     method specialize(Mu \r, Mu:U \obj, *@pos_args, *%named_args) is hidden-from-backtrace {
-        #note "*** Specializing role {r.^name} on {obj.WHO}";
+        # note "*** Specializing role {r.^name} on {obj.WHO}";
         #note "CLASS HAS THE ROLE:", obj.HOW ~~ AttrXMooishClassHOW;
         obj.HOW does AttrXMooishClassHOW unless obj.HOW ~~ AttrXMooishClassHOW;
         #note "*** Done specializing";
