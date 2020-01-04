@@ -664,7 +664,7 @@ role AttrXMooishAttributeHOW {
             # note ". No $.name constructor parameter on $obj-id, checking default {$default // '(Nil)'}";
             given $default {
                 when Array | Hash { $initialized = so .elems; }
-                default { $initialized = .defined }
+                default { $initialized = nqp::isconcrete(nqp::decont($_)) }
             }
         }
 
