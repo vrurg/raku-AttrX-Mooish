@@ -18,7 +18,7 @@ my class Foo1 {
         self.^add_method( |make-method("bar-composed", method { "yes, bar is composed!" }) );
     }
 
-    method !baz-compose (*%attr) {
+    submethod !baz-compose (*%attr) {
         self.^add_method( |make-method("baz-composed", method { "yes, baz is composed!" }) );
     }
 }
@@ -31,7 +31,7 @@ is Foo1.baz-composed, "yes, baz is composed!", "baz named compose works";
 my role FooRole2 {
     has $.foo is mooish( :composer );
 
-    method !compose-foo {
+    submethod !compose-foo {
         self.^add_method( |make-method("foo-composed", method { "foo-composed method" }) );
     }
 }

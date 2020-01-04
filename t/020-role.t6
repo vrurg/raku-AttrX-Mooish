@@ -1,7 +1,7 @@
 use Test;
 use AttrX::Mooish;
 
-plan 3;
+plan 4;
 
 my $author-testing = ? %*ENV<AUTHOR_TESTING>;
 
@@ -150,6 +150,24 @@ subtest "Private Methods", {
     $inst.re-clean;
     is $inst.get-foo<a>, "private foo", "build after class-initiated clear";
     is $inst.build-count, 3, "build count is 3";
+}
+
+subtest "Parameterized" => {
+    plan 1;
+    my role FooRole[::T] {
+        has T $.attr is mooish(:lazy);
+
+        method build-attr {
+            T.new
+        }
+    }
+
+    my class Bar { method bar { "42!" } }
+
+    my class Foo does FooRole[Bar] { }
+
+    my $inst = Foo.new;
+    is $inst.attr.bar, "42!", "parameterized attribute is built";
 }
 
 done-testing;

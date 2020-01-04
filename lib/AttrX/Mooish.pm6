@@ -620,8 +620,10 @@ role AttrXMooishAttributeHOW {
     }
 
     method compose ( Mu \type, :$compiler_services ) is hidden-from-backtrace {
+        # note "+++ composing {$.name} on {type.^name} {type.HOW}, was composed? ", $composed;
+        # $!composed is a recent addition on Attribute object.
+        return if try nqp::getattr_i(self, Attribute, '$!composed');
 
-        # note "+++ composing {$.name} on {type.^name} {type.HOW}";
         # note "ATTR PACKAGE:", $.package.^name;
 
         $!always-bind = $!filter || $!trigger;
@@ -646,7 +648,6 @@ role AttrXMooishAttributeHOW {
         #note "+++ done composing attribute {$.name}";
     }
 
-    # force-default is true if attribute is set in .new( ) call
     method make-mooish ( Mu \instance, %attrinit ) is hidden-from-backtrace {
         my $attr = self;
         my Mu $attr-var := nqp::getattr(nqp::decont(instance), $.package, $.name).VAR;
@@ -664,7 +665,7 @@ role AttrXMooishAttributeHOW {
             # note ". No $.name constructor parameter on $obj-id, checking default {$default // '(Nil)'}";
             given $default {
                 when Array | Hash { $initialized = so .elems; }
-                default { $initialized = .defined }
+                default { $initialized = nqp::isconcrete(nqp::decont($_)) }
             }
         }
 
@@ -699,11 +700,12 @@ role AttrXMooishAttributeHOW {
                     my Mu $attr-var := $proxy.VAR;
                     my $val;
                     # note "ATTR<{$.name}> SIGIL: ", $!sigil, ", attr-var:", $attr-var.^name, " prox: ", $proxy.VAR.^name;
+                    # note "SELF:", self.^name, ", auto viv: ", nqp::getattr(self, Attribute, '$!auto_viv_container').^name, ", generic? ", self.auto_viv_container.HOW.archetypes.generic;
                     if $!sigil eq '$' | '&' {
-                        $val := nqp::clone($.auto_viv_container.VAR);
+                        $val := nqp::clone(self.auto_viv_container.VAR);
                     }
                     else {
-                        $val := $.auto_viv_container.clone;
+                        $val := self.auto_viv_container.clone;
                     }
                     # note "IS MOOISHED? ", ? nqp::istype($attr-var, AttrProxy) && $attr-var.mooished;
                     if nqp::istype($attr-var, AttrProxy) && $attr-var.mooished {
@@ -870,14 +872,14 @@ role AttrXMooishAttributeHOW {
         return unless $!composer;
         #note "My type for composer: ", $.package;
         my $comp-name = self.opt2method( 'composer' );
-        #note "Looking for method $comp-name";
-        my $composer = type.^find_private_method( $comp-name );
+        # note "Looking for method $comp-name";
+        my &composer = type.^find_private_method( $comp-name );
         X::Method::NotFound.new(
             method    => $comp-name,
             private  => True,
             typename => type.WHO,
-        ).throw unless $composer;
-        type.&$composer();
+        ).throw unless &composer;
+        type.&composer();
     }
 }
 
@@ -1007,7 +1009,7 @@ role AttrXMooishRoleHOW does AttrXMooishHelper {
     }
 
     method specialize(Mu \r, Mu:U \obj, *@pos_args, *%named_args) is hidden-from-backtrace {
-        #note "*** Specializing role {r.^name} on {obj.WHO}";
+        # note "*** Specializing role {r.^name} on {obj.WHO}";
         #note "CLASS HAS THE ROLE:", obj.HOW ~~ AttrXMooishClassHOW;
         obj.HOW does AttrXMooishClassHOW unless obj.HOW ~~ AttrXMooishClassHOW;
         #note "*** Done specializing";
