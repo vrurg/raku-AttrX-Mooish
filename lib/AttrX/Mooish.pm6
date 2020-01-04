@@ -870,14 +870,14 @@ role AttrXMooishAttributeHOW {
         return unless $!composer;
         #note "My type for composer: ", $.package;
         my $comp-name = self.opt2method( 'composer' );
-        #note "Looking for method $comp-name";
-        my $composer = type.^find_private_method( $comp-name );
+        # note "Looking for method $comp-name";
+        my &composer = type.^find_private_method( $comp-name );
         X::Method::NotFound.new(
             method    => $comp-name,
             private  => True,
             typename => type.WHO,
-        ).throw unless $composer;
-        type.&$composer();
+        ).throw unless &composer;
+        type.&composer();
     }
 }
 
