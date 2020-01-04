@@ -699,11 +699,12 @@ role AttrXMooishAttributeHOW {
                     my Mu $attr-var := $proxy.VAR;
                     my $val;
                     # note "ATTR<{$.name}> SIGIL: ", $!sigil, ", attr-var:", $attr-var.^name, " prox: ", $proxy.VAR.^name;
+                    # note "SELF:", self.^name, ", auto viv: ", nqp::getattr(self, Attribute, '$!auto_viv_container').^name, ", generic? ", self.auto_viv_container.HOW.archetypes.generic;
                     if $!sigil eq '$' | '&' {
-                        $val := nqp::clone($.auto_viv_container.VAR);
+                        $val := nqp::clone(self.auto_viv_container.VAR);
                     }
                     else {
-                        $val := $.auto_viv_container.clone;
+                        $val := self.auto_viv_container.clone;
                     }
                     # note "IS MOOISHED? ", ? nqp::istype($attr-var, AttrProxy) && $attr-var.mooished;
                     if nqp::istype($attr-var, AttrProxy) && $attr-var.mooished {
