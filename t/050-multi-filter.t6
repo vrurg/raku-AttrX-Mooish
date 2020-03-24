@@ -1,7 +1,7 @@
 use Test;
 use AttrX::Mooish;
 
-plan 7;
+plan 8;
 
 my $inst;
 my class Foo1 {
@@ -25,12 +25,13 @@ my class Foo1 {
 
     multi method filter-bar ( Num $val ) {
         is $val, pi, "Num value from builder";
+        $val
     }
 }
 
 $inst = Foo1.new;
 
-$inst.bar;
+is $inst.bar, pi, "built as expected";
 
 $inst.bar = "a string value";
 $inst.bar = 42;
