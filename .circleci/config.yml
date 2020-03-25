@@ -1,24 +1,27 @@
 defaults:
-  steps:
-    - checkout
+    steps:
+        - checkout
     - run: tagged_release
 version: 2
 jobs:
-  build:
-    docker:
-      - image: tonyodell/rakudo-nightly:latest
-    
+    build:
+        docker:
+            - image: tonyodell/rakudo-nightly:latest
+
+    environment:
+        PATH: /usr/local/share/perl6/site/bin:$PATH
+
     working_directory: ~
 
     steps:
-      - checkout
-      - run: 
+        - checkout
+        - run: 
           name: install build deps
           command: |
               zef install --deps-only --test-depends --/test .
               zef install --/test App::Prove6
-      - run:
-          name: test 
-          command: |
-              prove6 -v -l t
+        - run:
+           name: test 
+           command: |
+               prove6 -v -l t
 
