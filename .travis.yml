@@ -9,6 +9,7 @@ perl6:
 install:
   - rakudobrew build zef
   - zef install --deps-only --test-depends --/test .
+  - zef install App::Prove6 --/test
 script:
-  - PERL6LIB=$PWD/lib prove -e perl6 -vr --ext .t --ext .t6 --ext .rakutest t
+  - prove6 -v -l t
 sudo: false
