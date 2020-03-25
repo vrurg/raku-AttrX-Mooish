@@ -1,15 +1,12 @@
 defaults:
     steps:
         - checkout
-    - run: tagged_release
+        - run: tagged_release
 version: 2
 jobs:
     build:
         docker:
             - image: tonyodell/rakudo-nightly:latest
-
-    environment:
-        PATH: /usr/local/share/perl6/site/bin:$PATH
 
     working_directory: ~
 
@@ -23,5 +20,5 @@ jobs:
         - run:
            name: test 
            command: |
-               prove6 -v -l t
+               /usr/local/share/perl6/site/bin/prove6 -v -l t
 
