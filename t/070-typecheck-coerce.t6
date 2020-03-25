@@ -45,7 +45,7 @@ subtest "Basics", {
 
     throws-like {
             $inst = Foo2.new( initial => 43.1 );
-            $inst.foo;
+            my $v = $inst.foo;
         }, X::TypeCheck,
         message => q<Type check failed in assignment to $!foo; expected <anon> but got Rat (43.1)>,
         "subset fails as expected from initial bad string value";
@@ -61,7 +61,7 @@ subtest "Typed", {
 
         method build-bar { ["a", "b", "c"] }
         method trigger-bar ( $val ) { }
-        method !build-baz { 
+        method !build-baz {
             <a b c d>
         }
 

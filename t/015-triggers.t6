@@ -4,7 +4,7 @@ use AttrX::Mooish;
 plan 1;
 
 subtest "Triggers", {
-    plan 12;
+    plan 14;
     my $inst;
     my class Foo1 {
         has $.bar is rw is mooish(:trigger);
@@ -44,7 +44,7 @@ subtest "Triggers", {
     }
 
     $inst = Foo2.new;
-    $inst.bar;
+    is $inst.bar, "build bar", "lazily built as expected";
 
     my class Foo3 {
         has $.bar is rw is mooish(:lazy, :trigger);
@@ -61,7 +61,7 @@ subtest "Triggers", {
     }
 
     $inst = Foo3.new;
-    $inst.bar;
+    is $inst.bar, "from builder", "built as expected";
     $inst.bar = "not from builder";
 }
 

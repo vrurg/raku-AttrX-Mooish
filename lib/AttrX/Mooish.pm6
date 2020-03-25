@@ -471,11 +471,28 @@ class X::TypeCheck::MooishOption is X::TypeCheck {
 my class AttrProxy is Proxy {
     has $.val is rw;
     has Bool $.is-set is rw is default(False);
+    has Promise $!built-promise;
     has Bool $.mooished is rw is default(False);
 
     method clear {
         $!val = Nil;
         $!is-set = Nil;
+        $!built-promise = Nil;
+    }
+
+    method build-acquire {
+        return False if $!is-set;
+        my $bp = $!built-promise;
+        if !$bp.defined && cas($!built-promise, $bp, Promise.new) === $bp {
+            # note "ACQUIRED, promise: ", $!built-promise.WHICH if $*AXM-DEBUG;
+            return True;
+        }
+        await $!built-promise;
+        False
+    }
+
+    method build-release {
+        $!built-promise.keep(True);
     }
 
     method assign-val( $value is raw ) {
@@ -483,7 +500,8 @@ my class AttrProxy is Proxy {
         $!is-set = True;
     }
     method bind-val( $value is raw ) {
-        $!val := $value;
+        nqp::bindattr(self, AttrProxy, '$!val', $value);
+        # $!val := $value;
         $!is-set = True;
     }
 }
@@ -588,8 +606,8 @@ my sub typecheck-attr-value ( $attr is raw, $value ) is raw is hidden-from-backt
 
 role AttrXMooishAttributeHOW {
     has $.base-name = self.name.substr(2);
-    has $.sigil = self.name.substr( 0, 1 );
-    has $.always-bind = False;
+    has $!sigil = self.name.substr( 0, 1 );
+    has $!always-bind = False;
     has $.lazy is rw = False;
     has $.builder is rw = 'build-' ~ $!base-name;
     has $.clearer is rw = False;
@@ -599,6 +617,7 @@ role AttrXMooishAttributeHOW {
     has $.composer is rw = False;
     has $.no-init is rw = False;
     has @.init-args;
+    has Promise $!built-promise;
 
     my %opt2prefix = clearer => 'clear',
                      predicate => 'has',
@@ -707,10 +726,14 @@ role AttrXMooishAttributeHOW {
                     else {
                         $val := self.auto_viv_container.clone;
                     }
-                    # note "IS MOOISHED? ", ? nqp::istype($attr-var, AttrProxy) && $attr-var.mooished;
+                    # note "IS MOOISHED? ", ? nqp::istype($attr-var, AttrProxy) && $attr-var.mooished if $*AXM-DEBUG;
                     if nqp::istype($attr-var, AttrProxy) && $attr-var.mooished {
-                        # note "FETCH of {$attr.name}, lazy? ", ?$!lazy, ", set? ", $attr-var.is-set;
-                        self.build-attr( instance, $attr-var ) if ?$!lazy && !$attr-var.is-set;
+                        # note "FETCH of {$attr.name}, lazy? ", ?$!lazy, ", set? ", $attr-var.is-set if $*AXM-DEBUG;
+                        if ?$!lazy && $attr-var.build-acquire {
+                            LEAVE $attr-var.build-release;
+                            # note "BUILDING {$attr.name} for {instance.WHICH} attr var: ", $attr-var.^name, "|", nqp::objectid($attr-var) if $*AXM-DEBUG;
+                            self.build-attr( instance, $attr-var );
+                        }
                         $val := $attr-var.val if $attr-var.is-set;
                         # note "Fetched value for {$.name}: ", $val.VAR.^name, " // ", $val.perl, "; attr was set? ", $attr-var.is-set;
                         # Once read and built, mooishing is not needed unless filter or trigger are set; and until
@@ -780,6 +803,7 @@ role AttrXMooishAttributeHOW {
     method clear-attr ( Mu \obj ) is hidden-from-backtrace {
         my $attr-var := nqp::getattr(nqp::decont(obj), $.package, $.name).VAR;
         # note "Clearing {$.name} on ", $attr-var.^name;
+        $!built-promise = Nil;
         $attr-var.clear if nqp::istype($attr-var, AttrProxy);
     }
 
@@ -894,36 +918,10 @@ role AttrXMooishClassHOW does AttrXMooishHelper {
         nextsame;
     }
 
-    # method add_method(Mu \type, $name, $code_obj, :$nowrap=False) is hidden-from-backtrace {
-    #     # note "^^^ ADDING METHOD $name on {$obj.^name} defined:{?$obj.?defined} // $nowrap";
-    #     my $m = $code_obj;
-    #     my $how = self;
-    #     unless $nowrap {
-    #         given $name {
-    #             when <DESTROY> {
-    #                 #note "^^^ WRAPPING DESTROY";
-    #                 $m = my submethod DESTROY {
-    #                     # note "&&& REPLACED DESTROY on {self.WHICH} // {self.HOW.^name}";
-    #                     $how.on_DESTROY( self );
-    #                     self.&$code_obj;
-    #                 }
-    #             }
-    #         }
-    #     }
-    #     #note "^^^ Done adding method $name";
-    #     nextwith(type, $name, $m);
-    # }
-
     method install-stagers ( Mu \type ) is hidden-from-backtrace {
         # note "+++ INSTALLING STAGERS {type.WHO} {type.HOW}";
         my %wrap-methods;
         my $how = self;
-
-        # %wrap-methods<DESTROY> = my submethod {
-        #     # note "&&& INSTALLED DESTROY on {self.WHICH} // {self.HOW.^name}";
-        #     $how.on_DESTROY( self );
-        #     nextsame;
-        # };
 
         my $has-build = type.^declares_method( 'BUILD' );
         my $iarg-cache := %!init-arg-cache;

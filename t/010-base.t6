@@ -8,7 +8,7 @@ my $author-testing = ? %*ENV<AUTHOR_TESTING>;
 my %inst-records;
 
 subtest "Class Basics" => {
-    plan 19;
+    plan 20;
     my $inst;
 
     my class Foo1 {
@@ -88,7 +88,8 @@ subtest "Class Basics" => {
     }
 
     $inst = Foo4.new;
-    my $v = $inst.bar; # Has to assign it or it gets optimized away sometimes.
+    # Has to use attribute's value or it gets optimized away sometimes.
+    is $inst.bar, "from builder", "built as expected";
     lives-ok { $inst.reset-bar }, "custom clearer name";
     nok $inst.is-set-bar, "clearer did the job";
 

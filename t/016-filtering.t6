@@ -1,14 +1,14 @@
 use Test;
 use AttrX::Mooish;
 
-plan 14;
+plan 15;
 my $inst;
 
 my class Foo1 {
     has $.bar is rw is mooish(:filter);
 
     method filter-bar ( $value, :$attribute, *%opt ) {
-        pass q<filter for attribute $.bar>;
+        pass 'filter for attribute $.bar';
         is $attribute, '$!bar', "filter attribute name";
         if $value == 1 {
             nok %opt<old-value>:exists, "no old value on first call";
@@ -48,11 +48,12 @@ my class Foo3 {
         else {
             nok %opt<builder>:exists, "no builder option";
         }
+        $value ~ "..."
     }
 }
 
 $inst = Foo3.new;
-$inst.bar;
+is $inst.bar, "from builder...", "built and filtered as expected";
 $inst.bar = "not from builder";
 
 my class Foo4 {
