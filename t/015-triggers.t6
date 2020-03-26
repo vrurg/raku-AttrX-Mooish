@@ -4,7 +4,7 @@ use AttrX::Mooish;
 plan 1;
 
 subtest "Triggers", {
-    plan 14;
+    plan 15;
     my $inst;
     my class Foo1 {
         has $.bar is rw is mooish(:trigger);
@@ -56,6 +56,7 @@ subtest "Triggers", {
             }
             else {
                 nok %opt<builder>:exists, "no builder option";
+                is %opt<old-value>, 'from builder', "old value is known to trigger";
             }
         }
     }

@@ -244,9 +244,13 @@ way.
 The parameter can have values of C<Bool>, C<Str>, C<Callable>. All values are treated similarly to the C<builder>
 parameter except that prefix 'I<filter->' is used when value is I<True>.
 
-The filter method is passed with user-supplied value and two named parameters: C<attribute> with full attribute name;
-and optional C<old-value> which could omitted if attribute has not been initialized yet. Otherwise C<old-value> contains
-attribute value before the assignment.
+The filter method is passed with user-supplied value and the following named parameters:
+
+C<attribute> - contains full attribute name.
+
+C<builder> - passed if filter is called as a stage of attribute building.
+
+C<old-value> - passed with the previous attribute value if it had one; i.e. if attribute has been initialized.
 
 B<Note> that it is not recommended for a filter method to use the corresponding attribute directly as it may cause
 unforseen side-effects like deep recursion. The C<old-value> parameter is the right way to do it.
@@ -255,13 +259,16 @@ unforseen side-effects like deep recursion. The C<old-value> parameter is the ri
 =begin item
 I<C<trigger>>
 
-A trigger is a method which is executed when a value is being written into an attribute. It gets passed with the stored
-value as first positional parameter and named parameter C<attribute> with full attribute name. Allowed values for this
-parameter are C<Bool>, C<Str>, C<Callable>. All values are treated similarly to the C<builder> parameter except that
-prefix 'I<trigger->' is used when value is I<True>.
+A trigger is a method which is executed right after attribute value has been changed.
 
-Trigger method is being executed right after changing the attribute value. If there is a C<filter> defined for the
-attribute then value will be the filtered one, not the initial.
+Allowed values for this parameter are C<Bool>, C<Str>, C<Callable>. All values are treated similarly to the C<builder>
+parameter except that prefix 'I<trigger->' is used when value is I<True>.
+
+Trigger method gets passed with the stored value as first positional parameter. If there is also a C<filter> defined for
+the attribute then trigger receives the value returned by the filter, not the initial. I.e. it always get what's
+eventually stored in the attribute. It also receives the same named parameters as C<filter> method: C<attribute>,
+C<builder>, C<old-value>.
+
 =end item
 
 =begin item
@@ -468,6 +475,14 @@ class X::TypeCheck::MooishOption is X::TypeCheck {
     }
 }
 
+class X::NotAllowed is X::Fatal {
+    has Str:D $.op is required;
+    has Str $.cause;
+    method message {
+        "Operation '$!op' is not allowed at this time" ~ ($!cause ?? ": $!cause" !! "")
+    }
+}
+
 my class AttrProxy is Proxy {
     has $.val is rw;
     has Bool $.is-set is rw is default(False);
@@ -484,7 +499,7 @@ my class AttrProxy is Proxy {
         return False if $!is-set;
         my $bp = $!built-promise;
         if !$bp.defined && cas($!built-promise, $bp, Promise.new) === $bp {
-            # note "ACQUIRED, promise: ", $!built-promise.WHICH if $*AXM-DEBUG;
+            # note "ACQUIRE SUCCESS";
             return True;
         }
         await $!built-promise;
@@ -493,6 +508,10 @@ my class AttrProxy is Proxy {
 
     method build-release {
         $!built-promise.keep(True);
+    }
+
+    method is-building {
+        ? (nqp::defined($!built-promise) && $!built-promise.status ~~ Planned);
     }
 
     method assign-val( $value is raw ) {
@@ -529,7 +548,7 @@ role AttrXMooishHelper {
                 !! $attr;
         }
         my %helpers =
-            :clearer( my method {
+            :clearer( my method () is hidden-from-backtrace {
                 # Can't use $attr to call bind-proxy upon if the original attribute belongs to a role. In this case its
                 # .package is not defined.
                 # Metamodel::GenericHOW only happens for role attributes
@@ -617,7 +636,6 @@ role AttrXMooishAttributeHOW {
     has $.composer is rw = False;
     has $.no-init is rw = False;
     has @.init-args;
-    has Promise $!built-promise;
 
     my %opt2prefix = clearer => 'clear',
                      predicate => 'has',
@@ -715,7 +733,7 @@ role AttrXMooishAttributeHOW {
         nqp::bindattr(nqp::decont(instance), $.package, $.name,
             $proxy := AttrProxy.new(
                 FETCH => -> $ {
-                    #note "FETCHING";
+                    # note "FETCHING";
                     my Mu $attr-var := $proxy.VAR;
                     my $val;
                     # note "ATTR<{$.name}> SIGIL: ", $!sigil, ", attr-var:", $attr-var.^name, " prox: ", $proxy.VAR.^name;
@@ -726,12 +744,12 @@ role AttrXMooishAttributeHOW {
                     else {
                         $val := self.auto_viv_container.clone;
                     }
-                    # note "IS MOOISHED? ", ? nqp::istype($attr-var, AttrProxy) && $attr-var.mooished if $*AXM-DEBUG;
+                    # note "IS MOOISHED? ", ? nqp::istype($attr-var, AttrProxy) && $attr-var.mooished;
                     if nqp::istype($attr-var, AttrProxy) && $attr-var.mooished {
-                        # note "FETCH of {$attr.name}, lazy? ", ?$!lazy, ", set? ", $attr-var.is-set if $*AXM-DEBUG;
+                        # note "FETCH of {$attr.name}, lazy? ", ?$!lazy, ", set? ", $attr-var.is-set;
                         if ?$!lazy && $attr-var.build-acquire {
                             LEAVE $attr-var.build-release;
-                            # note "BUILDING {$attr.name} for {instance.WHICH} attr var: ", $attr-var.^name, "|", nqp::objectid($attr-var) if $*AXM-DEBUG;
+                            # note "BUILDING {$attr.name} for {instance.WHICH} attr var: ", $attr-var.^name, "|", nqp::objectid($attr-var);
                             self.build-attr( instance, $attr-var );
                         }
                         $val := $attr-var.val if $attr-var.is-set;
@@ -742,7 +760,7 @@ role AttrXMooishAttributeHOW {
                     }
                     $val
                 },
-                STORE => -> $, $value is copy {
+                STORE => sub ($, $value is copy) is hidden-from-backtrace {
                     self.store-with-cb( instance, $proxy.VAR, $value );
                 }
             )
@@ -750,19 +768,20 @@ role AttrXMooishAttributeHOW {
         $proxy.VAR
     }
 
-    method unbind-proxy ( Mu \instance, $attr-var is raw, $val is raw ) {
+    method unbind-proxy ( Mu \instance, $attr-var is raw, $val is raw ) is hidden-from-backtrace {
         unless $!always-bind or $attr-var !~~ AttrProxy {
             # note "---- UNBINDING ATTR {$.name} FROM {$attr-var.^name} INTO VALUE ({$val.^name}";
             nqp::bindattr( nqp::decont(instance), $.package, $.name, $val );
         }
     }
 
-    method store-with-cb ( Mu \instance, $attr-var is raw, $value is rw, @params = () ) is hidden-from-backtrace {
+    method store-with-cb ( Mu \instance, $attr-var is raw, $value is rw, @params = [] ) is hidden-from-backtrace {
+        @params.append: ( :old-value( nqp::clone($attr-var.val) ) ) if $attr-var.is-set;
         # note "INVOKING {$.name} FILTER WITH {@params.perl}";
         self.invoke-filter( instance, $attr-var, $value, @params ) if $!filter;
         # note "STORING VALUE: ($value) on ", ;
         self.store-value( instance, $attr-var, $value );
-        #note "INVOKING {$.name} TRIGGER WITH {@params.perl}";
+        # note "INVOKING {$.name} TRIGGER WITH {@params.perl}";
         self.invoke-opt( instance, 'trigger', ( $value, |@params ), :strict ) if $!trigger;
     }
 
@@ -802,17 +821,14 @@ role AttrXMooishAttributeHOW {
 
     method clear-attr ( Mu \obj ) is hidden-from-backtrace {
         my $attr-var := nqp::getattr(nqp::decont(obj), $.package, $.name).VAR;
+        X::NotAllowed.new(:op('clear'), :cause("attribute " ~ $.name ~ " is still building")).throw
+            if $attr-var.is-building;
         # note "Clearing {$.name} on ", $attr-var.^name;
-        $!built-promise = Nil;
         $attr-var.clear if nqp::istype($attr-var, AttrProxy);
     }
 
-    method invoke-filter ( Mu \instance, $attr-var is raw, $value is rw, @params = () ) is hidden-from-backtrace {
-        if $!filter {
-            my @invoke-params = $value, |@params;
-            @invoke-params.push( 'old-value' => $attr-var.val ) if $attr-var.is-set;
-            $value = self.invoke-opt( instance, 'filter', @invoke-params, :strict );
-        }
+    method invoke-filter ( Mu \instance, $attr-var is raw, $value is rw, @params = [] ) is hidden-from-backtrace {
+        $value = self.invoke-opt( instance, 'filter', ($value, |@params), :strict ) if $!filter
     }
 
     method invoke-opt (
@@ -882,14 +898,11 @@ role AttrXMooishAttributeHOW {
     }
 
     method build-attr ( Any \instance, $attr-var is raw ) is hidden-from-backtrace {
-        my $publicity = $.has_accessor ?? "public" !! "private";
+        # my $publicity = $.has_accessor ?? "public" !! "private";
         # note "&&& KINDA BUILDING FOR $publicity {$.name} on {$attr-var.^name} (is-set:{$attr-var.is-set})";
-        unless $attr-var.is-set {
-            # note "&&& Calling builder {$!builder} // ", "set: ", $attr-var.is-set;
-            my $val = self.invoke-opt( instance, 'builder', :strict );
-            # note "Set ATTR to ({$val})";
-            self.store-with-cb( instance, $attr-var, $val, [ :builder ] );
-        }
+        my $val = self.invoke-opt( instance, 'builder', :strict );
+        # note "Set ATTR to ({$val})";
+        self.store-with-cb( instance, $attr-var, $val, [ :builder ] );
     }
 
     method invoke-composer ( Mu \type ) is hidden-from-backtrace {

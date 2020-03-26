@@ -210,15 +210,23 @@ Trait parameters
 
     The parameter can have values of `Bool`, `Str`, `Callable`. All values are treated similarly to the `builder` parameter except that prefix '*filter-*' is used when value is *True*.
 
-    The filter method is passed with user-supplied value and two named parameters: `attribute` with full attribute name; and optional `old-value` which could omitted if attribute has not been initialized yet. Otherwise `old-value` contains attribute value before the assignment.
+    The filter method is passed with user-supplied value and the following named parameters:
+
+    `attribute` - contains full attribute name.
+
+    `builder` - passed if filter is called as a stage of attribute building.
+
+    `old-value` - passed with the previous attribute value if it had one; i.e. if attribute has been initialized.
 
     **Note** that it is not recommended for a filter method to use the corresponding attribute directly as it may cause unforseen side-effects like deep recursion. The `old-value` parameter is the right way to do it.
 
   * *`trigger`*
 
-    A trigger is a method which is executed when a value is being written into an attribute. It gets passed with the stored value as first positional parameter and named parameter `attribute` with full attribute name. Allowed values for this parameter are `Bool`, `Str`, `Callable`. All values are treated similarly to the `builder` parameter except that prefix '*trigger-*' is used when value is *True*.
+    A trigger is a method which is executed right after attribute value has been changed.
 
-    Trigger method is being executed right after changing the attribute value. If there is a `filter` defined for the attribute then value will be the filtered one, not the initial.
+    Allowed values for this parameter are `Bool`, `Str`, `Callable`. All values are treated similarly to the `builder` parameter except that prefix '*trigger-*' is used when value is *True*.
+
+    Trigger method gets passed with the stored value as first positional parameter. If there is also a `filter` defined for the attribute then trigger receives the value returned by the filter, not the initial. I.e. it always get what's eventually stored in the attribute. It also receives the same named parameters as `filter` method: `attribute`, `builder`, `old-value`.
 
   * *`alias`, `aliases`, `init-arg`, `init-args`*
 
