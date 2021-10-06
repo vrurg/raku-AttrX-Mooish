@@ -665,7 +665,6 @@ our sub META6 {
 	#build-depends  => <Pod::To::Markdown>,
     tags           => <AttrX Moo Moose Mooish attribute mooish trait>,
     authors        => ['Vadim Belman <vrurg@cpan.org>'],
-    auth           => 'github:vrurg',
     source-url     => 'git://github.com/vrurg/raku-AttrX-Mooish.git',
     support        => META6::Support.new(
         source          => 'https://github.com/vrurg/raku-AttrX-Mooish.git',

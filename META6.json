@@ -1,6 +1,6 @@
 {
   "api": "0.7.0",
-  "auth": "github:vrurg",
+  "auth": "zef:vrurg",
   "authors": [
     "Vadim Belman <vrurg@cpan.org>"
   ],
