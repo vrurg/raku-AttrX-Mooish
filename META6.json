@@ -13,7 +13,7 @@
   "name": "AttrX::Mooish",
   "production": true,
   "provides": {
-    "AttrX::Mooish": "lib/AttrX/Mooish.pm6"
+    "AttrX::Mooish": "lib/AttrX/Mooish.rakumod"
   },
   "raku": "6.*",
   "resources": [

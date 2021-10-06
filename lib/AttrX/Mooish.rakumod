@@ -671,7 +671,7 @@ our sub META6 {
         source          => 'https://github.com/vrurg/raku-AttrX-Mooish.git',
     ),
     provides => {
-        'AttrX::Mooish' => 'lib/AttrX/Mooish.pm6',
+        'AttrX::Mooish' => 'lib/AttrX/Mooish.rakumod',
     },
     license        => 'Artistic-2.0',
     production     => True,
