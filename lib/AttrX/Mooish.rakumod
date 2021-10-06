@@ -668,7 +668,7 @@ our sub META6 {
     auth           => 'github:vrurg',
     source-url     => 'git://github.com/vrurg/raku-AttrX-Mooish.git',
     support        => META6::Support.new(
-        source          => 'https://github.com/vrurg/raku-AttrX-Mooish',
+        source          => 'https://github.com/vrurg/raku-AttrX-Mooish.git',
     ),
     provides => {
         'AttrX::Mooish' => 'lib/AttrX/Mooish.pm6',
