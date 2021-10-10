@@ -1,7 +1,7 @@
 use Test;
 use AttrX::Mooish;
 
-plan 2;
+plan 3;
 
 subtest "Basics", {
     plan 7;
@@ -99,6 +99,18 @@ subtest "Typed", {
         X::TypeCheck,
         "assignment of pairs of Str values to Int hash fails type check";
     is-deeply $inst.bar, Hash[Int].new( 'a', 1, 'b', 2 ), "hash attribute doesn't change after failed assignment";
+}
+
+subtest "Initialize With Nil", {
+    my class Foo1 {
+        has Str $.foo is mooish(:lazy);
+
+        method build-foo { Nil }
+    }
+
+    my $foo = Foo1.new;
+    nok $foo.foo.defined, "attribute remains undefined";
+    isa-ok $foo.foo, Str, "attribute defaults to its type";
 }
 
 done-testing;
