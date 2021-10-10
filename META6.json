@@ -6,7 +6,8 @@
   ],
   "build-depends": [
   ],
-  "depends": null,
+  "depends": [
+  ],
   "description": "Extending attribute functionality with ideas from Moo/Moose",
   "license": "Artistic-2.0",
   "meta-version": "0",

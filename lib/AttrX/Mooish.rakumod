@@ -578,7 +578,7 @@ our sub META6 {
 	api			   => AttrX::Mooish.^api,
     perl-version   => Version.new('6.*'),
     raku-version   => Version.new('6.*'),
-    #depends        => <JSON::Class>,
+    depends        => [],
     test-depends   => <Test Test::META Test::When>,
 	#build-depends  => <Pod::To::Markdown>,
     tags           => <AttrX Moo Moose Mooish attribute mooish trait>,
