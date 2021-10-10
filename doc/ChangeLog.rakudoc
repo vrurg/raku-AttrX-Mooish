@@ -1,6 +1,10 @@
 =begin pod
 =CHANGELOG
 
+=head2 v0.7.5
+
+=item Make sure a builder can return Nil and it will be handled according to Raku specs
+
 =head2 v0.7.4
 
 Migrate to zef ecosystem.

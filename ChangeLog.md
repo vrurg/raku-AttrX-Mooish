@@ -3,6 +3,11 @@ CHANGELOG
 
 
 
+v0.7.5
+------
+
+  * Make sure a builder can return Nil and it will be handled according to Raku specs
+
 v0.7.4
 ------
 
