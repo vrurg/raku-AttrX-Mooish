@@ -460,9 +460,8 @@ role AttrXMooishClassHOW does AttrXMooishHelper {
         callsame;
     }
 
+    my $init-lock = Lock.new;
     method on_create ( Mu \type, Mu \instance, %attrinit ) is hidden-from-backtrace {
-        state $init-lock = Lock.new;
-
         my @lazyAttrs = type.^attributes( :local(1) ).grep( AttrXMooishAttributeHOW );
 
         $init-lock.protect: {
