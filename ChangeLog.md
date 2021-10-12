@@ -3,6 +3,11 @@ CHANGELOG
 
 
 
+v0.7.6
+------
+
+  * Minor but important fix for a flapping bug with `state` variables in precompiled code
+
 v0.7.5
 ------
 

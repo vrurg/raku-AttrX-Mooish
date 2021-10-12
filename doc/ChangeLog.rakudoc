@@ -1,6 +1,10 @@
 =begin pod
 =CHANGELOG
 
+=head2 v0.7.6
+
+=item Minor but important fix for a flapping bug with C<state> variables in precompiled code
+
 =head2 v0.7.5
 
 =item Make sure a builder can return Nil and it will be handled according to Raku specs
