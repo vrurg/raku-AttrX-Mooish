@@ -3,10 +3,6 @@ use AttrX::Mooish;
 
 plan 4;
 
-my $author-testing = ? %*ENV<AUTHOR_TESTING>;
-
-my %inst-records;
-
 subtest "Class Basics" => {
     plan 20;
     my $inst;
@@ -15,8 +11,6 @@ subtest "Class Basics" => {
         has $.initial is default(pi);
         has $.bar is rw is mooish(:lazy, :clearer, :predicate);
         has Int $.build-count = 0;
-        submethod BUILD { %inst-records{self.WHICH} = True; }
-        submethod DESTROY { %inst-records{self.WHICH}:delete; }
         method build-bar { $!build-count++; $!initial }
         method direct-access { $!bar }
     }
@@ -195,9 +189,9 @@ subtest "Constructor init", {
         has @.foo ;
     }
 
-    $inst = Foo1.new( :bar(1,2,3), :foo(<a b c>) );
+    $inst = Foo1.new( :bar(1,2,3), :foo('a', 'b', 'c') );
     is-deeply $inst.bar, [1,2,3], 'mooish array attribute init from new';
-    is-deeply $inst.foo, [<a b c>], 'non-mooish array attribute init from new';
+    is-deeply $inst.foo, ['a', 'b', 'c'], 'non-mooish array attribute init from new';
 }
 
 done-testing;
