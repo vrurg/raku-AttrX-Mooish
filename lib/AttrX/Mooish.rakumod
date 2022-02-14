@@ -5,9 +5,17 @@ use nqp;
 role AttrXMooishClassHOW { ... }
 role AttrXMooishAttributeHOW {...}
 
+# BUILDPLAN task codes
+my $BP_4_400 = 4;
+my $BP_10_1000 = 10;
+
 CHECK {
     die "Rakudo of at least v2019.11 required to run this version of " ~ ::?PACKAGE.^name
         unless $*RAKU.compiler.version >= v2019.11;
+    if $*RAKU.compiler.version >= v2021.12.176.ga.38.bebecf {
+        $BP_4_400 = 400;
+        $BP_10_1000 = 1000;
+    }
 }
 
 class X::Fatal is Exception {
@@ -66,7 +74,7 @@ my class AttrProxy is Proxy {
         }
     }
 
-    method build-acquire is implementation-detail {
+    method build-acquire {
         return False if $!is-set;
         my $bp = $!built-promise;
         if !$bp.defined && cas($!built-promise, $bp, Promise.new) === $bp {
@@ -76,7 +84,7 @@ my class AttrProxy is Proxy {
         False
     }
 
-    method build-release is implementation-detail {
+    method build-release {
         $!built-promise.keep(True);
     }
 
@@ -166,7 +174,7 @@ my role AttrXMooishAttributeHOW {
     has $.trigger = False;
     has $.filter = False;
     has $.composer = False;
-    has Bool() $.no-init = False;
+    has Bool $.no-init = False;
     has @.init-args;
 
     my %opt2prefix = clearer => 'clear',
@@ -181,7 +189,7 @@ my role AttrXMooishAttributeHOW {
         $opt ~~ Bool ?? $prefix ~ '-' ~ ( $base-name // $!base-name ) !! $opt;
     }
 
-    method INIT-FROM-OPTIONS(@opt-list) is implementation-detail {
+    method INIT-FROM-OPTIONS(@opt-list) {
         sub set-attr($name, $value) {
             self.^get_attribute_for_usage('$!' ~ $name).get_value(self) = $value;
         }
@@ -513,12 +521,13 @@ role AttrXMooishClassHOW does AttrXMooishHelper {
                 my $task := nqp::shift(plan);
 #                note "^ PLAN TASK: ", ($task ~~ Code ?? $task.gist !! nqp::hllize($task));
                 if nqp::islist($task) {
-                    my $code = nqp::atpos($task, 0);
-                    if $code == 0 | 400 {
+                    my $code = nqp::hllize(nqp::atpos($task, 0));
+                    if $code == 0 | $BP_4_400 {
                         # Attribute initialize from constructor arguments
                         my $name = nqp::atpos($task, 2);
                         my $type := nqp::atpos($task, 1);
                         my $attr = $type.^get_attribute_for_usage($name);
+                        $name = nqp::box_s($name, Str);
                         if $attr ~~ AttrXMooishAttributeHOW {
                             next TASK if %skip-attr{$name};
                             # Create a batch of attributes to be moofied, in the order reported. The batch may include
@@ -568,7 +577,7 @@ role AttrXMooishClassHOW does AttrXMooishHelper {
             my int $count = nqp::elems($mro_plan);
             while $i < $count {
                 my $task := nqp::atpos($mro_plan, $i);
-                if nqp::islist($task) && nqp::atpos($task, 0) == 1000 {
+                if nqp::islist($task) && nqp::atpos($task, 0) == $BP_10_1000 {
                     $noops = True;
                 }
                 else {
