@@ -14,10 +14,11 @@ my class Foo1 {
 
 $inst = Foo1.new;
 lives-ok { $inst.bar = "Fine" }, "assignment to RW attribute";
-throws-like { $inst.baz = "Bad"; },
-X::Assignment::RO,
-message => 'Cannot modify an immutable Str (is baz)',
-"assignment to RO attribute failes";
+throws-like
+    { $inst.baz = "Bad"; },
+    X::Assignment::RO,
+    message => 'Cannot modify an immutable Str (is baz)',
+    "assignment to RO attribute failes";
 
 my class Foo2 {
     has Int $.bar is rw is mooish(:lazy);
@@ -34,6 +35,7 @@ throws-like { $inst.bar = "abc" },
             "assignment to a different attribute type";
 
 my class Foo3 {
+    has Stringy $.s is mooish(:lazy) = Str;
     has Str:D $.bar is rw is mooish(:lazy) = "";
 
     method build-bar { "is bar" }
@@ -41,9 +43,10 @@ my class Foo3 {
 
 $inst = Foo3.new;
 lives-ok { $inst.bar = "a string" }, "assignment of defined value";
-throws-like { $inst.bar = Nil },
-X::TypeCheck,
-"assignment of Nil to a definite type attribute";
+throws-like
+    { $inst.bar = Nil },
+    X::TypeCheck,
+    "assignment of Nil to a definite type attribute";
 
 my class Foo4 {
     has Str $.bar is rw is mooish(:lazy) where * ~~ /:i ^ a/;
@@ -53,10 +56,11 @@ my class Foo4 {
 
 $inst = Foo4.new;
 lives-ok { $inst.bar = "another value" }, "value assigned matches 'where' constraint";
-throws-like { $inst.bar = "not allowed" },
-X::TypeCheck,
-message => q{Type check failed in assignment to $!bar; expected <anon> but got Str ("not allowed")},
-"assignment of non-compliant value";
+throws-like
+    { $inst.bar = "not allowed" },
+    X::TypeCheck,
+    message => q{Type check failed in assignment to $!bar; expected <anon> but got Str ("not allowed")},
+    "assignment of non-compliant value";
 
 #CATCH { note "Got exception ", $_.WHO; $_.throw}
 
