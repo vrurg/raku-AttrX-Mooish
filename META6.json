@@ -32,7 +32,7 @@
     "trait"
   ],
   "api": "0.7.0",
-  "production": true,
+  "production": false,
   "source-url": "git://github.com/vrurg/raku-AttrX-Mooish.git",
   "raku": "6.*"
 }
