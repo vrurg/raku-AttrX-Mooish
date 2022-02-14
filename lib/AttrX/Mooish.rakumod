@@ -39,12 +39,22 @@ class X::NoNatives is X::Fatal {
 }
 
 my class AttrProxy is Proxy {
-    trusts AttrXMooishAttributeHOW;
-
     has Mu $.val;
     has Bool $.is-set is rw is default(False);
     has Bool $.mooished is default(False);
     has Promise $!built-promise;
+    has $.attribute;
+    has $.instance;
+
+    method !SET-SELF(%attrinit) is raw {
+        $!attribute := %attrinit<attribute>;
+        $!instance := %attrinit<instance>;
+        self
+    }
+
+    method new(:$FETCH, :$STORE, *%attrinit) is raw {
+        callwith(:$FETCH, :$STORE).VAR!SET-SELF(%attrinit)
+    }
 
     method clear {
         cas $!is-set, {
@@ -74,14 +84,16 @@ my class AttrProxy is Proxy {
         ? (.status ~~ Planned with $!built-promise);
     }
 
-    method assign-val( Mu $value is raw ) {
-        nqp::p6assign($!val, $value);
-        $!is-set = True;
-    }
-
-    method bind-val( Mu $value is raw ) {
-        $!val := $value;
-        $!is-set = True;
+    method store-value(Mu $value is raw) is raw is hidden-from-backtrace {
+        unless $!is-set {
+            $!val := nqp::clone_nd($!attribute.auto_viv_container);
+            $!is-set = True;
+        }
+        nqp::if(
+            nqp::istype_nd($!val, Scalar),
+            ($!val = $value),
+            ($!val.STORE($value)));
+        $!attribute.unbind-proxy($!instance, $!val)
     }
 
     method now-mooished {
@@ -146,7 +158,6 @@ role AttrXMooishHelper {
 
 my role AttrXMooishAttributeHOW {
     has $.base-name = self.name.substr(2);
-    has $!sigil = self.name.substr( 0, 1 );
     has $!always-proxy = False;
     has $.lazy = False;
     has $.builder = 'build-' ~ $!base-name;
@@ -318,6 +329,8 @@ my role AttrXMooishAttributeHOW {
             $attr-var,
             nqp::bindattr(nqp::decont($instance), nqp::decont($.package), $.name,
                 AttrProxy.new(
+                    :attribute(self),
+                    :$instance,
                     FETCH => -> $proxy {
 #                        note "... FETCH from ", $.name, ", lazy? ", $!lazy;
                         my $attr-var := nqp::decont($proxy);
@@ -348,7 +361,7 @@ my role AttrXMooishAttributeHOW {
                     })))
     }
 
-    method unbind-proxy ( Mu $instance is raw, Mu $val is raw ) is hidden-from-backtrace {
+    method unbind-proxy ( Mu $instance is raw, Mu $val is raw ) is raw is hidden-from-backtrace {
         my $attr-var := self.get_value($instance);
         unless $!always-proxy or !nqp::istype_nd($attr-var.VAR, AttrProxy) {
             nqp::bindattr( nqp::decont($instance), nqp::decont($.package), $.name, $val );
@@ -364,40 +377,9 @@ my role AttrXMooishAttributeHOW {
     {
         $params = \( |$params, :old-value( nqp::clone($attr-var.VAR.val) ) ) if $attr-var.VAR.is-set;
         my Mu $filtered := $!filter ?? self.invoke-filter( $instance, $value, $params ) !! $value;
-        my $rval := self.store-value( $instance, $attr-var, $filtered );
+        my $rval := $attr-var.VAR.store-value($filtered);
         self.invoke-opt( $instance, 'trigger', \( $filtered, |$params ), :strict ) if $!trigger;
         $rval
-    }
-
-    # store-value would return the value stored.
-    method store-value( Mu $instance is raw,
-                        Mu $attr-var is raw,
-                        Mu $value is raw
-                       ) is raw is hidden-from-backtrace
-    {
-        if $attr-var.VAR.is-set {
-            given $!sigil {
-                when '$' | '&' {
-                    $attr-var.VAR.assign-val( $value );
-                }
-                when '@' | '%' {
-                    $attr-var.VAR.val.STORE(nqp::decont($value));
-                }
-                default {
-                    die "AttrX::Mooish can't handle «$_» sigil";
-                }
-            }
-        }
-        else {
-            my $cont := nqp::clone_nd(self.auto_viv_container);
-            nqp::if(
-                nqp::istype_nd($cont.VAR, Scalar),
-                ($cont = $value),
-                ($cont.STORE(nqp::decont($value))));
-            $attr-var.VAR.bind-val( $cont );
-        }
-
-        self.unbind-proxy( $instance, $attr-var.VAR.val );
     }
 
     method is-set ( Mu \obj ) is hidden-from-backtrace {
