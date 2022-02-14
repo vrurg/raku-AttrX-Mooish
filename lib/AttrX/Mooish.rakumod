@@ -632,28 +632,7 @@ multi trait_mod:<is>( Attribute:D $attr, :$mooish! ) is export {
 }
 
 our sub META6 {
-	use META6;
-    name           => 'AttrX::Mooish',
-    description    => 'Extending attribute functionality with ideas from Moo/Moose',
-    version        => AttrX::Mooish.^ver,
-	auth		   => AttrX::Mooish.^auth,
-	api			   => AttrX::Mooish.^api,
-    perl-version   => Version.new('6.*'),
-    raku-version   => Version.new('6.*'),
-    depends        => [],
-    test-depends   => <Test Test::META Test::When>,
-	#build-depends  => <Pod::To::Markdown>,
-    tags           => <AttrX Moo Moose Mooish attribute mooish trait>,
-    authors        => ['Vadim Belman <vrurg@cpan.org>'],
-    source-url     => 'git://github.com/vrurg/raku-AttrX-Mooish.git',
-    support        => META6::Support.new(
-        source          => 'https://github.com/vrurg/raku-AttrX-Mooish.git',
-    ),
-    provides => {
-        'AttrX::Mooish' => 'lib/AttrX/Mooish.rakumod',
-    },
-    license        => 'Artistic-2.0',
-    production     => True,
+    $?DISTRIBUTION.meta
 }
 
 # Copyright (c) 2018, Vadim Belman <vrurg@cpan.org>
