@@ -1,6 +1,13 @@
 =begin pod
 =CHANGELOG
 
+=head2 v0.8.0
+
+Major refactor of code toward increasing reliability.
+
+=item Rely on container type rather tahn on sigil
+=item Switch initialization code from wrapping C<BUILD> to use of C<BUILDPLAN>
+
 =head2 v0.7.6
 
 =item Minor but important fix for a flapping bug with C<state> variables in precompiled code

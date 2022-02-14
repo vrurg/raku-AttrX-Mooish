@@ -3,6 +3,15 @@ CHANGELOG
 
 
 
+v0.8.0
+------
+
+Major refactor of code toward increasing reliability.
+
+  * Rely on container type rather tahn on sigil
+
+  * Switch initialization code from wrapping `BUILD` to use of `BUILDPLAN`
+
 v0.7.6
 ------
 
