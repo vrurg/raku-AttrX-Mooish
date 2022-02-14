@@ -1,4 +1,4 @@
-unit module AttrX::Mooish:ver<0.7.903>:auth<zef:vrurg>:api<0.7.903>;
+unit module AttrX::Mooish:ver($?DISTRIBUTION.meta<ver>):auth<zef:vrurg>:api($?DISTRIBUTION.meta<api>);
 #use Data::Dump;
 use nqp;
 
