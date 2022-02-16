@@ -6,16 +6,14 @@ role AttrXMooishClassHOW { ... }
 role AttrXMooishAttributeHOW {...}
 
 # BUILDPLAN task codes
-my $BP_4_400 = 4;
-my $BP_10_1000 = 10;
+my $BP_4_400;
+my $BP_10_1000;
 
 CHECK {
     die "Rakudo of at least v2019.11 required to run this version of " ~ ::?PACKAGE.^name
         unless $*RAKU.compiler.version >= v2019.11;
-    if $*RAKU.compiler.version >= v2021.12.176.ga.38.bebecf {
-        $BP_4_400 = 400;
-        $BP_10_1000 = 1000;
-    }
+    ($BP_4_400, $BP_10_1000) =
+        $*RAKU.compiler.version >= v2021.12.176.ga.38.bebecf ?? (400, 1000) !! (4, 10);
 }
 
 class X::Fatal is Exception {
