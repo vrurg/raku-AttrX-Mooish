@@ -36,9 +36,9 @@ throws-like { $inst.bar = "abc" },
 
 my class Foo3 {
     has Stringy $.s is mooish(:lazy) = Str;
-    has Str:D $.bar is rw is mooish(:lazy) = "";
+    has Str:D $.bar is rw is mooish(:trigger) = "";
 
-    method build-bar { "is bar" }
+    method trigger-bar($) { }
 }
 
 $inst = Foo3.new;

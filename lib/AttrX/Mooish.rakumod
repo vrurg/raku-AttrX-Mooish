@@ -131,9 +131,8 @@ role AttrXMooishHelper {
                 # .package is not defined.
                 # Metamodel::GenericHOW only happens for role attributes
                 my $attr-obj = get-attr-obj(self, $attr);
-                my Mu $a := nqp::getattr(self, nqp::decont($attr-obj.package), $attr.name);
-                my Mu $attr-var := $attr-obj.bind-proxy( self );
-                $attr-obj.clear-attr( self );
+                my Mu $attr-var := $attr-obj.bind-proxy(self, $attr-obj.package);
+                $attr-obj.clear-attr(self);
                 $attr-var.VAR.now-mooished;
              } ),
             :predicate( my method () is hidden-from-backtrace { get-attr-obj(self, $attr).is-set( self ) } ),
@@ -174,6 +173,7 @@ my role AttrXMooishAttributeHOW {
     has $.composer = False;
     has Bool $.no-init = False;
     has @.init-args;
+    has $!has-build-closure = False;
 
     my %opt2prefix = clearer => 'clear',
                      predicate => 'has',
@@ -250,6 +250,8 @@ my role AttrXMooishAttributeHOW {
         self!bool-str-meth-name( self."$oname"(), %opt2prefix{$oname}, :$base-name );
     }
 
+    method SET-HAS-BUILD-CLOSURE { $!has-build-closure = True }
+
     method compose ( Mu \type, :$compiler_services ) is hidden-from-backtrace {
         return if try nqp::getattr_i(self, Attribute, '$!composed');
 
@@ -271,13 +273,13 @@ my role AttrXMooishAttributeHOW {
         self.invoke-composer( type );
     }
 
-    method make-mooish ( Mu $instance is raw, %attrinit ) is hidden-from-backtrace {
+    method make-mooish ( Mu $instance is raw, Mu $type is raw, %attrinit ) is hidden-from-backtrace {
         my Mu $attr-var := self.get_value($instance);
 
         return if nqp::istype_nd($attr-var, AttrProxy);
 
 #        note "? mooifying ", $.name, " of ", $.type.^name, " on ", self.package.^name;
-#        note "  = ", nqp::getattr(nqp::decont($instance), nqp::decont($.package), $.name).WHICH;
+#        note "  = ", $type.WHICH;
 
         my $initialized = False;
         my Mu $init-value;
@@ -292,17 +294,22 @@ my role AttrXMooishAttributeHOW {
             }
         }
 
-        unless $initialized {
+        if !$initialized && $!has-build-closure {
+#            note "  . init from build closure";
             my Mu $build := self.build;
-            my Mu $default :=
-                nqp::isconcrete($build)
-                ?? ($build ~~ Block ?? $build($instance, self) !! nqp::decont($build))
-                !! nqp::decont(self.container_descriptor.default);
-#            note "  . default: ", $default.WHICH;
-#            note "  . container descriptor of ", self.container_descriptor.of.WHICH;
+            $init-value = $build ~~ Block ?? $build($instance, self) !! nqp::decont($build);
+            $initialized = True;
+        }
+
+        if !$initialized && nqp::istype_nd($attr-var, Scalar) {
+            my Mu $default := nqp::decont(self.container_descriptor.default);
+            $default := $default.^nominalize if $default.HOW.archetypes.nominalizable;
+            my Mu $attr_type := nqp::decont(self.container_descriptor.of);
+            $attr_type := $attr_type.^nominalize if $attr_type.HOW.archetypes.nominalizable;
+#            note "  . default: ", $default.WHICH, " of ", $default.HOW.^name;
+#            note "  . container descriptor of ", $attr_type.WHICH;
 #            note "  . auto viv: ", self.auto_viv_container.VAR.^name;
-#            note "  . build closure: ", self.build.WHICH;
-            unless $default =:= nqp::decont(self.container_descriptor.of) || $default =:= Any {
+            unless $default =:= nqp::decont($attr_type) || ($default =:= Any) {
                 # If default is different from attribute type then it was manually specified
                 $initialized = True;
                 $init-value := $default;
@@ -310,7 +317,7 @@ my role AttrXMooishAttributeHOW {
             }
         }
 
-#        note "? initialized ", $initialized;
+#        note "? initialized ", $initialized, ", init-value: ", $init-value.WHICH;
 
         if $initialized && !$!always-proxy {
             # No need to bind proxy when there is default value and no filter or trigger set.
@@ -320,7 +327,7 @@ my role AttrXMooishAttributeHOW {
                 ($attr-var.STORE($init-value)));
         }
         else {
-            $attr-var := self.bind-proxy( $instance );
+            $attr-var := self.bind-proxy($instance, $type);
             self.store-with-cb( $instance, $attr-var, $init-value, \( :$constructor ) )
                 if $initialized;
             $attr-var.VAR.now-mooished;
@@ -328,12 +335,12 @@ my role AttrXMooishAttributeHOW {
 
     }
 
-    method bind-proxy ( Mu $instance is raw ) is raw is hidden-from-backtrace {
+    method bind-proxy(Mu $instance is raw, Mu $type is raw) is raw is hidden-from-backtrace {
         my Mu $attr-var := self.get_value($instance);
         nqp::if(
             nqp::istype_nd($attr-var, AttrProxy),
             $attr-var,
-            nqp::bindattr(nqp::decont($instance), nqp::decont($.package), $.name,
+            nqp::bindattr(nqp::decont($instance), $type, $.name,
                 AttrProxy.new(
                     :attribute(self),
                     :$instance,
@@ -362,7 +369,6 @@ my role AttrXMooishAttributeHOW {
                         $val
                     },
                     STORE => sub ($proxy, Mu $value is raw) is hidden-from-backtrace {
-#                        note "... STORE into ", $.name;
                         self.store-with-cb( $instance, nqp::decont($proxy), $value );
                     })))
     }
@@ -520,18 +526,22 @@ role AttrXMooishClassHOW does AttrXMooishHelper {
 #                note "^ PLAN TASK: ", ($task ~~ Code ?? $task.gist !! nqp::hllize($task));
                 if nqp::islist($task) {
                     my $code = nqp::hllize(nqp::atpos($task, 0));
-                    if $code == 0 | $BP_4_400 {
+#                    note "  . task is a list, code: ", $code, " matches: ", ($code == 0 | $BP_4_400 | $BP_10_1000), ", codes=", ($BP_4_400 | $BP_10_1000);
+                    if $code == 0 | $BP_4_400 | $BP_10_1000 {
                         # Attribute initialize from constructor arguments
                         my $name = nqp::atpos($task, 2);
                         my $type := nqp::atpos($task, 1);
                         my $attr = $type.^get_attribute_for_usage($name);
                         $name = nqp::box_s($name, Str);
+#                        note "  ? considering ", $name;
                         if $attr ~~ AttrXMooishAttributeHOW {
+                            $attr.SET-HAS-BUILD-CLOSURE if $code == $BP_4_400;
                             next TASK if %skip-attr{$name};
                             # Create a batch of attributes to be moofied, in the order reported. The batch may include
                             # those for which there are no entries in the plan. Like the private ones.
                             loop {
                                 with @mooified.shift {
+#                                    note "  + adding ", $name, " to candidates";
                                     @candidates.push: $_;
                                     my $cand-name = .name;
                                     %skip-attr{$cand-name} = True;
@@ -555,18 +565,18 @@ role AttrXMooishClassHOW does AttrXMooishHelper {
             if @candidates {
                 my $init-block :=
                     $no-attrinit
-                        ?? -> Mu $instance is raw, *% {
-                                .make-mooish($instance, %()) for @candidates;
+                        ?? my sub TASK-MOOIFY-NO-INIT(Mu $instance is raw, *%) is hidden-from-backtrace {
+                                .make-mooish($instance, type, %()) for @candidates;
                             }
-                        !! -> Mu $instance is raw, *%attrinit {
-                                .make-mooish($instance, %attrinit) for @candidates;
+                        !! my sub TASK-MOOIFY(Mu $instance is raw, *%attrinit) is hidden-from-backtrace {
+                                .make-mooish($instance, type, %attrinit) for @candidates;
                             };
                 nqp::push(newplan, $init-block);
             }
         }
         nqp::bindattr(self, Metamodel::ClassHOW, '@!BUILDPLAN', newplan);
 
-        # Now collect @!BUILDALLPLAN. This part logic is largerly copied from Rakudo's Perl6::Metamodel::BUILDPLAN
+        # Now collect @!BUILDALLPLAN. This part's logic is largerly copied from Rakudo's Perl6::Metamodel::BUILDPLAN
         my $allplan := nqp::create(nqp::what(plan));
         my $noops = False;
         for type.^mro -> Mu $mro_class is raw {
@@ -603,7 +613,7 @@ role AttrXMooishClassHOW does AttrXMooishHelper {
 role AttrXMooishRoleHOW does AttrXMooishHelper {
     method compose (Mu \type, :$compiler_services ) is hidden-from-backtrace {
         for type.^attributes.grep( AttrXMooishAttributeHOW ) -> $attr {
-            self.setup-helpers( type, $attr );
+            self.setup-helpers(type, $attr);
         }
         nextsame
     }

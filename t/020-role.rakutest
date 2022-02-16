@@ -1,7 +1,7 @@
 use Test;
 use AttrX::Mooish;
 
-plan 4;
+plan 5;
 
 my $author-testing = ? %*ENV<AUTHOR_TESTING>;
 
@@ -153,9 +153,9 @@ subtest "Private Methods", {
 }
 
 subtest "Parameterized" => {
-    plan 1;
+    plan 4;
     my role FooRole[::T] {
-        has T $.attr is mooish(:lazy);
+        has T $.attr is mooish(:lazy, :clearer, :predicate);
 
         method build-attr {
             T.new
@@ -168,6 +168,26 @@ subtest "Parameterized" => {
 
     my $inst = Foo.new;
     is $inst.attr.bar, "42!", "parameterized attribute is built";
+
+    lives-ok { $inst.clear-attr }, "clearing works";
+    nok $inst.has-attr, "attribute is clear";
+    is $inst.attr.bar, "42!", "attribute is re-built after clearing";
+}
+
+subtest "Mixins" => {
+    plan 1;
+    my class Foo { };
+    my $mixin := Foo.^mixin: role {
+        has $!mix is mooish(:lazy);
+
+        method !build-mix { "from mixin" }
+
+        method get-mix { $!mix }
+    };
+
+    my $inst = $mixin.new;
+
+    is $inst.get-mix, "from mixin", "attribute from a mixin role is initialized";
 }
 
 done-testing;

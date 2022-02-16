@@ -1,25 +1,61 @@
 use Test;
 use AttrX::Mooish;
 
-plan 7;
-my $inst;
+plan 2;
 
-my class Foo1 {
-    has %.bar is rw is mooish(:lazy, :trigger);
+subtest "Simple" => {
+    plan 7;
+    my $inst;
 
-    method build-bar { pass "build-bar "; { a => 1, b => 2, c => 3, p => pi } }
-    method trigger-bar ( %value ) { 
-        pass "trigger on array attribute";
+    my class Foo1 {
+        has %.bar is rw is mooish(:lazy, :trigger);
+
+        method build-bar {
+            pass "build-bar ";
+            { a => 1, b => 2, c => 3, p => pi }
+        }
+        method trigger-bar (%value) {
+            pass "trigger on array attribute";
+        }
     }
+
+    $inst = Foo1.new;
+    is $inst.bar.elems, 4, "correct number of elements";
+    is $inst.bar<p>, pi, "a value from lazy array attribute";
+    $inst.bar<e> = e;
+    is $inst.bar<e>, e, "changed value from lazy array attribute";
+    $inst.bar = { x => 0.1, y => 0.2, z => 0.3 };
+    is-deeply $inst.bar, { x => 0.1, y => 0.2, z => 0.3 }, "new hash assigned";
 }
 
-$inst = Foo1.new;
-is $inst.bar.elems, 4, "correct number of elements";
-is $inst.bar<p>, pi, "a value from lazy array attribute";
-$inst.bar<e> = e;
-is $inst.bar<e>, e, "changed value from lazy array attribute";
-$inst.bar = { x => 0.1, y => 0.2, z => 0.3 };
-is-deeply $inst.bar, { x => 0.1, y => 0.2, z => 0.3 }, "new hash assigned";
+subtest "Typed" => {
+    plan 4;
+    my class Foo2 {
+        has Int:D %.typed is mooish(:lazy);
+        has SetHash:D %!typed-private is mooish(:lazy);
+
+        method build-typed {
+            %( a => 1, b => 2 )
+        }
+
+        method build-typed-private {
+            <k1 k2>.map: * => SetHash.new
+        }
+
+        method typed-private { %!typed-private }
+    }
+
+    my $inst;
+    lives-ok { $inst = Foo2.new }, "instantiate a class with typed hash";
+    if $inst.defined {
+        is-deeply $inst.typed, (my Int:D % = %(a => 1, b => 2)), "typed hash initialized correctly";
+        isa-ok $inst.typed-private<k1>, SetHash:D, "private typed hash is initialized correctly";
+        isa-ok $inst.typed-private<k3>, SetHash:U, "uninitialized key in typed private hash";
+    }
+    else {
+        skip "the previous test failed", 3;
+    }
+}
 
 done-testing;
 # vim: ft=perl6
