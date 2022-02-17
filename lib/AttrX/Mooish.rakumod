@@ -602,7 +602,7 @@ role AttrXMooishClassHOW does AttrXMooishHelper {
                 if nqp::islist($task) {
                     my $code = nqp::hllize(nqp::atpos($task, 0));
                     my $name = nqp::box_s(nqp::atpos($task, 2), Str);
-                    if $code == $BP_10_1000 || ($code == $BP_8_800 && %seen-attr{$name}.phony-required) {
+                    if $code == $BP_10_1000 || ($code == $BP_8_800 && (%seen-attr{$name} andthen .phony-required)) {
                         $skip = $noops = True;
                     }
                 }
