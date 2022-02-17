@@ -82,7 +82,7 @@ subtest "Where-clause" => {
 # Make sure lazy attributes can be of definite type!
 subtest "Definite lazy attribute" => {
     plan 8;
-    
+
     my class Foo5 {
         has Str:D $.good is rw is mooish(:lazy, :predicate);
         has Int:D $.bad is rw is mooish(:lazy);

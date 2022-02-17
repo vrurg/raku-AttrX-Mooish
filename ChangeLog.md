@@ -3,6 +3,19 @@ CHANGELOG
 
 
 
+v0.8.1
+------
+
+  * Make it possible to have definite lazy attributes like:
+
+    has Str:D $.s is mooish(:lazy);
+
+  * Fix incorrect processing of BUILDPLAN on the latest Rakudo builds
+
+  * Fix various cases where attributes were not properly initialized
+
+  * Fix for unbinding not taking place when it had to
+
 v0.8.0
 ------
 

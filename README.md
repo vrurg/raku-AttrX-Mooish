@@ -345,6 +345,23 @@ User defined (callback-type) methods receive additional named parameters (option
 
     Set for `filter` only. See its description above.
 
+Definite Types
+--------------
+
+The module allows for lazy attributes to have a definite type. By default the compiler will throw an error unless such attribute has `is required` trait or a default value. But for lazy attributes the default value must be provided by their builders:
+
+    class Foo {
+        has Int:D $.the-answer is mooish(:lazy);
+        method build-the-answer { 42 }
+    }
+
+Apparently, the value returned by a builder must pass the typecheck. Therefore the following code will fail a run time:
+
+    class Foo {
+        has Str:D $.bad is mooish(:lazy);
+        method build-bad { Str }
+    }
+
 Some magic
 ----------
 

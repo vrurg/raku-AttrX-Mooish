@@ -1,6 +1,16 @@
 =begin pod
 =CHANGELOG
 
+=head2 v0.8.1
+
+=item Make it possible to have definite lazy attributes like:
+
+    has Str:D $.s is mooish(:lazy);
+
+=item Fix incorrect processing of BUILDPLAN on the latest Rakudo builds
+=item Fix various cases where attributes were not properly initialized
+=item Fix for unbinding not taking place when it had to
+
 =head2 v0.8.0
 
 Major refactor of code toward increasing reliability.
