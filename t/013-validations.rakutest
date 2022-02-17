@@ -81,6 +81,8 @@ subtest "Where-clause" => {
 
 # Make sure lazy attributes can be of definite type!
 subtest "Definite lazy attribute" => {
+    plan 8;
+    
     my class Foo5 {
         has Str:D $.good is rw is mooish(:lazy, :predicate);
         has Int:D $.bad is rw is mooish(:lazy);
@@ -101,6 +103,11 @@ subtest "Definite lazy attribute" => {
         X::TypeCheck,
         "cannot initialize a definite lazy attribute with a type object";
     lives-ok { $inst.bad = 12 }, "assignment into a bad definite is still possible";
+
+    throws-like
+        q<my class Foo6 { has Str:D $.bad is mooish(:trigger); }>,
+        X::Syntax::Variable::MissingInitializer,
+        "non-lazy definite attribute has to be initialized";
 }
 
 done-testing;
