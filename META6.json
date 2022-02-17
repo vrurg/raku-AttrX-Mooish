@@ -1,7 +1,7 @@
 {
   "name": "AttrX::Mooish",
   "description": "Extending attribute functionality with ideas from Moo/Moose",
-  "version": "0.8.1",
+  "version": "0.8.900",
   "meta-version": "0",
   "authors": [
     "Vadim Belman <vrurg@cpan.org>"
