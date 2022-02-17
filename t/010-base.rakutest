@@ -1,7 +1,7 @@
 use Test;
 use AttrX::Mooish;
 
-plan 4;
+plan 5;
 
 subtest "Class Basics" => {
     plan 20;
@@ -155,7 +155,7 @@ subtest "Attr value resetting" => {
     nok $inst.fubar.defined, "callable is undefined";
 }
 
-subtest "Lazy Chain", {
+subtest "Lazy Chain" => {
     plan 2;
     my $inst;
 
@@ -181,7 +181,7 @@ subtest "Lazy Chain", {
     is $inst.bar, pi * e, "lazy initialized from a method";
 }
 
-subtest "Constructor init", {
+subtest "Constructor init" => {
     plan 2;
     my $inst;
     my class Foo1 {
@@ -192,6 +192,40 @@ subtest "Constructor init", {
     $inst = Foo1.new( :bar(1,2,3), :foo('a', 'b', 'c') );
     is-deeply $inst.bar, [1,2,3], 'mooish array attribute init from new';
     is-deeply $inst.foo, ['a', 'b', 'c'], 'non-mooish array attribute init from new';
+}
+
+subtest "Unbinding" => {
+    plan 3;
+    my class Foo {
+        has $.scalar is mooish(:lazy, :clearer, :predicate);
+        has @.array is mooish(:lazy, :clearer, :predicate);
+        has %.hash is mooish(:lazy, :clearer, :predicate);
+
+        method build-scalar { "Scalar container" }
+        method build-hash { key => "Hash container" }
+        method build-array { ("Array container",) }
+    }
+
+    my sub bind-unbind-ok($name, Mu \cont) is test-assertion {
+        my $cont-name = cont.^name;
+        subtest "Container: $cont-name", {
+            plan 7;
+            my $inst = Foo.new;
+            my $attr = $inst.^attributes(:local).grep(*.name.contains: $name).head;
+            nok $inst."has-$name"(), "attribute is not set";
+            nok $attr.get_value($inst).VAR.^isa(cont), "unintialized attribute is mooified";
+            cmp-ok $inst."$name"().Str, &[~~], /$cont-name \s container/, "attribute initialized";
+            ok $inst."has-$name"(), "attribute is marked as set";
+            ok $attr.get_value($inst).VAR.^isa(cont), "attribute is de-mooified";
+            $inst."clear-$name"();
+            nok $inst."has-$name"(), "attribute is cleared";
+            nok $attr.get_value($inst).VAR.^isa(cont), "cleared attribute is mooified again";
+        }
+    }
+
+    bind-unbind-ok "scalar", Scalar;
+    bind-unbind-ok "array", Array;
+    bind-unbind-ok "hash", Hash;
 }
 
 done-testing;

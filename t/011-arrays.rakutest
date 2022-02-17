@@ -7,8 +7,8 @@ my $inst;
 my class Foo1 {
     has @.bar is rw is mooish(:lazy, :trigger);
 
-    method build-bar { pass "build-bar "; [ 1,2,3,pi,4 ] }
-    method trigger-bar ( @value ) { 
+    method build-bar { pass "build-bar "; 1,2,3,pi,4 }
+    method trigger-bar(@) {
         pass "trigger on array attribute";
     }
 }

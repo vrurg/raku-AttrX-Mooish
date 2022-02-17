@@ -375,8 +375,8 @@ my role AttrXMooishAttributeHOW {
 
     method unbind-proxy ( Mu $instance is raw, Mu $val is raw ) is raw is hidden-from-backtrace {
         my $attr-var := self.get_value($instance);
-        unless $!always-proxy or !nqp::istype_nd($attr-var.VAR, AttrProxy) {
-            nqp::bindattr( nqp::decont($instance), nqp::decont($.package), $.name, $val );
+        unless $!always-proxy or !nqp::istype_nd($attr-var, AttrProxy) {
+            self.set_value($instance, $val);
         }
         $val
     }
