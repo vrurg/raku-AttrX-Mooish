@@ -7,13 +7,14 @@ role AttrXMooishAttributeHOW {...}
 
 # BUILDPLAN task codes
 my $BP_4_400;
+my $BP_8_800;
 my $BP_10_1000;
 
 CHECK {
     die "Rakudo of at least v2019.11 required to run this version of " ~ ::?PACKAGE.^name
         unless $*RAKU.compiler.version >= v2019.11;
-    ($BP_4_400, $BP_10_1000) =
-        $*RAKU.compiler.version >= v2021.12.176.ga.38.bebecf ?? (400, 1000) !! (4, 10);
+    ($BP_4_400, $BP_8_800, $BP_10_1000) =
+        $*RAKU.compiler.version >= v2021.12.176.ga.38.bebecf ?? (400, 800, 1000) !! (4, 8, 10);
 }
 
 class X::Fatal is Exception {
@@ -174,6 +175,7 @@ my role AttrXMooishAttributeHOW {
     has Bool $.no-init = False;
     has @.init-args;
     has $!has-build-closure = False;
+    has $.phony-required = False;
 
     my %opt2prefix = clearer => 'clear',
                      predicate => 'has',
@@ -251,6 +253,17 @@ my role AttrXMooishAttributeHOW {
     }
 
     method SET-HAS-BUILD-CLOSURE { $!has-build-closure = True }
+
+    method FAKE-REQUIRED {
+        return if self.required; # Already explicitly set
+        nqp::bindattr(self, Attribute, '$!required', 1);
+        $!phony-required = True;
+    }
+
+    method set_required(Mu $required) {
+        $!phony-required = False if $required;
+        nextsame
+    }
 
     method compose ( Mu \type, :$compiler_services ) is hidden-from-backtrace {
         return if try nqp::getattr_i(self, Attribute, '$!composed');
@@ -344,7 +357,7 @@ my role AttrXMooishAttributeHOW {
                 AttrProxy.new(
                     :attribute(self),
                     :$instance,
-                    FETCH => -> $proxy {
+                    FETCH => my sub ($proxy) is hidden-from-backtrace {
 #                        note "... FETCH from ", $.name, ", lazy? ", $!lazy;
                         my $attr-var := nqp::decont($proxy);
                         my Mu $val;
@@ -368,7 +381,7 @@ my role AttrXMooishAttributeHOW {
 
                         $val
                     },
-                    STORE => sub ($proxy, Mu $value is raw) is hidden-from-backtrace {
+                    STORE => my sub ($proxy, Mu $value is raw) is hidden-from-backtrace {
                         self.store-with-cb( $instance, nqp::decont($proxy), $value );
                     })))
     }
@@ -512,7 +525,7 @@ role AttrXMooishClassHOW does AttrXMooishHelper {
         my \newplan := nqp::create(nqp::what(plan));
 
         my @mooified = type.^attributes(:local).grep(* ~~ AttrXMooishAttributeHOW);
-        my %skip-attr;
+        my %seen-attr;
         # To follow the specs, we must not initialize attributes from %attrinit if there is user-defined BUILD.
         my $no-attrinit = False;
         # Those we've already added moofication for
@@ -536,15 +549,14 @@ role AttrXMooishClassHOW does AttrXMooishHelper {
 #                        note "  ? considering ", $name;
                         if $attr ~~ AttrXMooishAttributeHOW {
                             $attr.SET-HAS-BUILD-CLOSURE if $code == $BP_4_400;
-                            next TASK if %skip-attr{$name};
+                            next TASK if %seen-attr{$name};
                             # Create a batch of attributes to be moofied, in the order reported. The batch may include
                             # those for which there are no entries in the plan. Like the private ones.
                             loop {
                                 with @mooified.shift {
-#                                    note "  + adding ", $name, " to candidates";
                                     @candidates.push: $_;
                                     my $cand-name = .name;
-                                    %skip-attr{$cand-name} = True;
+                                    %seen-attr{$cand-name} = $_;
                                     last if $cand-name eq $name;
                                 }
                             }
@@ -577,6 +589,7 @@ role AttrXMooishClassHOW does AttrXMooishHelper {
         nqp::bindattr(self, Metamodel::ClassHOW, '@!BUILDPLAN', newplan);
 
         # Now collect @!BUILDALLPLAN. This part's logic is largerly copied from Rakudo's Perl6::Metamodel::BUILDPLAN
+#        note "--- ALL PLAN for ", type.^name;
         my $allplan := nqp::create(nqp::what(plan));
         my $noops = False;
         for type.^mro -> Mu $mro_class is raw {
@@ -585,10 +598,15 @@ role AttrXMooishClassHOW does AttrXMooishHelper {
             my int $count = nqp::elems($mro_plan);
             while $i < $count {
                 my $task := nqp::atpos($mro_plan, $i);
-                if nqp::islist($task) && nqp::atpos($task, 0) == $BP_10_1000 {
-                    $noops = True;
+                my $skip = False;
+                if nqp::islist($task) {
+                    my $code = nqp::hllize(nqp::atpos($task, 0));
+                    my $name = nqp::box_s(nqp::atpos($task, 2), Str);
+                    if $code == $BP_10_1000 || ($code == $BP_8_800 && %seen-attr{$name}.phony-required) {
+                        $skip = $noops = True;
+                    }
                 }
-                else {
+                unless $skip {
                     nqp::push($allplan, $task);
                 }
                 ++$i;
@@ -599,14 +617,7 @@ role AttrXMooishClassHOW does AttrXMooishHelper {
             $allplan := newplan;
         }
 
-#        for nqp::hllize($allplan) -> $task {
-#            note "^^^ ", $task;
-#            note "    ", $_ with $task.?comment;
-#        }
-
         nqp::bindattr(self, Metamodel::ClassHOW, '@!BUILDALLPLAN', $allplan);
-
-#        note "*** NEW PLAN FINALIZED";
     }
 }
 
@@ -646,6 +657,10 @@ multi trait_mod:<is>( Attribute:D $attr, :$mooish! ) is export {
     }
 
     $attr.INIT-FROM-OPTIONS(@opt-list);
+
+    if $attr.lazy && $attr.type.HOW.archetypes.definite && !$attr.required {
+        $attr.FAKE-REQUIRED;
+    }
 }
 
 our sub META6 {

@@ -1,68 +1,107 @@
 use Test;
 use AttrX::Mooish;
 
-plan 9;
-my $inst;
+plan 5;
 
-my class Foo1 {
-    has $.bar is rw is mooish(:lazy);
-    has $.baz is mooish(:lazy);
+subtest "Immutable" => {
+    plan 2;
 
-    method build-bar { "is bar" }
-    method build-baz { "is baz" }
+    my class Foo1 {
+        has $.bar is rw is mooish(:lazy);
+        has $.baz is mooish(:lazy);
+
+        method build-bar { "is bar" }
+        method build-baz { "is baz" }
+    }
+
+    my $inst = Foo1.new;
+    lives-ok { $inst.bar = "Fine" }, "assignment to RW attribute";
+    throws-like
+        { $inst.baz = "Bad"; },
+        X::Assignment::RO,
+        message => 'Cannot modify an immutable Str (is baz)',
+        "assignment to RO attribute failes";
 }
 
-$inst = Foo1.new;
-lives-ok { $inst.bar = "Fine" }, "assignment to RW attribute";
-throws-like
-    { $inst.baz = "Bad"; },
-    X::Assignment::RO,
-    message => 'Cannot modify an immutable Str (is baz)',
-    "assignment to RO attribute failes";
+subtest "Type check" => {
+    plan 3;
 
-my class Foo2 {
-    has Int $.bar is rw is mooish(:lazy);
-    has $.baz is mooish(:lazy);
+    my class Foo2 {
+        has Int $.bar is rw is mooish(:lazy);
+        has $.baz is mooish(:lazy);
 
-    method build-bar { 1234 }
-    method build-baz { "is baz" }
-}
-$inst = Foo2.new;
-lives-ok { $inst.bar = 31415926 }, "assignment of same types";
-lives-ok { $inst.bar = Nil }, "assignment of Nil";
-throws-like { $inst.bar = "abc" },
-            X::TypeCheck::Assignment,
-            "assignment to a different attribute type";
+        method build-bar { 1234 }
+        method build-baz { "is baz" }
+    }
 
-my class Foo3 {
-    has Stringy $.s is mooish(:lazy) = Str;
-    has Str:D $.bar is rw is mooish(:trigger) = "";
-
-    method trigger-bar($) { }
+    my $inst = Foo2.new;
+    lives-ok { $inst.bar = 31415926 }, "assignment of same types";
+    lives-ok { $inst.bar = Nil }, "assignment of Nil";
+    throws-like { $inst.bar = "abc" },
+        X::TypeCheck::Assignment,
+        "assignment to a different attribute type";
 }
 
-$inst = Foo3.new;
-lives-ok { $inst.bar = "a string" }, "assignment of defined value";
-throws-like
-    { $inst.bar = Nil },
-    X::TypeCheck,
-    "assignment of Nil to a definite type attribute";
+subtest "Nil to a definite smiley" => {
+    plan 2;
 
-my class Foo4 {
-    has Str $.bar is rw is mooish(:lazy) where * ~~ /:i ^ a/;
+    my class Foo3 {
+        has Stringy $.s is mooish(:lazy) = Str;
+        has Str:D $.bar is rw is mooish(:trigger) = "";
 
-    method build-bar { "a default value" }
+        method trigger-bar($) { }
+    }
+
+    my $inst = Foo3.new;
+    lives-ok { $inst.bar = "a string" }, "assignment of defined value";
+    throws-like
+        { $inst.bar = Nil },
+        X::TypeCheck,
+        "assignment of Nil to a definite type attribute";
 }
 
-$inst = Foo4.new;
-lives-ok { $inst.bar = "another value" }, "value assigned matches 'where' constraint";
-throws-like
-    { $inst.bar = "not allowed" },
-    X::TypeCheck,
-    message => q{Type check failed in assignment to $!bar; expected <anon> but got Str ("not allowed")},
-    "assignment of non-compliant value";
+subtest "Where-clause" => {
+    plan 2;
 
-#CATCH { note "Got exception ", $_.WHO; $_.throw}
+    my class Foo4 {
+        has Str $.bar is rw is mooish(:lazy) where * ~~ /:i ^ a/;
+
+        method build-bar {
+            "a default value"
+        }
+    }
+
+    my $inst = Foo4.new;
+    lives-ok { $inst.bar = "another value" }, "value assigned matches 'where' constraint";
+    throws-like
+        { $inst.bar = "not allowed" }, X::TypeCheck,
+        message => q{Type check failed in assignment to $!bar; expected <anon> but got Str ("not allowed")},
+        "assignment of non-compliant value";
+}
+
+# Make sure lazy attributes can be of definite type!
+subtest "Definite lazy attribute" => {
+    my class Foo5 {
+        has Str:D $.good is rw is mooish(:lazy, :predicate);
+        has Int:D $.bad is rw is mooish(:lazy);
+
+        method build-good { "oki" }
+        method build-bad { Int }
+    }
+
+    my $inst;
+    lives-ok { $inst = Foo5.new }, "can create a class with lazy definite attribute";
+    is $inst.good, "oki", "the good attribute is initialized";
+    ok $inst.has-good, "the good attribute is marked as set";
+    lives-ok { $inst.good = "42" }, "can assign to a writable definite attribute";
+    is $inst.good, "42", "the assignment is not lost";
+
+    throws-like
+        { my $v = $inst.bad },
+        X::TypeCheck,
+        "cannot initialize a definite lazy attribute with a type object";
+    lives-ok { $inst.bad = 12 }, "assignment into a bad definite is still possible";
+}
 
 done-testing;
 # vim: ft=perl6
