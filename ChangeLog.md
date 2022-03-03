@@ -3,6 +3,11 @@ CHANGELOG
 
 
 
+v0.8.2
+------
+
+  * Fix a bug with the order of `TWEAK` invocation for inherited classes
+
 v0.8.1
 ------
 

@@ -1,6 +1,10 @@
 =begin pod
 =CHANGELOG
 
+=head2 v0.8.2
+
+=item Fix a bug with the order of C<TWEAK> invocation for inherited classes
+
 =head2 v0.8.1
 
 =item Make it possible to have definite lazy attributes like:
