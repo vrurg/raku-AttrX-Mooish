@@ -588,11 +588,11 @@ role AttrXMooishClassHOW does AttrXMooishHelper {
         }
         nqp::bindattr(self, Metamodel::ClassHOW, '@!BUILDPLAN', newplan);
 
-        # Now collect @!BUILDALLPLAN. This part's logic is largerly copied from Rakudo's Perl6::Metamodel::BUILDPLAN
+        # Now collect @!BUILDALLPLAN. This part's logic is largely copied from Rakudo's Perl6::Metamodel::BUILDPLAN
 #        note "--- ALL PLAN for ", type.^name;
         my $allplan := nqp::create(nqp::what(plan));
         my $noops = False;
-        for type.^mro -> Mu $mro_class is raw {
+        for type.^mro.reverse -> Mu $mro_class is raw {
             my Mu $mro_plan := nqp::getattr($mro_class.HOW, Metamodel::ClassHOW, '@!BUILDPLAN');
             my $i = 0;
             my int $count = nqp::elems($mro_plan);

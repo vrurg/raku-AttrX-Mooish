@@ -1,7 +1,7 @@
 use Test;
 use AttrX::Mooish;
 
-plan 6;
+plan 7;
 
 my $author-testing = ? %*ENV<AUTHOR_TESTING>;
 
@@ -239,6 +239,23 @@ subtest "Chained init and BUILD", {
     is $inst.bar2, Any, "bar2 attribute ok";
     is $inst.baz1, "baz1 from new", "baz1 attribute ok";
     is $inst.baz2, "baz2 from new", "baz2 attribute ok";
+}
+
+# Control for a bug where the order of BUILDALL was broken
+subtest "TWEAK order" => {
+    my @order;
+    my class C1 {
+        submethod TWEAK { @order.push: ::?CLASS.^name }
+    }
+    my class C2 is C1 {
+        has Str $.b is mooish(:lazy);
+        submethod TWEAK { @order.push: ::?CLASS.^name }
+        method build-b { "irrelevant" }
+    }
+
+    C2.new;
+
+    is-deeply @order.List, <C1 C2>, "TWEAK order is not broken";
 }
 
 done-testing;
