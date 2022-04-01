@@ -62,7 +62,8 @@ subtest "Concurrent instantiation" => {
 }
 
 subtest "Concurrent lazy builds" => {
-    plan 4;
+    my $thread-count = 100;
+    plan 6;
     my class Foo {
         has $.foo is mooish(:lazy, :clearer);
         has atomicint $.builds-ran = 0;
@@ -82,13 +83,18 @@ subtest "Concurrent lazy builds" => {
 
         my @workers;
         my @w-ready;
-        for ^100 {
+
+        my @values;
+        my $val-lock = Lock::Async.new;
+
+        for ^100 -> $thread-id {
             @w-ready.push: my $ready = Promise.new;
             @workers.push: start {
                 $ready.keep(True);
                 await $starter;
                 # Initialize concurrent read from the attribute.
                 my $v = $inst.foo;
+                $val-lock.protect: { @values.push: $v };
             }
         }
 
@@ -97,6 +103,8 @@ subtest "Concurrent lazy builds" => {
         await @workers;
         is $inst.builds-ran, 1, "build was ran exactly once per instance";
         is $inst.foo, 1, "initialized with the number of builds invoked";
+        # This is to make sure there is nothing wrong about the attribute build logic.
+        is-deeply @values.List, 1 xx $thread-count, "all threads got the same value";
     }
 
     my $foo = Foo.new;
