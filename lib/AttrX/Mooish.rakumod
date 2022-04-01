@@ -47,7 +47,7 @@ class X::NoNatives is X::Fatal {
 
 my class AttrProxy is Proxy {
     has Mu $.val;
-    has Bool $.is-set is rw is default(False);
+    has Bool $!is-set is default(False);
     has Bool $.mooished is default(False);
     has Promise $!built-promise;
     has $.attribute;
@@ -74,7 +74,7 @@ my class AttrProxy is Proxy {
     }
 
     method build-acquire {
-        return False if $!is-set;
+        return False if ⚛$!is-set;
         my $bp = $!built-promise;
         if !$bp.defined && cas($!built-promise, $bp, Promise.new) === $bp {
             return True;
@@ -86,6 +86,8 @@ my class AttrProxy is Proxy {
     method build-release {
         $!built-promise.keep(True);
     }
+
+    method is-set { ⚛$!is-set }
 
     method is-building {
         ? (.status ~~ Planned with $!built-promise);
@@ -348,6 +350,7 @@ my role AttrXMooishAttributeHOW {
 
     }
 
+    my class NO-VALUE-YET {}
     method bind-proxy(Mu $instance is raw, Mu $type is raw) is raw is hidden-from-backtrace {
         my Mu $attr-var := self.get_value($instance);
         nqp::if(
@@ -360,21 +363,24 @@ my role AttrXMooishAttributeHOW {
                     FETCH => my sub ($proxy) is hidden-from-backtrace {
 #                        note "... FETCH from ", $.name, ", lazy? ", $!lazy;
                         my $attr-var := nqp::decont($proxy);
-                        my Mu $val;
+                        my Mu $val := NO-VALUE-YET;
 
                         if !$attr-var.VAR.is-set {
 #                            note "  . proxy value is not set yet";
-                            if $!lazy && $attr-var.VAR.build-acquire {
-                                LEAVE $attr-var.VAR.build-release;
-#                                note "    . try build attr";
-                                $val := self.build-attr( $instance, $attr-var );
+                            if $!lazy {
+                                if $attr-var.VAR.build-acquire {
+                                    LEAVE $attr-var.VAR.build-release;
+#                                    note "    . try build attr";
+                                    $val := self.build-attr($instance, $attr-var);
+                                }
                             }
                             else {
 #                                note "    . build has been acquired already";
                                 $val := nqp::clone_nd(self.auto_viv_container);
                             }
                         }
-                        else {
+
+                        if $val =:= NO-VALUE-YET {
 #                            note "    . get value";
                             $val := $attr-var.VAR.val;
                         }
