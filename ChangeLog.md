@@ -3,6 +3,11 @@ CHANGELOG
 
 
 
+v0.8.3
+------
+
+  * Fix incorrect handling of uninitialized lazy attributes in concurrent environment
+
 v0.8.2
 ------
 
