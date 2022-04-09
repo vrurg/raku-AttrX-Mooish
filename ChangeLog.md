@@ -3,6 +3,11 @@ CHANGELOG
 
 
 
+v0.8.4
+------
+
+  * Tidy up exceptions
+
 v0.8.3
 ------
 

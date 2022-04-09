@@ -1,6 +1,10 @@
 =begin pod
 =CHANGELOG
 
+=head2 v0.8.4
+
+=item Tidy up exceptions
+
 =head2 v0.8.3
 
 =item Fix incorrect handling of uninitialized lazy attributes in concurrent environment
