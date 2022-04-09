@@ -17,9 +17,7 @@ CHECK {
         $*RAKU.compiler.version >= v2021.12.176.ga.38.bebecf ?? (400, 800, 1000) !! (4, 8, 10);
 }
 
-class X::Fatal is Exception {
-    #has Str $.message is rw;
-}
+class X::Fatal is Exception { }
 
 class X::TypeCheck::MooishOption is X::TypeCheck {
     has @.expected is required;
@@ -42,6 +40,28 @@ class X::NoNatives is X::Fatal {
         "Cannot apply to '" ~ $.attr.name
             ~ "' on type '" ~ $.attr.type.^name
             ~ ": natively typed attributes are not supported"
+    }
+}
+
+class X::Option::Name is X::Fatal {
+    has Str:D $.option is required;
+    method message {
+        "Unknown named option '$.option'"
+    }
+}
+
+class X::Option::Type is X::Fatal {
+    has Mu $.type is required;
+    method message {
+        "Trait 'mooish' only takes options as Pairs, but a {$.type.^name} encountered"
+    }
+}
+
+class X::HelperMethod is X::Fatal {
+    has Str:D $.helper is required;
+    has Str:D $.helper-name is required;
+    method message {
+        "Cannot install {$.helper}: a method with name '$.helper-name' is already defined"
     }
 }
 
@@ -148,7 +168,7 @@ role AttrXMooishHelper {
             for @aliases -> $base-name {
                 my $helper-name = $attr.opt2method( $helper, :$base-name  );
 
-                X::Fatal.new( message => "Cannot install {$helper} {$helper-name}: method already defined").throw
+                X::HelperMethod.new( :$helper, :$helper-name ).throw
                     if type.^declares_method( $helper-name );
 
                 my $m = %helpers{$helper};
@@ -237,13 +257,13 @@ my role AttrXMooishAttributeHOW {
                     @!init-args.append: $value<>;
                 }
                 default {
-                    X::Fatal.new( message => "Unknown named option {$_}" ).throw;
+                    X::Option::Name.new( :option($_) ).throw
                 }
             }
         }
 
         multi sub set-option(Mu $opt) {
-            X::Fatal.new( message => "Trait 'mooish' only takes options as Pairs, not an {$opt.^name}" ).throw;
+            X::Option::Type.new( :type($opt.WHAT) ).throw
         }
 
         set-option($_) for @opt-list;
