@@ -3,6 +3,11 @@ CHANGELOG
 
 
 
+v0.8.5
+------
+
+  * Make clearer method thread-safe
+
 v0.8.4
 ------
 
