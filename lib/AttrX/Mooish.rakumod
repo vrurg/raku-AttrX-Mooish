@@ -141,6 +141,9 @@ enum PvtMode <pvmForce pvmNever pvmAsAttr pvmAuto>;
 role AttrXMooishHelper {
     method setup-helpers ( Mu \type, $attr ) is hidden-from-backtrace {
         my sub get-attr-obj( Mu \obj, $attr ) is raw is hidden-from-backtrace {
+            # Can't use $attr to call bind-proxy upon if the original attribute belongs to a role. In this case its
+            # .package is not defined.
+            # Metamodel::GenericHOW only happens for role attributes
             $attr.package.HOW ~~ Metamodel::GenericHOW
                 ?? (
                     ( try { obj.^get_attribute_for_usage($attr.name) } )
@@ -150,13 +153,11 @@ role AttrXMooishHelper {
         }
         my %helpers =
             :clearer( my method () is hidden-from-backtrace {
-                # Can't use $attr to call bind-proxy upon if the original attribute belongs to a role. In this case its
-                # .package is not defined.
-                # Metamodel::GenericHOW only happens for role attributes
-                my $attr-obj = get-attr-obj(self, $attr);
-                my Mu $attr-var := $attr-obj.bind-proxy(self, $attr-obj.package);
-                $attr-obj.clear-attr(self);
-                $attr-var.VAR.now-mooished;
+                get-attr-obj(self, $attr).protect: -> $attr-obj {
+                    my Mu $attr-var := $attr-obj.bind-proxy(self, $attr-obj.package);
+                    $attr-obj.clear-attr(self);
+                    $attr-var.VAR.now-mooished;
+                }
              } ),
             :predicate( my method () is hidden-from-backtrace { get-attr-obj(self, $attr).is-set( self ) } ),
             ;
@@ -198,6 +199,7 @@ my role AttrXMooishAttributeHOW {
     has @.init-args;
     has $!has-build-closure = False;
     has $.phony-required = False;
+    has $!lock = Lock.new;
 
     my %opt2prefix = clearer => 'clear',
                      predicate => 'has',
@@ -285,6 +287,12 @@ my role AttrXMooishAttributeHOW {
     method set_required(Mu $required) {
         $!phony-required = False if $required;
         nextsame
+    }
+
+    method protect(&code) {
+        $!lock.lock;
+        LEAVE $!lock.unlock;
+        &code(self)
     }
 
     method compose ( Mu \type, :$compiler_services ) is hidden-from-backtrace {
