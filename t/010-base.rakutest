@@ -1,7 +1,7 @@
 use Test;
 use AttrX::Mooish;
 
-plan 5;
+plan 6;
 
 subtest "Class Basics" => {
     plan 20;
@@ -226,6 +226,19 @@ subtest "Unbinding" => {
     bind-unbind-ok "scalar", Scalar;
     bind-unbind-ok "array", Array;
     bind-unbind-ok "hash", Hash;
+}
+
+subtest "Attribute with 'handles' trait" => {
+    plan 1;
+
+    my class Foo {
+        has $.foo is mooish(:lazy) handles<pairs>;
+
+        method build-foo { my %h = a => 1, b => 2 }
+    }
+
+    my $f = Foo.new;
+    is-deeply $f.pairs.sort, (:a(1), :b(2)), "`handles` vivifies a lazy attribute";
 }
 
 done-testing;
