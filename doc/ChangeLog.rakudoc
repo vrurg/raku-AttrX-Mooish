@@ -1,6 +1,10 @@
 =begin pod
 =CHANGELOG
 
+=head v0.8.6
+
+=item Slightly improve thread-safety
+
 =head2 v0.8.5
 
 =item Make clearer method thread-safe

@@ -376,12 +376,34 @@ The only exception takes place if `clearer` parameter is used and `clear-<attrib
 
 `filter` and `trigger` are exceptional here because they require permanent monitoring of attribute operations making it effectively impossible to drop `Proxy`. For this reason use of these parameters must be very carefully considered and highly discouraged for any code where performance is of the high precedence.
 
+Multi-threading
+---------------
+
+Attribute build and clearing are mutually thread-safe operations. But reading and assigning are not. While it is safe to try several simultaneous `clear` invocations for an attribute, trying to read/assign at the same time would likely result in undesired consequences.
+
+Predicates are considered *read* operations and as such are not protected either. Think of testing a non-mooified attribute for definedness, for example.
+
 CAVEATS
 =======
 
-Due to the magical nature of attribute behaviour conflicts with other traits are possible. None is known to the author yet.
+  * Due to the magical nature of attribute behaviour conflicts with other traits are possible. None is known to the author yet.
 
-Internally `Proxy` is used as attribute container. It was told that the class has a number of unpleasant side effects including multiplication of FETCH operation. Though generally this bug is harmles it could be workarounded by assigning an attribute value to a temporary variable.
+  * Use of `Proxy` as the container may have unexpected side effects in some use cases like passing it as a parameter. Multiple calls of `Proxy`'s `FETCH` are possible, for example. While generally harmless this may result in performance issues of affected application. To workaround the problem attribute value can be temporarily assigned into a variable.
+
+  * Another surprising side effect happens when a "mooified" array or hash attribute is used with a loop. Since `Proxy` is a container, loops are considering such attributes as itemized, no matter what their final value is. Consider the following:
+
+        class Foo {
+            has @.a is mooish(:lazy);
+            method build-a { 1,2,3 }
+            method dump {
+                for @!a -> $val { say $val.raku }
+            }
+        }
+        Foo.new.dump; # $[1, 2, 3]
+
+    Note that this only happens when attribute is accessed privately as `for Foo.new.a {...}` would behave as expected. Also, for non-filtering and non-triggering attributes this only happens when the attribute is not initialized yet.
+
+    The problem could be workarounded either by using `@.a` notation, or with explicit decontainerization `@!a<>`.
 
 SEE
 ===

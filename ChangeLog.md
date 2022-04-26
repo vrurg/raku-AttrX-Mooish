@@ -3,6 +3,13 @@ CHANGELOG
 
 
 
+head
+====
+
+v0.8.6
+
+  * Slightly improve thread-safety
+
 v0.8.5
 ------
 
