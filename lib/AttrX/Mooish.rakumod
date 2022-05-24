@@ -147,8 +147,8 @@ role AttrXMooishHelper {
                 !! $attr;
         }
         my %helpers =
-            :clearer( my method () is hidden-from-backtrace { get-attr-obj(self, $attr).clear-attr(self) } ),
-            :predicate( my method () is hidden-from-backtrace { get-attr-obj(self, $attr).is-set( self ) } ),
+            :clearer( anon method () is hidden-from-backtrace { get-attr-obj(self, $attr).clear-attr(self) } ),
+            :predicate( anon method () is hidden-from-backtrace { get-attr-obj(self, $attr).is-set( self ) } ),
             ;
 
         my @aliases = $attr.base-name, |$attr.init-args;
