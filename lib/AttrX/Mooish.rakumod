@@ -601,6 +601,7 @@ role AttrXMooishClassHOW does AttrXMooishHelper {
                 nqp::push(newplan, $task) unless @candidates;
             }
             else {
+                %seen-attr{@mooified.map(*.name)} = @mooified;
                 @candidates.append: @mooified;
                 @mooified = ();
             }
