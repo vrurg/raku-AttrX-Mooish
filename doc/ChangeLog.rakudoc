@@ -1,6 +1,11 @@
 =begin pod
 =CHANGELOG
 
+=head v0.8.7
+
+=item Fix private attribute helper methods checked for duplicate names in public method tables
+=item Fix definite-typed private lazy attributes
+
 =head v0.8.6
 
 =item Slightly improve thread-safety

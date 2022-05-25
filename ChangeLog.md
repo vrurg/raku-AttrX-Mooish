@@ -6,6 +6,15 @@ CHANGELOG
 head
 ====
 
+v0.8.7
+
+  * Fix private attribute helper methods checked for duplicate names in public method tables
+
+  * Fix definite-typed private lazy attributes
+
+head
+====
+
 v0.8.6
 
   * Slightly improve thread-safety
