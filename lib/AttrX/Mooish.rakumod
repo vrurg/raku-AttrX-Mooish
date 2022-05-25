@@ -153,18 +153,21 @@ role AttrXMooishHelper {
 
         my @aliases = $attr.base-name, |$attr.init-args;
 
+        my $is-public := $attr.has_accessor;
         for %helpers.keys -> $helper {
             next unless $attr."$helper"(); # Don't generate if attribute isn't set
             for @aliases -> $base-name {
                 my $helper-name = $attr.opt2method( $helper, :$base-name  );
 
                 X::HelperMethod.new( :$helper, :$helper-name ).throw
-                    if type.^declares_method( $helper-name );
+                    if $is-public
+                        ?? type.^declares_method($helper-name)
+                        !! type.^find_private_method($helper-name);
 
                 my $m = %helpers{$helper};
                 $m.set_name( $helper-name );
 
-                if $attr.has_accessor { # I.e. – public?
+                if $is-public {
                     type.^add_method( $helper-name, $m );
                 } else {
                     type.^add_private_method( $helper-name, $m );
