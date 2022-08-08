@@ -505,7 +505,7 @@ The problem could be workarounded either by using C<@.a> notation, or with expli
 
 =SEE ALSO
 
-L<ChangeLog|https://github.com/vrurg/raku-AttrX-Mooish/blob/main/ChangeLog.md>
+L<ChangeLog|ChangeLog.md>
 
 =head1 AUTHOR
 

@@ -418,7 +418,7 @@ SEE
 
 ALSO
 
-[ChangeLog](https://github.com/vrurg/raku-AttrX-Mooish/blob/main/ChangeLog.md)
+[ChangeLog](ChangeLog.md)
 
 AUTHOR
 ======
