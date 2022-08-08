@@ -389,6 +389,8 @@ This module provides partial thread-safety and must be used with care with this 
 
 Consider it the way we normally consider working with an attribute in a concurrent environment, where reads and writes must be mutually protected to ensure data safety.
 
+To sum up the above stated, what would be guaranteed is that a read-only attribute would provide robust results in a multi-threaded environment, as it is expected from a read-only pre-initialized attribute.
+
 Predicates are considered *read* operations and as such are not protected either. Think of testing a non-mooified attribute for definedness, for example.
 
 CAVEATS
