@@ -86,7 +86,7 @@ my class AttrProxy is Proxy {
         cas $!is-set, {
             if $_ {
                 $!val := Nil;
-                $!built-promise := Nil;
+                $!built-promise ⚛= Nil;
             }
             False
         }
@@ -94,28 +94,28 @@ my class AttrProxy is Proxy {
 
     method build-acquire {
         return False if ⚛$!is-set;
-        my $bp = $!built-promise;
-        if !$bp.defined && cas($!built-promise, $bp, Promise.new) === $bp {
+        my $bp = my $bp-old = $!built-promise;
+        if !$bp-old.defined && ($bp = cas($!built-promise, $bp-old, Promise.new)) === $bp-old {
             return True;
         }
-        await $!built-promise;
+        await $bp;
         False
     }
 
     method build-release {
-        $!built-promise.keep(True);
+        (⚛$!built-promise).keep;
     }
 
     method is-set { ⚛$!is-set }
 
     method is-building {
-        ? (.status ~~ Planned with $!built-promise);
+        ? (.status ~~ Planned with ⚛$!built-promise);
     }
 
     method store-value(Mu $value is raw) is raw is hidden-from-backtrace {
-        unless $!is-set {
+        unless ⚛$!is-set {
             $!val := nqp::clone_nd($!attribute.auto_viv_container);
-            $!is-set = True;
+            $!is-set ⚛= True;
         }
         nqp::if(
             nqp::iscont($!val),
@@ -414,6 +414,7 @@ my role AttrXMooishAttributeHOW {
         
         &code ?? $rc !! $attr-var
     }
+
     method unbind-proxy(Mu $instance is raw, Mu $val is raw) is hidden-from-backtrace {
         my $attr-var := self.get_value($instance);
         unless $!always-proxy or !nqp::istype_nd($attr-var, AttrProxy) {
@@ -448,7 +449,6 @@ my role AttrXMooishAttributeHOW {
         my $attr-var := self.attr-var: obj, :proxify;
         X::NotAllowed.new(:op('clear'), :cause("attribute " ~ $.name ~ " is still building")).throw
             if $attr-var.VAR.is-building;
-        return unless $attr-var.VAR.is-set;
         nqp::if(nqp::istype_nd($attr-var, AttrProxy), $attr-var.VAR.clear);
     }
 

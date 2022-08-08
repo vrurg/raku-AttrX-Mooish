@@ -3,11 +3,11 @@ use Test;
 use AttrX::Mooish;
 
 # Make sure we have enough threads in pool on low-cores CPUs.
-BEGIN PROCESS::<$SCHEDULER> = ThreadPoolScheduler.new(:max_threads(100));
+BEGIN PROCESS::<$SCHEDULER> = ThreadPoolScheduler.new(:max_threads(400));
 
 plan 2;
 
-subtest "Concurrent instantiation" => {
+subtest "Concurrent instantiation, single instance per thread" => {
     plan 4;
 
     my $repeats = 10000;
@@ -76,9 +76,9 @@ subtest "Concurrent instantiation" => {
     is $nonset-total, 2 * $expected, "all non-set passed";
 }
 
-subtest "Concurrent lazy builds" => {
+subtest "Concurrent lazy builds/clears" => {
     my $thread-count = 100;
-    plan 6;
+    plan 2;
     my class Foo {
         has $.foo is mooish(:lazy, :clearer);
         has atomicint $.builds-ran = 0;
@@ -93,40 +93,70 @@ subtest "Concurrent lazy builds" => {
         }
     }
 
-    sub access-test($inst) {
-        my $starter = Promise.new;
+    sub access-test($inst, $msg) is test-assertion {
+        subtest "concurrent access: " ~ $msg => {
+            plan 6;
+            my $starter = Promise.new;
+            my $intermediate1 = Promise.new;
+            my $intermediate2 = Promise.new;
 
-        my @workers;
-        my @w-ready;
+            my @workers;
+            my @w-ready;
+            my @w-paused1;
+            my @w-paused2;
 
-        my @values;
-        my $val-lock = Lock::Async.new;
+            my @values;
+            my @values-cleared;
+            my $val-lock = Lock::Async.new;
 
-        for ^100 -> $thread-id {
-            @w-ready.push: my $ready = Promise.new;
-            @workers.push: start {
-                $ready.keep(True);
-                await $starter;
-                # Initialize concurrent read from the attribute.
-                my $v = $inst.foo;
-                $val-lock.protect: { @values.push: $v };
+            for ^$thread-count -> $thread-id {
+                @w-ready[$thread-id] = my $ready = Promise.new;
+                @w-paused1[$thread-id] = my $paused1 = Promise.new;
+                @w-paused2[$thread-id] = my $paused2 = Promise.new;
+                @workers.push: start {
+                    $ready.keep(True);
+                    await $starter;
+                    # Initialize concurrent read from the attribute.
+                    my $v = $inst.foo;
+                    $val-lock.protect: { @values.push: $v };
+                    $paused1.keep;
+                    await $intermediate1;
+                    $inst.clear-foo;
+                    # Because clearer and builder are not mutually safe we need another pause here to sync all states.
+                    $paused2.keep;
+                    await $intermediate2;
+                    $v = $inst.foo;
+                    $val-lock.protect: { @values-cleared.push: $v };
+                }
             }
-        }
 
-        await @w-ready;
-        $starter.keep(True);
-        await @workers;
-        is $inst.builds-ran, 1, "build was ran exactly once per instance";
-        is $inst.foo, 1, "initialized with the number of builds invoked";
-        # This is to make sure there is nothing wrong about the attribute build logic.
-        is-deeply @values.List, 1 xx $thread-count, "all threads got the same value";
+            # Orchestrate the threads
+            await @w-ready;
+            $starter.keep;
+            await @w-paused1;
+
+            is $inst.builds-ran, 1, "build was ran exactly once per instance";
+            is $inst.foo, 1, "initialized with the number of builds invoked";
+
+            $intermediate1.keep;
+            await @w-paused2;
+            $intermediate2.keep;
+            await @workers;
+
+            is $inst.builds-ran, 2, "build was ran for the second time after clearing";
+            is $inst.foo, 2, "initialized with the number of builds invoked again";
+
+            # This is to make sure there is nothing wrong about the attribute build logic.
+            is-deeply @values.List, 1 xx $thread-count, "all threads got the same value";
+            is-deeply @values-cleared.List, 2 xx $thread-count, "all threads got the same value after clearing";
+        }
     }
 
     my $foo = Foo.new;
-    my $*AXM-DEBUG = 1;
-    access-test($foo);
+    access-test($foo, "first round");
     $foo.reset;
-    access-test($foo);
+    access-test($foo, "second round");
+
 }
 
 done-testing;
