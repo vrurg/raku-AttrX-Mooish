@@ -449,28 +449,39 @@ The only exception takes place if C<clearer> parameter is used and C«clear-<att
 the attribute state is reverted back to uninitialized state and C<Proxy> is getting installed again – until the next
 read/write operation.
 
-C<filter> and C<trigger> are exceptional here because they require permanent monitoring of attribute operations making
-it effectively impossible to drop C<Proxy>. For this reason use of these parameters must be very carefully considered
-and highly discouraged for any code where performance is of the high precedence.
+C<filter> and C<trigger> are special with this respect because they require permanent monitoring of attribute operations
+making it effectively impossible to strip off C<Proxy> from attribute's value. For this reason use of these parameters
+must be very carefully considered. One is highly discouraged from using them for any code where performance is
+important.
 
 =head2 Multi-threading
 
-Attribute build and clearing are mutually thread-safe operations. But reading and assigning are not. While it is safe
-to try several simultaneous C<clear> invocations for an attribute, trying to read/assign at the same time would likely
-result in undesired consequences.
+This module provides partial thread-safety and must be used with care with this respect. This means that the following
+conditions are guaranteed:
+
+=item build operations are safe among themselves
+=item clear operations are safe among themselves
+=item anything else, including mix of build/clear operations, is unsafe
+
+Consider it the way we normally consider working with an attribute in a concurrent environment, where reads and writes
+must be mutually protected to ensure data safety.
 
 Predicates are considered I<read> operations and as such are not protected either. Think of testing a non-mooified
 attribute for definedness, for example.
 
 =head1 CAVEATS
 
-=item Due to the magical nature of attribute behaviour conflicts with other traits are possible. None is known to the author
-yet.
+=begin item
+Due to the "magical" nature of attribute behaviour conflicts with other traits are possible.
+In particular, mixing up with `is built` trait is not recommended.
+=end item
 
-=item Use of C<Proxy> as the container may have unexpected side effects in some use cases like passing it as a
+=begin item
+Use of C<Proxy> as the container may have unexpected side effects in some use cases like passing it as a
 parameter. Multiple calls of C<Proxy>'s C<FETCH> are possible, for example. While generally harmless this may result in
 performance issues of affected application. To workaround the problem attribute value can be temporarily assigned into
 a variable.
+=end item
 
 =begin item
 Another surprising side effect happens when a "mooified" array or hash attribute is used with a loop. Since
@@ -494,7 +505,7 @@ The problem could be workarounded either by using C<@.a> notation, or with expli
 
 =SEE ALSO
 
-L<ChangeLog|https://modules.raku.org/dist/ChangeLog>
+L<ChangeLog|https://github.com/vrurg/raku-AttrX-Mooish/blob/main/ChangeLog.md>
 
 =head1 AUTHOR
 

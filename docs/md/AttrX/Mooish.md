@@ -374,19 +374,27 @@ Module versions prior to v0.5.0 were pretty much costly perfomance-wise. This wa
 
 The only exception takes place if `clearer` parameter is used and `clear-<attribute>` method is called. In this case the attribute state is reverted back to uninitialized state and `Proxy` is getting installed again – until the next read/write operation.
 
-`filter` and `trigger` are exceptional here because they require permanent monitoring of attribute operations making it effectively impossible to drop `Proxy`. For this reason use of these parameters must be very carefully considered and highly discouraged for any code where performance is of the high precedence.
+`filter` and `trigger` are special with this respect because they require permanent monitoring of attribute operations making it effectively impossible to strip off `Proxy` from attribute's value. For this reason use of these parameters must be very carefully considered. One is highly discouraged from using them for any code where performance is important.
 
 Multi-threading
 ---------------
 
-Attribute build and clearing are mutually thread-safe operations. But reading and assigning are not. While it is safe to try several simultaneous `clear` invocations for an attribute, trying to read/assign at the same time would likely result in undesired consequences.
+This module provides partial thread-safety and must be used with care with this respect. This means that the following conditions are guaranteed:
+
+  * build operations are safe among themselves
+
+  * clear operations are safe among themselves
+
+  * anything else, including mix of build/clear operations, is unsafe
+
+Consider it the way we normally consider working with an attribute in a concurrent environment, where reads and writes must be mutually protected to ensure data safety.
 
 Predicates are considered *read* operations and as such are not protected either. Think of testing a non-mooified attribute for definedness, for example.
 
 CAVEATS
 =======
 
-  * Due to the magical nature of attribute behaviour conflicts with other traits are possible. None is known to the author yet.
+  * Due to the "magical" nature of attribute behaviour conflicts with other traits are possible. In particular, mixing up with `is built` trait is not recommended.
 
   * Use of `Proxy` as the container may have unexpected side effects in some use cases like passing it as a parameter. Multiple calls of `Proxy`'s `FETCH` are possible, for example. While generally harmless this may result in performance issues of affected application. To workaround the problem attribute value can be temporarily assigned into a variable.
 
@@ -410,7 +418,7 @@ SEE
 
 ALSO
 
-[ChangeLog](https://modules.raku.org/dist/ChangeLog)
+[ChangeLog](https://github.com/vrurg/raku-AttrX-Mooish/blob/main/ChangeLog.md)
 
 AUTHOR
 ======

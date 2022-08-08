@@ -6,6 +6,13 @@ CHANGELOG
 head
 ====
 
+v0.8.8
+
+  * Resolve some more rare race conditions
+
+head
+====
+
 v0.8.7
 
   * Fix private attribute helper methods checked for duplicate names in public method tables
