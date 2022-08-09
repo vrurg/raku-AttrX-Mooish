@@ -1,7 +1,7 @@
 use Test;
 use AttrX::Mooish;
 
-plan 5;
+plan 4;
 throws-like
     q<my class Foo1 { has $.bar is rw is mooish(:filter); }; Foo1.new.bar = 123; >,
     X::Method::NotFound,
@@ -65,39 +65,5 @@ subtest "Nils", {
                 "hash build returns Nil";
 }
 
-subtest "Not Allowed" => {
-    plan 2;
-
-    my class Foo {
-        has $.foo is mooish(:lazy, :clearer, :filter);
-        has $.bar is mooish(:lazy, :clearer, :trigger);
-
-        method build-foo { 42 }
-
-        method filter-foo(|) {
-            self.clear-foo; # Boo!
-        }
-
-        method build-bar { pi }
-        method trigger-bar(|) {
-            self.clear-bar
-        }
-    }
-
-    throws-like
-        { my $v = Foo.new.foo; },
-        X::NotAllowed,
-        "clear called in a filter while building throws",
-        :op<clear>,
-        :cause('attribute $!foo is still building');
-
-    throws-like
-        { my $v = Foo.new.bar; },
-        X::NotAllowed,
-        "clear called in a trigger while building throws",
-        :op<clear>,
-        :cause('attribute $!bar is still building');
-}
-
 done-testing;
-# vim: ft=perl6
+# vim: ft=raku

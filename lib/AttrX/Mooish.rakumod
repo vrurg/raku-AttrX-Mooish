@@ -83,6 +83,7 @@ my class AttrProxy is Proxy {
     }
 
     method clear {
+        return if self.VAR.is-building;
         cas $!is-set, {
             if $_ {
                 $!val := Nil;
@@ -383,7 +384,7 @@ my role AttrXMooishAttributeHOW {
                 ($attr-var := AttrProxy.new(
                     :attribute(self),
                     :$instance,
-                    FETCH => my sub ($proxy) is hidden-from-backtrace {
+                    FETCH => my sub ($proxy) is raw is hidden-from-backtrace {
                         my $attr-var := nqp::decont($proxy);
                         my Mu $val := NO-VALUE-YET;
 
@@ -447,8 +448,6 @@ my role AttrXMooishAttributeHOW {
 
     method clear-attr(Mu \obj --> Nil) is hidden-from-backtrace {
         my $attr-var := self.attr-var: obj, :proxify;
-        X::NotAllowed.new(:op('clear'), :cause("attribute " ~ $.name ~ " is still building")).throw
-            if $attr-var.VAR.is-building;
         nqp::if(nqp::istype_nd($attr-var, AttrProxy), $attr-var.VAR.clear);
     }
 
@@ -703,4 +702,4 @@ our sub META6 {
 #
 # Check the LICENSE file for the license
 
-# vim: tw=120 ft=perl6
+# vim: tw=120 ft=raku
