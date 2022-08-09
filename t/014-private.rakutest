@@ -71,4 +71,4 @@ is $inst.bar, "default private", "public attr with private builder";
 is $inst.pvt-baz, "default private", "private attr with private builder";
 
 done-testing;
-# vim: ft=perl6
+# vim: ft=raku

@@ -114,4 +114,4 @@ subtest "Initialize With Nil", {
 }
 
 done-testing;
-# vim: ft=perl6
+# vim: ft=raku

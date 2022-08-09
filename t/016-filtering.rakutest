@@ -73,4 +73,4 @@ $inst = Foo4.new(bar => "from constructor");
 ok $inst.from-new, "filtered from constuctor";
 
 done-testing;
-# vim: ft=perl6
+# vim: ft=raku

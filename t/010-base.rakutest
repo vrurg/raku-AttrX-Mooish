@@ -242,4 +242,4 @@ subtest "Attribute with 'handles' trait" => {
 }
 
 done-testing;
-# vim: ft=perl6
+# vim: ft=raku

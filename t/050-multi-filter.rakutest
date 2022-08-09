@@ -50,4 +50,4 @@ is-deeply $inst.baz, <a b b c>.BagHash, "baz built";
 ok $inst.has-baz, "baz is inited";
 
 done-testing;
-# vim: ft=perl6
+# vim: ft=raku
