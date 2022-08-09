@@ -1,6 +1,10 @@
 =begin pod
 =CHANGELOG
 
+=head v0.8.9
+
+=item Clearer method would not throw anymore if attribute is still building. It would be just a NOP then.
+
 =head v0.8.8
 
 =item Resolve some more rare race conditions

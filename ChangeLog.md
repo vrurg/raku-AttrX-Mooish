@@ -6,6 +6,13 @@ CHANGELOG
 head
 ====
 
+v0.8.9
+
+  * Clearer method would not throw anymore if attribute is still building. It would be just a NOP then.
+
+head
+====
+
 v0.8.8
 
   * Resolve some more rare race conditions
