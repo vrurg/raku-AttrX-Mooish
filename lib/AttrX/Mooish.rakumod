@@ -378,37 +378,39 @@ my role AttrXMooishAttributeHOW {
         CATCH { nqp::unlock($!lock); .rethrow }
 
         $attr-var := self.get_value($instance);
-        nqp::unless(
-            (nqp::istype_nd($attr-var, AttrProxy) || !$proxify),
-            nqp::bindattr(nqp::decont($instance), $type, $.name,
-                ($attr-var := AttrProxy.new(
-                    :attribute(self),
-                    :$instance,
-                    FETCH => my sub ($proxy) is raw is hidden-from-backtrace {
-                        my $attr-var := nqp::decont($proxy);
-                        my Mu $val := NO-VALUE-YET;
+        # Don't let the newly created proxy to .sink
+        my $ :=
+            nqp::unless(
+                (nqp::istype_nd($attr-var, AttrProxy) || !$proxify),
+                nqp::bindattr(nqp::decont($instance), $type, $.name,
+                    ($attr-var := AttrProxy.new(
+                        :attribute(self),
+                        :$instance,
+                        FETCH => my sub ($proxy) is raw is hidden-from-backtrace {
+                            my $attr-var := nqp::decont($proxy);
+                            my Mu $val := NO-VALUE-YET;
 
-                        if !$attr-var.VAR.is-set {
-                            if $!lazy {
-                                if $attr-var.VAR.build-acquire {
-                                    LEAVE $attr-var.VAR.build-release;
-                                    $val := self.build-attr($instance, $attr-var);
+                            if !$attr-var.VAR.is-set {
+                                if $!lazy {
+                                    if $attr-var.VAR.build-acquire {
+                                        LEAVE $attr-var.VAR.build-release;
+                                        $val := self.build-attr($instance, $attr-var);
+                                    }
+                                }
+                                else {
+                                    $val := nqp::clone_nd(self.auto_viv_container);
                                 }
                             }
-                            else {
-                                $val := nqp::clone_nd(self.auto_viv_container);
+
+                            if $val =:= NO-VALUE-YET {
+                                $val := $attr-var.VAR.val;
                             }
-                        }
 
-                        if $val =:= NO-VALUE-YET {
-                            $val := $attr-var.VAR.val;
-                        }
-
-                        $val
-                    },
-                    STORE => my sub ($proxy, Mu $value is raw) is hidden-from-backtrace {
-                        self.store-with-cb( $instance, nqp::decont($proxy), $value );
-                    }))));
+                            $val
+                        },
+                        STORE => my sub ($proxy, Mu $value is raw) is hidden-from-backtrace {
+                            self.store-with-cb( $instance, nqp::decont($proxy), $value );
+                        }))));
         with &code { $rc := &code($attr-var) }
 
         nqp::unlock($!lock);
