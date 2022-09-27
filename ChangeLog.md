@@ -3,6 +3,36 @@ CHANGELOG
 
 
 
+head
+====
+
+v0.8.9
+
+  * Clearer method would not throw anymore if attribute is still building. It would be just a NOP then.
+
+head
+====
+
+v0.8.8
+
+  * Resolve some more rare race conditions
+
+head
+====
+
+v0.8.7
+
+  * Fix private attribute helper methods checked for duplicate names in public method tables
+
+  * Fix definite-typed private lazy attributes
+
+head
+====
+
+v0.8.6
+
+  * Slightly improve thread-safety
+
 v0.8.5
 ------
 

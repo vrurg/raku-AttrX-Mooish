@@ -374,21 +374,53 @@ Module versions prior to v0.5.0 were pretty much costly perfomance-wise. This wa
 
 The only exception takes place if `clearer` parameter is used and `clear-<attribute>` method is called. In this case the attribute state is reverted back to uninitialized state and `Proxy` is getting installed again – until the next read/write operation.
 
-`filter` and `trigger` are exceptional here because they require permanent monitoring of attribute operations making it effectively impossible to drop `Proxy`. For this reason use of these parameters must be very carefully considered and highly discouraged for any code where performance is of the high precedence.
+`filter` and `trigger` are special with this respect because they require permanent monitoring of attribute operations making it effectively impossible to strip off `Proxy` from attribute's value. For this reason use of these parameters must be very carefully considered. One is highly discouraged from using them for any code where performance is important.
+
+Multi-threading
+---------------
+
+This module provides partial thread-safety and must be used with care with this respect. This means that the following conditions are guaranteed:
+
+  * build operations are safe among themselves
+
+  * clear operations are safe among themselves
+
+  * anything else, including mix of build/clear operations, is unsafe
+
+Consider it the way we normally consider working with an attribute in a concurrent environment, where reads and writes must be mutually protected to ensure data safety.
+
+To sum up the above stated, what would be guaranteed is that a read-only attribute would provide robust results in a multi-threaded environment, as it is expected from a read-only pre-initialized attribute.
+
+Predicates are considered *read* operations and as such are not protected either. Think of testing a non-mooified attribute for definedness, for example.
 
 CAVEATS
 =======
 
-Due to the magical nature of attribute behaviour conflicts with other traits are possible. None is known to the author yet.
+  * Due to the "magical" nature of attribute behaviour conflicts with other traits are possible. In particular, mixing up with `is built` trait is not recommended.
 
-Internally `Proxy` is used as attribute container. It was told that the class has a number of unpleasant side effects including multiplication of FETCH operation. Though generally this bug is harmles it could be workarounded by assigning an attribute value to a temporary variable.
+  * Use of `Proxy` as the container may have unexpected side effects in some use cases like passing it as a parameter. Multiple calls of `Proxy`'s `FETCH` are possible, for example. While generally harmless this may result in performance issues of affected application. To workaround the problem attribute value can be temporarily assigned into a variable.
+
+  * Another surprising side effect happens when a "mooified" array or hash attribute is used with a loop. Since `Proxy` is a container, loops are considering such attributes as itemized, no matter what their final value is. Consider the following:
+
+        class Foo {
+            has @.a is mooish(:lazy);
+            method build-a { 1,2,3 }
+            method dump {
+                for @!a -> $val { say $val.raku }
+            }
+        }
+        Foo.new.dump; # $[1, 2, 3]
+
+    Note that this only happens when attribute is accessed privately as `for Foo.new.a {...}` would behave as expected. Also, for non-filtering and non-triggering attributes this only happens when the attribute is not initialized yet.
+
+    The problem could be workarounded either by using `@.a` notation, or with explicit decontainerization `@!a<>`.
 
 SEE
 ===
 
 ALSO
 
-[ChangeLog](https://modules.raku.org/dist/ChangeLog)
+[ChangeLog](ChangeLog.md)
 
 AUTHOR
 ======

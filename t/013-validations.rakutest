@@ -81,14 +81,19 @@ subtest "Where-clause" => {
 
 # Make sure lazy attributes can be of definite type!
 subtest "Definite lazy attribute" => {
-    plan 8;
+    plan 15;
 
     my class Foo5 {
-        has Str:D $.good is rw is mooish(:lazy, :predicate);
+        has Str:D $.good is rw is mooish(:lazy, :predicate, :clearer);
         has Int:D $.bad is rw is mooish(:lazy);
+        has Num:D $!priv is mooish(:lazy, :predicate, :clearer);
 
         method build-good { "oki" }
         method build-bad { Int }
+        method !build-priv { pi }
+        method priv { $!priv }
+        method has-priv { self!has-priv }
+        method clear-priv { self!clear-priv }
     }
 
     my $inst;
@@ -97,6 +102,14 @@ subtest "Definite lazy attribute" => {
     ok $inst.has-good, "the good attribute is marked as set";
     lives-ok { $inst.good = "42" }, "can assign to a writable definite attribute";
     is $inst.good, "42", "the assignment is not lost";
+    lives-ok { $inst.clear-good }, "a definite attribute can be cleared";
+    nok $inst.has-good, "a definite attribute is empty after clearing";
+    is $inst.good, "oki", "a definite attribute re-vivifies after clear";
+
+    is $inst.priv, pi, "private lazy attribute can be a definite too";
+    lives-ok { $inst.clear-priv }, "private definite attribute can be cleared";
+    nok $inst.has-priv, "private definite is empty after clearing";
+    is $inst.priv, pi, "private definite re-vivifies after clearing";
 
     throws-like
         { my $v = $inst.bad },
@@ -111,4 +124,4 @@ subtest "Definite lazy attribute" => {
 }
 
 done-testing;
-# vim: ft=perl6
+# vim: ft=raku

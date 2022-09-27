@@ -11,10 +11,6 @@ my class Foo1 {
         "private val";
     }
 
-    method !priv-builder {
-        note "Yes, it's me";
-    }
-
     method run-test {
         is $!bar, "private val", "initialized with private builder";
         is self!has-bar, True, "private predicate";
@@ -29,7 +25,9 @@ $inst.run-test;
 my class Foo2 {
     has $!bar is mooish(:lazy, :clearer<reset-bar>, :predicate<is-bar-set>);
 
-    method !build-bar { "private value" }
+    method !build-bar {
+        "private value"
+    }
     method run-test {
         nok self!is-bar-set, "private predicate reports attribute not set";
         is $!bar, "private value", "private builder ok";
@@ -73,4 +71,4 @@ is $inst.bar, "default private", "public attr with private builder";
 is $inst.pvt-baz, "default private", "private attr with private builder";
 
 done-testing;
-# vim: ft=perl6
+# vim: ft=raku

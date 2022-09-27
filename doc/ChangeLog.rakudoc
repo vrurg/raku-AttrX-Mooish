@@ -1,6 +1,23 @@
 =begin pod
 =CHANGELOG
 
+=head v0.8.9
+
+=item Clearer method would not throw anymore if attribute is still building. It would be just a NOP then.
+
+=head v0.8.8
+
+=item Resolve some more rare race conditions
+
+=head v0.8.7
+
+=item Fix private attribute helper methods checked for duplicate names in public method tables
+=item Fix definite-typed private lazy attributes
+
+=head v0.8.6
+
+=item Slightly improve thread-safety
+
 =head2 v0.8.5
 
 =item Make clearer method thread-safe

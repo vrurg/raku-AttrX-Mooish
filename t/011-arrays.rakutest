@@ -22,4 +22,4 @@ $inst.bar = [ <a b c d e> ];
 is-deeply $inst.bar, [ <a b c d e> ], "new array assigned";
 
 done-testing;
-# vim: ft=perl6
+# vim: ft=raku
