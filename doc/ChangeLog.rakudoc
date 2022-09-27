@@ -1,6 +1,10 @@
 =begin pod
 =CHANGELOG
 
+=head v0.8.10
+
+=item Fix accidental early initialization of lazy attributes on older Rakudo versions
+
 =head v0.8.9
 
 =item Clearer method would not throw anymore if attribute is still building. It would be just a NOP then.

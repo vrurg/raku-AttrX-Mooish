@@ -6,6 +6,13 @@ CHANGELOG
 head
 ====
 
+v0.8.10
+
+  * Fix accidental early initialization of lazy attributes on older Rakudo versions
+
+head
+====
+
 v0.8.9
 
   * Clearer method would not throw anymore if attribute is still building. It would be just a NOP then.
