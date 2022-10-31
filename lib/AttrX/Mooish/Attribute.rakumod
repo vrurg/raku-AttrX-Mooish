@@ -258,7 +258,8 @@ my class NO-VALUE-YET {}
 method attr-var( Mu $instance is raw,
                  &code?,
                  Mu :$type is raw = self.package,
-                 Bool :$proxify
+                 Bool :$proxify,
+                 Bool :$force-proxify
                 ) is raw is hidden-from-backtrace
 {
     my Mu $attr-var;
@@ -271,7 +272,7 @@ method attr-var( Mu $instance is raw,
     # Don't let the newly created proxy to .sink
     my $ :=
         nqp::unless(
-        (nqp::istype_nd($attr-var, AttrProxy) || !$proxify),
+            (!$force-proxify && (nqp::istype_nd($attr-var, AttrProxy) || !$proxify)),
             nqp::bindattr(nqp::decont($instance), $type, $.name,
                 ($attr-var := AttrProxy.new(
                     :attribute(self),
@@ -338,9 +339,11 @@ method is-set(Mu \obj) is hidden-from-backtrace {
     $rc
 }
 
-method clear-attr(Mu \obj --> Nil) is hidden-from-backtrace {
-    my $attr-var := self.attr-var: obj, :proxify;
-    nqp::if(nqp::istype_nd($attr-var, AttrProxy), $attr-var.VAR.clear);
+method clear-attr(Mu \obj, Bool :$force --> Nil) is hidden-from-backtrace {
+    if $!lazy || $!always-proxy {
+        my $attr-var := self.attr-var: obj, :proxify, :force-proxify($force);
+        nqp::if(nqp::istype_nd($attr-var, AttrProxy), $attr-var.VAR.clear);
+    }
 }
 
 method invoke-filter(Mu \instance, Mu $value is raw, Capture:D $params = \()) is raw is hidden-from-backtrace {

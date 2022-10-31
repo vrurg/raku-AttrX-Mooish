@@ -24,6 +24,25 @@ method compose(Mu \type, :$compiler_services) is hidden-from-backtrace {
     nextsame;
 }
 
+# Install clone fixup method before class method cache is published.
+method publish_method_cache(Mu \obj) {
+    # We're about to install clone fixup. But if there is a parent with a mooified attribute then the method has been
+    # already installed and we don't need to do it again.
+    unless self.parents(obj).grep({ .HOW ~~ ::?ROLE }) {
+        unless self.declares_method(obj, 'clone') {
+            my &clone-meth = anon method clone(|) is raw {
+                my \cloned := callsame();
+                for cloned.^attributes(:all).grep(AttrX::Mooish::Attribute) -> $attr {
+                    $attr.clear-attr(cloned, :force)
+                }
+                cloned
+            }
+            self.add_method(obj, 'clone', &clone-meth);
+        }
+    }
+    nextsame;
+}
+
 method create_BUILDPLAN(Mu \type) is raw is hidden-from-backtrace {
     callsame;
 

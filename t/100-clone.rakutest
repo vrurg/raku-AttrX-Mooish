@@ -1,0 +1,49 @@
+use v6.d;
+use Test;
+use AttrX::Mooish;
+
+plan 9;
+
+# There was a problem with cloning mooified attributes where AttrProxy container was preserved from the original
+# object with FETCH/STORE closures been bound to the object. So, when we initialize a lazy attribute which is built
+# using data from its object the attribute gets initialized with the original object content, not the cloned one.
+# Starting with v0.9 of AttrX::Mooish we fix up any uninitialized attributes so they get correct copy of AttrProxy
+# container.
+
+class Foo {
+    has Int:D $.foo is required;
+    has Int:D $.foo-copy is mooish(:lazy);
+    method build-foo-copy { $!foo }
+}
+
+my $f = Foo.new(:foo(42));
+my $f-copy = $f.clone(:foo(13));
+
+is $f-copy.foo-copy, 13, "cloned attribute is initialized correctly";
+is $f.foo-copy, 42, "the original attribute is not affected";
+
+class Bar is Foo {
+}
+
+class Baz is Bar {
+    has Str:D $.baz is required;
+    has Real:D $.numified is mooish(:lazy);
+    method build-numified {
+        $.baz.Real
+    }
+}
+
+my $b = Baz.new(:foo(12), :baz("3.14"));
+my $b-copy = $b.clone(:foo(666), :baz("1024"));
+
+is $b-copy.numified, 1024, "clone fixup works for a decendant class";
+is $b-copy.foo-copy, 666, "fixup of a decendant class works for parent attributes too";
+
+is $b.numified, 3.14, "original copy of a decendant class instance is not affected";
+is $b.foo-copy, 12, "parent attribute of original copy instance is ok too";
+
+ok Foo.^declares_method('clone'), "control: method 'clone' on the first parent";
+nok Bar.^declares_method('clone'), "control: no method 'clone' on child 1";
+nok Baz.^declares_method('clone'), "control: no method 'clone' on child 2";
+
+done-testing;
