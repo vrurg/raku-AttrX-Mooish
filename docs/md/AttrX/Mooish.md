@@ -370,9 +370,9 @@ Note that use of this trait doesn't change attribute accessors. More than that, 
 Performance
 -----------
 
-Module versions prior to v0.5.0 were pretty much costly perfomance-wise. This was happening due to use of `Proxy` to handle all attribute read/writes. Since v0.5.0 only the first read/write operation would be handled by this module unless `filter` or `trigger` parameters are used. When `AttrX::Mooish` is assured that the attribute is properly initialized it steps aside and lets the Raku core to do its job without intervention.
+Module versions prior to v0.5.0 were pretty much costly perfomance-wise. This was happening due to use of [`Proxy`](https://docs.raku.org/type/Proxy) to handle all attribute read/writes. Since v0.5.0 only the first read/write operation would be handled by this module unless `filter` or `trigger` parameters are used. When `AttrX::Mooish` is assured that the attribute is properly initialized it steps aside and lets the Raku core to do its job without intervention.
 
-The only exception takes place if `clearer` parameter is used and `clear-<attribute>` method is called. In this case the attribute state is reverted back to uninitialized state and `Proxy` is getting installed again – until the next read/write operation.
+The only exception takes place if `clearer` parameter is used and `clear-<attribute>` method is called. In this case the attribute state is reverted back to uninitialized state and [`Proxy`](https://docs.raku.org/type/Proxy) is getting installed again – until the next read/write operation.
 
 `filter` and `trigger` are special with this respect because they require permanent monitoring of attribute operations making it effectively impossible to strip off `Proxy` from attribute's value. For this reason use of these parameters must be very carefully considered. One is highly discouraged from using them for any code where performance is important.
 
@@ -398,9 +398,9 @@ CAVEATS
 
   * Due to the "magical" nature of attribute behaviour conflicts with other traits are possible. In particular, mixing up with `is built` trait is not recommended.
 
-  * Use of `Proxy` as the container may have unexpected side effects in some use cases like passing it as a parameter. Multiple calls of `Proxy`'s `FETCH` are possible, for example. While generally harmless this may result in performance issues of affected application. To workaround the problem attribute value can be temporarily assigned into a variable.
+  * Use of [`Proxy`](https://docs.raku.org/type/Proxy) as the container may have unexpected side effects in some use cases like passing it as a parameter. Multiple calls of `Proxy`'s `FETCH` are possible, for example. While generally harmless this may result in performance issues of affected application. To workaround the problem attribute value can be temporarily assigned into a variable.
 
-  * Another surprising side effect happens when a "mooified" array or hash attribute is used with a loop. Since `Proxy` is a container, loops are considering such attributes as itemized, no matter what their final value is. Consider the following:
+  * Another surprising side effect happens when a "mooified" array or hash attribute is used with a loop. Since [`Proxy`](https://docs.raku.org/type/Proxy) is a container, loops are considering such attributes as itemized, no matter what their final value is. Consider the following:
 
         class Foo {
             has @.a is mooish(:lazy);
@@ -414,6 +414,44 @@ CAVEATS
     Note that this only happens when attribute is accessed privately as `for Foo.new.a {...}` would behave as expected. Also, for non-filtering and non-triggering attributes this only happens when the attribute is not initialized yet.
 
     The problem could be workarounded either by using `@.a` notation, or with explicit decontainerization `@!a<>`.
+
+Cloning
+-------
+
+Cloning of an object with mooified attributes is a non-trivial case resulting from the use of [`Proxy`](https://docs.raku.org/type/Proxy). Again. The root of the problem lies in the fact that `Proxy` is using closures for its `FETCH`/`STORE`. This is how it knows what object is to be updated when necessary: the object is captured by the closures. But what help us under normal circumstances becomes our problem after cloning because the new object attributes would still be bound to proxies referring the original instance!
+
+`AttrX::Mooish` handles this situation starting with v1.0.0 release by implementing post-clone fix up procedure where all proxies are getting replaced using new closures. This is implemented by installing special `clone` method into each class containing mooified attributes.
+
+So far, so good until it comes down to lazy attributes which were already initialized using other attributes of the class. Simple cloning doesn't affect them, but if their dependency has been changed using twiddles then we're in trouble:
+
+    class Foo {
+        has $.a1 = 1;
+        has $.a2 is mooish(:lazy);
+        method build-a2 { $!a1 * 2 }
+    }
+    my $obj = Foo.new;
+    say $obj.a2; # 2
+    my $copy = $obj.clone(:a1(3));
+    say $copy.a2; # Oops, it's still 2!
+
+In such situations `AttrX::Mooish` resets the lazy attributes to unitialized state so they would get re-initialized again using new values.
+
+The only exception is for writable (`is rw`) lazy attributes. When they hold a value there is no way for us to know where the value came from because it could have been assigned by code external to our class in which case resetting it might be not so smart.
+
+**IMPORTTANT!** Also remember that a non-writable attribute can still be assigned via private accessor (`$!attr = $value;`) by class code. These cases cannot be detected either but disreprected by the module. Taking care of them is developer's responsibility!
+
+Generally speaking, there is no good strategy to handle all possible cases what it comes to cloning lazy entities. Sometimes it would be better to resolve edge cases manually. If this is your case then metamodel method `post-clone` can be used to do the standard fixup job:
+
+    class Foo {
+        ...
+        method clone(*%twiddles) {
+            my \cloned = ::?CLASS.^post-clone: self, callsame(), %twiddles;
+            ... # Do specific fixups here
+            cloned
+        }
+    }
+
+Basically, the first line is what `AttrX::Mooish` installs for you by default. Consider the use of `::?CLASS` instead of `self`. This is mandatory because `self` can be an instance of a child class.
 
 SEE
 ===

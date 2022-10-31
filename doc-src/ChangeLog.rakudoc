@@ -1,6 +1,10 @@
 =begin pod
 =CHANGELOG
 
+=head v1.0.0
+
+=item Implement/fix support of object cloning
+
 =head v0.8.10
 
 =item Fix accidental early initialization of lazy attributes on older Rakudo versions
