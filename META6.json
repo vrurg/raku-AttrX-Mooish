@@ -15,7 +15,12 @@
     "Test::When"
   ],
   "provides": {
-    "AttrX::Mooish": "lib/AttrX/Mooish.rakumod"
+    "AttrX::Mooish": "lib/AttrX/Mooish.rakumod",
+    "AttrX::Mooish::Attribute": "lib/AttrX/Mooish/Attribute.rakumod",
+    "AttrX::Mooish::ClassHOW": "lib/AttrX/Mooish/ClassHOW.rakumod",
+    "AttrX::Mooish::Helper": "lib/AttrX/Mooish/Helper.rakumod",
+    "AttrX::Mooish::ParametricRoleHOW": "lib/AttrX/Mooish/ParametricRoleHOW.rakumod",
+    "AttrX::Mooish::X": "lib/AttrX/Mooish/X.rakumod"
   },
   "resources": [],
   "support": {
@@ -31,8 +36,8 @@
     "mooish",
     "trait"
   ],
-  "api": "0.8.0",
+  "api": "0.9.0",
   "production": false,
   "source-url": "git://github.com/vrurg/raku-AttrX-Mooish.git",
-  "raku": "6.*"
+  "raku": "6.d"
 }
