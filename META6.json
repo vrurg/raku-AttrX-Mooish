@@ -1,10 +1,10 @@
 {
   "name": "AttrX::Mooish",
   "description": "Extending attribute functionality with ideas from Moo/Moose",
-  "version": "0.8.902",
+  "version": "1.0.0",
   "meta-version": "0",
   "authors": [
-    "Vadim Belman <vrurg@cpan.org>"
+    "Vadim Belman"
   ],
   "auth": "zef:vrurg",
   "depends": [],
@@ -37,7 +37,7 @@
     "trait"
   ],
   "api": "1.0.0",
-  "production": false,
+  "production": true,
   "source-url": "git://github.com/vrurg/raku-AttrX-Mooish.git",
   "raku": "6.d"
 }
