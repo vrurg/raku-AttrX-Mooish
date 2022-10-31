@@ -17,28 +17,36 @@ CHECK {
         $*RAKU.compiler.version >= v2021.12.176.ga.38.bebecf ?? (400, 800, 1000) !! (4, 8, 10);
 }
 
+has @!mooified-attrs;
+
 method compose(Mu \type, :$compiler_services) is hidden-from-backtrace {
-    for type.^attributes.grep(AttrX::Mooish::Attribute) -> $attr {
+    for type.^attributes(:local).grep(AttrX::Mooish::Attribute) -> $attr {
         self.setup-helpers(type, $attr);
     }
     nextsame;
 }
 
+method post-clone(Mu \type, Mu:D \orig, Mu:D \cloned, %twiddles) is raw {
+    my $force = ?%twiddles;
+    my int $elems = nqp::elems(@!mooified-attrs);
+    my int $i = -1;
+    nqp::while(
+        (++$i < $elems),
+        nqp::stmts(
+            (my $attr := nqp::atpos(@!mooified-attrs, $i)),
+            nqp::unless(
+                (%twiddles{$attr.base-name}:exists),
+                ($attr.fixup-attr(orig, cloned, :$force)))));
+    cloned
+}
+
 # Install clone fixup method before class method cache is published.
-method publish_method_cache(Mu \obj) {
+method publish_method_cache(Mu \type) {
     # We're about to install clone fixup. But if there is a parent with a mooified attribute then the method has been
     # already installed and we don't need to do it again.
-    unless self.parents(obj).grep({ .HOW ~~ ::?ROLE }) {
-        unless self.declares_method(obj, 'clone') {
-            my &clone-meth = anon method clone(|) is raw {
-                my \cloned := callsame();
-                for cloned.^attributes(:all).grep(AttrX::Mooish::Attribute) -> $attr {
-                    $attr.clear-attr(cloned, :force)
-                }
-                cloned
-            }
-            self.add_method(obj, 'clone', &clone-meth);
-        }
+    unless self.declares_method(type, 'clone') {
+        my &clone-meth = anon method clone(*%twiddles) is raw { type.^post-clone: self, callsame(), %twiddles }
+        self.add_method(type, 'clone', &clone-meth);
     }
     nextsame;
 }
@@ -50,7 +58,10 @@ method create_BUILDPLAN(Mu \type) is raw is hidden-from-backtrace {
     my \plan := nqp::getattr(self, Metamodel::ClassHOW, '@!BUILDPLAN');
     my \newplan := nqp::create(nqp::what(plan));
 
-    my @mooified = type.^attributes(:local).grep(* ~~ AttrX::Mooish::Attribute);
+    my @mooified;
+    for (@mooified = type.^attributes(:local).grep(* ~~ AttrX::Mooish::Attribute)) {
+        nqp::push(@!mooified-attrs, nqp::decont($_));
+    }
     my %seen-attr;
     # To follow the specs, we must not initialize attributes from %attrinit if there is user-defined BUILD.
     my $no-attrinit = False;

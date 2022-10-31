@@ -63,6 +63,11 @@ my class AttrProxy is Proxy {
             ($!val.STORE($value)));
         $!attribute.unbind-proxy($!instance, $!val)
     }
+
+    method FIXUP($is-set, Mu \val) is implementation-detail {
+        $!is-set ⚛= $is-set;
+        self.VAR.store-value(val) if $is-set;
+    }
 }
 
 # PvtMode enum defines what privacy mode is used when looking for an option method:
@@ -339,10 +344,33 @@ method is-set(Mu \obj) is hidden-from-backtrace {
     $rc
 }
 
-method clear-attr(Mu \obj, Bool :$force --> Nil) is hidden-from-backtrace {
+method clear-attr(Mu \obj --> Nil) is hidden-from-backtrace {
     if $!lazy || $!always-proxy {
-        my $attr-var := self.attr-var: obj, :proxify, :force-proxify($force);
+        my $attr-var := self.attr-var: obj, :proxify;
         nqp::if(nqp::istype_nd($attr-var, AttrProxy), $attr-var.VAR.clear);
+    }
+}
+
+method fixup-attr(Mu \orig, Mu \cloned, Bool :$force --> Nil) is hidden-from-backtrace {
+    if $!lazy || $!always-proxy {
+        my $attr-var := self.get_value(cloned);
+        AttrX::Mooish::X::NotAllowed.new(:op('clone'), "attribute $.name is being currently built").throw
+            if $attr-var.VAR.?is-building;
+        # We can only enforce reset for non-rw attributes because the latter could have been set with an assignment
+        # and there is no way to determine how it got its value.
+        if  nqp::istype_nd($attr-var, AttrProxy) || ($force && $!lazy && !$.rw) {
+            my $new-cont := self.attr-var(cloned, :force-proxify);
+            my $orig-attr-var := self.get_value(orig);
+            # If fixup is forced then it means we don't care about attribute value is there is any.
+            unless $force && $!lazy {
+                if nqp::istype_nd($orig-attr-var, AttrProxy) {
+                    $new-cont.VAR.FIXUP($orig-attr-var.VAR.is-set, $orig-attr-var.VAR.val);
+                }
+                else {
+                    $new-cont.VAR.FIXUP(True, $orig-attr-var);
+                }
+            }
+        }
     }
 }
 

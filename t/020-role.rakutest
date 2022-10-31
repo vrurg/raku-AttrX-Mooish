@@ -3,8 +3,6 @@ use AttrX::Mooish;
 
 plan 5;
 
-my $author-testing = ? %*ENV<AUTHOR_TESTING>;
-
 my %inst-records;
 
 subtest "Role Basics", {

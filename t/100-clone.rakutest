@@ -2,7 +2,7 @@ use v6.d;
 use Test;
 use AttrX::Mooish;
 
-plan 9;
+plan 16;
 
 # There was a problem with cloning mooified attributes where AttrProxy container was preserved from the original
 # object with FETCH/STORE closures been bound to the object. So, when we initialize a lazy attribute which is built
@@ -13,24 +13,30 @@ plan 9;
 class Foo {
     has Int:D $.foo is required;
     has Int:D $.foo-copy is mooish(:lazy);
+    has Str:D $.controlled is mooish(:filter) is required;
     method build-foo-copy { $!foo }
+    method filter-controlled(Str:D $val) { $val ~ "!" }
 }
 
-my $f = Foo.new(:foo(42));
+my $f = Foo.new(:foo(42), :controlled("Do it"));
 my $f-copy = $f.clone(:foo(13));
 
 is $f-copy.foo-copy, 13, "cloned attribute is initialized correctly";
 is $f.foo-copy, 42, "the original attribute is not affected";
+
+is $f-copy.controlled, "Do it!", "filtered attribute is preserved";
 
 class Bar is Foo {
 }
 
 class Baz is Bar {
     has Str:D $.baz is required;
-    has Real:D $.numified is mooish(:lazy);
+    has Real:D $.numified is mooish(:lazy, :predicate);
+    has Bool:D $.flag is mooish(:lazy, :predicate) is rw;
     method build-numified {
         $.baz.Real
     }
+    method build-flag { True }
 }
 
 my $b = Baz.new(:foo(12), :baz("3.14"));
@@ -44,6 +50,34 @@ is $b.foo-copy, 12, "parent attribute of original copy instance is ok too";
 
 ok Foo.^declares_method('clone'), "control: method 'clone' on the first parent";
 nok Bar.^declares_method('clone'), "control: no method 'clone' on child 1";
-nok Baz.^declares_method('clone'), "control: no method 'clone' on child 2";
+ok Baz.^declares_method('clone'), "control: method 'clone' on child 2";
+
+ok $b.flag, "initialize flag";
+ok $b.has-flag, "\$!flag is set";
+ok $b.has-numified, "\$!numified is set";
+
+subtest "Plain clone preserves object state" => {
+    plan 3;
+    $b-copy = $b.clone;
+    ok $b-copy.has-numified, '$!numified is set';
+    is $b-copy.numified, $b.numified, '$!numified value is preserved';
+    ok $b-copy.has-flag, '$!flah is set';
+}
+
+subtest "Cloning with twiddles resets lazy non-writable" => {
+    plan 2;
+    $b-copy = $b.clone(:foo(123));
+    nok $b-copy.has-numified, '$!numified is reset';
+    ok $b-copy.has-flag, '$!flag is preserved because it is writable';
+}
+
+subtest "Clonging with twiddles for lazy attributes" => {
+    plan 4;
+    $b-copy = $b.clone(:flag(False), :numified(12.34));
+    ok $b-copy.has-numified, '$!numified is set';
+    is $b-copy.numified, 12.34, '$!numified value is supplied with twiddle';
+    ok $b-copy.has-flag, '$!flag is set';
+    nok $b-copy.flag, '$!flag value is supplied with twiddle';
+}
 
 done-testing;
