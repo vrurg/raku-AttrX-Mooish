@@ -1,5 +1,6 @@
 use Test;
 use AttrX::Mooish;
+use AttrX::Mooish::X;
 
 plan 4;
 throws-like
@@ -21,7 +22,7 @@ subtest "Base Errors" => {
     my $inst;
 
     throws-like q{my class Foo1 { has $.bar is mooish(:lazy(pi)); }},
-            X::TypeCheck::MooishOption, "bad option value";
+            AttrX::Mooish::X::TypeCheck::MooishOption, "bad option value";
 
     my class Foo2 {
         has $.bar is mooish(:lazy);

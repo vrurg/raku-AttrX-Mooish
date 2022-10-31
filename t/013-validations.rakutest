@@ -1,5 +1,6 @@
 use Test;
 use AttrX::Mooish;
+use AttrX::Mooish::X;
 
 plan 5;
 
