@@ -1,6 +1,11 @@
 =begin pod
 =CHANGELOG
 
+=head v1.0.1
+
+=item Provide better error reporting for impossible usages
+=item Make sure C<AttrX::Mooish> works equally well with either NQP or Raku implementation of Metamodel classes
+
 =head v1.0.0
 
 =item Implement/fix support of object cloning

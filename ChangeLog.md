@@ -6,6 +6,15 @@ CHANGELOG
 head
 ====
 
+v1.0.1
+
+  * Provide better error reporting for impossible usages
+
+  * Make sure `AttrX::Mooish` works equally well with either NQP or Raku implementation of Metamodel classes
+
+head
+====
+
 v1.0.0
 
   * Implement/fix support of object cloning
