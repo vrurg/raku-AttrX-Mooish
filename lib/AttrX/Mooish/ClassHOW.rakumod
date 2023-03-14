@@ -17,7 +17,7 @@ CHECK {
         $*RAKU.compiler.version >= v2021.12.176.ga.38.bebecf ?? (400, 800, 1000) !! (4, 8, 10);
 }
 
-has @!mooified-attrs;
+has $!mooified-attrs;
 
 method compose(Mu \type, :$compiler_services) is hidden-from-backtrace {
     for type.^attributes(:local).grep(AttrX::Mooish::Attribute) -> $attr {
@@ -28,12 +28,12 @@ method compose(Mu \type, :$compiler_services) is hidden-from-backtrace {
 
 method post-clone(Mu \type, Mu:D \orig, Mu:D \cloned, %twiddles) is raw {
     my $force = ?%twiddles;
-    my int $elems = nqp::elems(@!mooified-attrs);
+    my int $elems = $!mooified-attrs.elems;
     my int $i = -1;
     nqp::while(
         (++$i < $elems),
         nqp::stmts(
-            (my $attr := nqp::atpos(@!mooified-attrs, $i)),
+            (my $attr := $!mooified-attrs[$i]),
             nqp::unless(
                 (%twiddles{$attr.base-name}:exists),
                 ($attr.fixup-attr(orig, cloned, :$force)))));
@@ -52,6 +52,8 @@ method publish_method_cache(Mu \type) {
 }
 
 method create_BUILDPLAN(Mu \type) is raw is hidden-from-backtrace {
+    $!mooified-attrs := IterationBuffer.new without $!mooified-attrs;
+
     callsame;
 
     #        note "--- PLAN FOR ", type.^name;
@@ -60,7 +62,7 @@ method create_BUILDPLAN(Mu \type) is raw is hidden-from-backtrace {
 
     my @mooified;
     for (@mooified = type.^attributes(:local).grep(* ~~ AttrX::Mooish::Attribute)) {
-        nqp::push(@!mooified-attrs, nqp::decont($_));
+        $!mooified-attrs.push: nqp::decont($_);
     }
     my %seen-attr;
     # To follow the specs, we must not initialize attributes from %attrinit if there is user-defined BUILD.

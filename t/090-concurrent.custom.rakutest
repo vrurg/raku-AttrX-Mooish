@@ -2,7 +2,7 @@ use v6;
 use Test;
 use AttrX::Mooish;
 
-#?mooish-custom
+use CustomHOW;
 
 # Make sure we have enough threads in pool on low-cores CPUs.
 BEGIN PROCESS::<$SCHEDULER> = ThreadPoolScheduler.new(:max_threads(400));
