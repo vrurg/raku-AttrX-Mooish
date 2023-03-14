@@ -1,7 +1,7 @@
 use Test;
 use AttrX::Mooish;
 
-use CustomHOW;
+use lib $?FILE.IO.parent(1).add("lib"); use CustomHOW;
 
 class Foo {
     has $.a is rw is mooish(:clearer, :lazy, :init-arg<a1 a2>);
