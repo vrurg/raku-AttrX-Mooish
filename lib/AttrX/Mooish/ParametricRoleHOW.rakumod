@@ -14,7 +14,11 @@ method compose(Mu \type, :compiler_services($)) is hidden-from-backtrace {
     nextsame
     }
 
-method specialize(Mu \r, Mu:U \obj, *@pos_args, *%named_args) is hidden-from-backtrace {
+method specialize(Mu \r, Mu:U \obj, *@, *%) is hidden-from-backtrace {
+    unless obj.HOW ~~ Metamodel::ClassHOW {
+        AttrX::Mooish::X::TypeObject.new(:type(obj),
+                                         :why('role ' ~ r.^name ~ " can only be consumed by a Raku class")).throw;
+    }
     obj.HOW does AttrX::Mooish::ClassHOW unless obj.HOW ~~ AttrX::Mooish::ClassHOW;
     nextsame;
 }
