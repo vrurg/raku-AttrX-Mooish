@@ -27,6 +27,14 @@ class NoNatives is Fatal {
     }
 }
 
+class TypeObject is Fatal {
+    has Mu $.type is built(:bind) is required;
+    has Str:D $.why is required;
+    method message {
+        "Unsupported typeobject " ~ $!type.^name ~ ": " ~ $.why
+    }
+}
+
 class Option::Name is Fatal {
     has Str:D $.option is required;
     method message {

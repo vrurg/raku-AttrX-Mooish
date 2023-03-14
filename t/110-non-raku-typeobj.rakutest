@@ -1,0 +1,17 @@
+use v6.d;
+use lib $?FILE.IO.parent(1).add('lib');
+use Test;
+use AttrX::Mooish;
+use AttrX::Mooish::X;
+
+plan 1;
+
+role R {
+    has $.a is mooish(:lazy);
+}
+
+class Foo { }
+
+throws-like { Metamodel::ClassHOW but R }, AttrX::Mooish::X::TypeObject, "with NQP class";
+
+done-testing;

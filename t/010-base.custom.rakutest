@@ -1,7 +1,7 @@
 use Test;
 use AttrX::Mooish;
 
-#?mooish-custom
+use CustomHOW;
 
 plan 6;
 

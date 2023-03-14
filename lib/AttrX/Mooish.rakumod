@@ -15,15 +15,19 @@ CHECK {
 multi trait_mod:<is>( Attribute:D $attr, :$mooish! ) is export {
     AttrX::Mooish::X::NoNatives.new(:$attr).throw if nqp::objprimspec($attr.type);
 
-    $attr does AttrX::Mooish::Attribute;
     given $*PACKAGE.HOW {
         when Metamodel::ParametricRoleHOW {
             $_ does AttrX::Mooish::ParametricRoleHOW unless $_ ~~ AttrX::Mooish::ParametricRoleHOW;
         }
-        default {
+        when Metamodel::ClassHOW {
             $_ does AttrX::Mooish::ClassHOW unless $_ ~~ AttrX::Mooish::ClassHOW;
         }
+        default {
+            AttrX::Mooish::X::TypeObject.new(:type($*PACKAGE), :why('it is not a Raku role or class')).throw
+        }
     }
+
+    $attr does AttrX::Mooish::Attribute;
 
     my @opt-list;
 
