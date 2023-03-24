@@ -53,10 +53,10 @@ my class AttrProxy is Proxy {
     }
 
     method store-value(Mu $value is raw) is raw is hidden-from-backtrace {
-        unless ⚛$!is-set {
-            $!val := nqp::clone_nd($!attribute.auto_viv_container);
-            $!is-set ⚛= True;
-        }
+        cas $!is-set, {
+            $!val := nqp::clone_nd($!attribute.auto_viv_container) unless $_;
+            True
+        };
         nqp::if(
             nqp::iscont($!val),
             ($!val = $value),
