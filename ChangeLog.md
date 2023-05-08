@@ -6,6 +6,13 @@ CHANGELOG
 head
 ====
 
+v1.0.3
+
+  * Minor fix of an exception not thrown properly
+
+head
+====
+
 v1.0.2
 
   * Provide better error reporting for impossible usages
