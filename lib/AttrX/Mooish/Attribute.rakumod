@@ -93,13 +93,12 @@ has $!has-build-closure = False;
 has $.phony-required = False;
 has $!lock is built(:bind) = Lock.new;
 
-my %opt2prefix = clearer => 'clear',
-                 predicate => 'has',
-                 builder => 'build',
-                 trigger => 'trigger',
-                 filter => 'filter',
-                 composer => 'compose',
-                 ;
+my constant %opt2prefix = clearer => 'clear',
+                          predicate => 'has',
+                          builder => 'build',
+                          trigger => 'trigger',
+                          filter => 'filter',
+                          composer => 'compose';
 
 method !bool-str-meth-name( $opt, Str $prefix, Str :$base-name? ) is hidden-from-backtrace {
     $opt ~~ Bool ?? $prefix ~ '-' ~ ( $base-name // $!base-name ) !! $opt;
