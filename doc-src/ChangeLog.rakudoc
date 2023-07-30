@@ -1,6 +1,10 @@
 =begin pod
 =CHANGELOG
 
+=head v1.0.4
+
+=item Fix an exception when mixin in roles with aliased attributes
+
 =head v1.0.3
 
 =item Minor fix of an exception not thrown properly
