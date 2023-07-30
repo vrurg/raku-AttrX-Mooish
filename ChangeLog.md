@@ -6,6 +6,20 @@ CHANGELOG
 head
 ====
 
+v1.0.4
+
+  * Fix an exception when mixin in roles with aliased attributes
+
+head
+====
+
+v1.0.3
+
+  * Minor fix of an exception not thrown properly
+
+head
+====
+
 v1.0.2
 
   * Provide better error reporting for impossible usages

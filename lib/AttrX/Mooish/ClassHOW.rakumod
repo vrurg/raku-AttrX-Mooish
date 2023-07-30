@@ -56,7 +56,7 @@ method create_BUILDPLAN(Mu \type) is raw is hidden-from-backtrace {
 
     callsame;
 
-    #        note "--- PLAN FOR ", type.^name;
+    # note "--- PLAN FOR ", type.^name;
     my \plan := nqp::getattr(self, Metamodel::ClassHOW, '@!BUILDPLAN');
     my \newplan := nqp::create(nqp::what(plan));
 
