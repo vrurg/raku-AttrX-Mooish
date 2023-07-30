@@ -12,7 +12,7 @@ method compose(Mu \type, :compiler_services($)) is hidden-from-backtrace {
         self.setup-helpers(type, $attr);
     }
     nextsame
-    }
+}
 
 method specialize(Mu \r, Mu:U \obj, *@, *%) is hidden-from-backtrace {
     unless obj.HOW ~~ Metamodel::ClassHOW {

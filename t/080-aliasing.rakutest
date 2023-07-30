@@ -1,87 +1,113 @@
 use Test;
 use AttrX::Mooish;
 
+plan 2;
+
 #?mooish-custom
 
-class Foo {
-    has $.a is rw is mooish(:clearer, :lazy, :init-arg<a1 a2>);
-    has $.n is mooish(:lazy, :init-arg<n1>, :no-init);
+subtest "Base" => {
+    my class Foo {
+        has $.a is rw is mooish(:clearer, :lazy, :init-arg<a1 a2>);
+        has $.n is mooish(:lazy, :init-arg<n1>, :no-init);
 
-    method build-a {
-        42
+        method build-a {
+            42
+        }
+
+        method build-n {
+            "Це - Відповідь!"
+        }
     }
 
-    method build-n {
-        "Це - Відповідь!"
+    my class Bar is Foo {
+    }
+
+    my role FooRole {
+        has $.a is rw is mooish(:clearer, :lazy, :aliases<a1 a2>);
+        has $.n is mooish(:lazy, :no-init);
+
+        method build-a {
+            42
+        }
+
+        method build-n {
+            "Це - Відповідь!"
+        }
+    }
+
+    my class Baz does FooRole { }
+    my class Fubar is Baz { }
+
+    my $inst;
+
+    my @t =
+        { type => Foo,      name => "class itself" },
+        { type => Bar,      name => "inheriting class" },
+        { type => Baz,      name => "from role" },
+        { type => Fubar,    name => "inheriting from a class with role" },
+        ;
+
+    plan @t.elems;
+
+    for @t -> %data {
+        subtest %data<name>, {
+            plan 13;
+            my \type = %data<type>;
+            $inst = type.new( a => pi, n => "невірна відповідь" );
+            is $inst.a, pi, "name itself";
+            is $inst.a1, pi, "access via alias 1";
+            is $inst.a2, pi, "access via alias 2";
+            is $inst.n, "Це - Відповідь!", "no-init ignores constructor";
+
+            $inst.a2 = pi*2;
+            is $inst.a, pi*2, "manual set via alias";
+
+            $inst.clear-a;
+            is $inst.a, 42, "clearing initializes from builder";
+
+            $inst.a = -42;
+            $inst.clear-a1;
+            is $inst.a, 42, "clearing of alias initializes from builder";
+
+            $inst = type.new( a1 => pi/2, n1 => "все-одно невірно" );
+            is $inst.a, pi/2, "via first alias";
+            is $inst.n, "Це - Відповідь!", "no-init ignores aliased parameter too";
+
+            $inst = type.new( a2 => pi/3 );
+            is $inst.a, pi/3, "via second alias";
+
+            $inst = type.new( a => -42, a2 => pi, a1 => e );
+            is $inst.a, -42, "attribute name wins against aliases";
+
+            $inst = type.new( a2 => pi, a1 => e );
+            is $inst.a, e, "first defined alias wins when no argument name";
+
+            $inst = type.new();
+            is $inst.a, 42, "builder works for aliased attributes, as usual";
+        }
     }
 }
 
-class Bar is Foo {
-}
+subtest "but/does" => {
+    plan 4;
 
-role FooRole {
-    has $.a is rw is mooish(:clearer, :lazy, :aliases<a1 a2>);
-    has $.n is mooish(:lazy, :no-init);
+    my role ForMixin {
+        has $.attr is mooish(:lazy, :alias<nick>) is rw;
 
-    method build-a {
-        42
+        method build-attr { "вдало!" }
     }
 
-    method build-n {
-        "Це - Відповідь!"
-    }
-}
+    my class Foo { }
 
-class Baz does FooRole { }
-class Fubar is Baz { }
+    my $obj;
+    lives-ok { $obj = Foo.new but ForMixin; }, "a role with aliased attribute can be mixed into instance";
 
-my $inst;
+    is $obj.nick, "вдало!", "aliasing works for mixins";
+    is $obj.attr, "вдало!", "the original accessor works too";
 
-my @t =
-    { type => Foo,      name => "class itself" },
-    { type => Bar,      name => "inheriting class" },
-    { type => Baz,      name => "from role" },
-    { type => Fubar,    name => "inheriting from a class with role" },
-    ;
+    $obj.nick = "новеньке";
 
-plan @t.elems;
-
-for @t -> %data {
-    subtest %data<name>, {
-        plan 13;
-        my \type = %data<type>;
-        $inst = type.new( a => pi, n => "невірна відповідь" );
-        is $inst.a, pi, "name itself";
-        is $inst.a1, pi, "access via alias 1";
-        is $inst.a2, pi, "access via alias 2";
-        is $inst.n, "Це - Відповідь!", "no-init ignores constructor";
-
-        $inst.a2 = pi*2;
-        is $inst.a, pi*2, "manual set via alias";
-
-        $inst.clear-a;
-        is $inst.a, 42, "clearing initializes from builder";
-
-        $inst.a = -42;
-        $inst.clear-a1;
-        is $inst.a, 42, "clearing of alias initializes from builder";
-
-        $inst = type.new( a1 => pi/2, n1 => "все-одно невірно" );
-        is $inst.a, pi/2, "via first alias";
-        is $inst.n, "Це - Відповідь!", "no-init ignores aliased parameter too";
-
-        $inst = type.new( a2 => pi/3 );
-        is $inst.a, pi/3, "via second alias";
-
-        $inst = type.new( a => -42, a2 => pi, a1 => e );
-        is $inst.a, -42, "attribute name wins against aliases";
-
-        $inst = type.new( a2 => pi, a1 => e );
-        is $inst.a, e, "first defined alias wins when no argument name";
-
-        $inst = type.new();
-        is $inst.a, 42, "builder works for aliased attributes, as usual";
-    }
+    is $obj.attr, "новеньке", "aliasing works for rw attributes";
 }
 
 done-testing;

@@ -185,14 +185,14 @@ method compose(Mu \type, :$compiler_services) is hidden-from-backtrace {
 
     $!always-proxy = $!filter || $!trigger;
 
-    for @!init-args -> $alias {
-        my $meth := $compiler_services.generate_accessor(
-            $alias, nqp::decont(type), $.name, nqp::decont( $.type ), $.rw ?? 1 !! 0
-            );
-        type.^add_method( $alias, $meth );
-    }
-
     callsame;
+
+    if self.has_accessor {
+        my $orig-accessor := type.^method_table.{$!base-name};
+        for @!init-args -> $alias {
+            type.^add_method($alias, $orig-accessor);
+        }
+    }
 
     self.invoke-composer( type );
 }
