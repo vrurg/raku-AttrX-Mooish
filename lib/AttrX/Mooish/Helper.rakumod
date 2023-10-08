@@ -1,9 +1,10 @@
 use v6.d;
 unit role AttrX::Mooish::Helper;
 
+use AttrX::Mooish::Attribute;
 use AttrX::Mooish::X;
 
-method setup-helpers(Mu \type, $attr) is hidden-from-backtrace {
+method setup-attr-helpers(Mu \type, $attr) is hidden-from-backtrace {
     my sub get-attr-obj( Mu \obj, $attr ) is raw is hidden-from-backtrace {
         # Can't use $attr to call bind-proxy upon if the original attribute belongs to a role. In this case its
         # .package is not defined.

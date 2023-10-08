@@ -19,13 +19,6 @@ CHECK {
 
 has $!mooified-attrs;
 
-method compose(Mu \type, :$compiler_services) is hidden-from-backtrace {
-    for type.^attributes(:local).grep(AttrX::Mooish::Attribute) -> $attr {
-        self.setup-helpers(type, $attr);
-    }
-    nextsame;
-}
-
 method post-clone(Mu \type, Mu:D \orig, Mu:D \cloned, %twiddles) is raw {
     my $force = ?%twiddles;
     my int $elems = $!mooified-attrs.elems;

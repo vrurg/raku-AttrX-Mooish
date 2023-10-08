@@ -187,6 +187,8 @@ method compose(Mu \type, :$compiler_services) is hidden-from-backtrace {
 
     callsame;
 
+    type.^setup-attr-helpers(self);
+
     if self.has_accessor {
         my $orig-accessor := type.^method_table.{$!base-name};
         for @!init-args -> $alias {
@@ -455,7 +457,6 @@ method invoke-composer(Mu \type) is hidden-from-backtrace {
     return unless $!composer;
     my $comp-name = self.opt2method( 'composer' );
     my &composer = type.^find_private_method( $comp-name );
-    X::Method::NotFound.new(:method($comp-name), :private, :typename(type.^name)).throw
-    unless &composer;
+    X::Method::NotFound.new(:method($comp-name), :private, :typename(type.^name)).throw unless &composer;
     type.&composer();
 }
