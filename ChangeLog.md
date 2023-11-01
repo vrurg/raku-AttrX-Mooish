@@ -1,145 +1,111 @@
-CHANGELOG
-=========
+# CHANGELOG
 
+  - v1.0.6
+    
+      - A quick fix for containerization problem with helper methods
 
+  - v1.0.5
+    
+      - Increase reliability of initialization
 
-head
-====
+  - v1.0.4
+    
+      - Fix an exception when mixin in roles with aliased attributes
 
-v1.0.6
+  - v1.0.3
+    
+      - Minor fix of an exception not thrown properly
 
-  * A quick fix for containerization problem with helper methods
+  - v1.0.2
+    
+      - Provide better error reporting for impossible usages
+    
+      - Make sure `AttrX::Mooish` works equally well with either NQP or Raku implementation of Metamodel classes
 
-head
-====
+  - v1.0.0
+    
+      - Implement/fix support of object cloning
 
-v1.0.5
+  - v0.8.10
+    
+      - Fix accidental early initialization of lazy attributes on older Rakudo versions
 
-  * Increase reliability of initialization
+  - v0.8.9
+    
+      - Clearer method would not throw anymore if attribute is still building. It would be just a NOP then.
 
-head
-====
+  - v0.8.8
+    
+      - Resolve some more rare race conditions
 
-v1.0.4
+  - v0.8.7
+    
+      - Fix private attribute helper methods checked for duplicate names in public method tables
+    
+      - Fix definite-typed private lazy attributes
 
-  * Fix an exception when mixin in roles with aliased attributes
+  - v0.8.6
+    
+      - Slightly improve thread-safety
 
-head
-====
+  - v0.8.5
+    
+      - Make clearer method thread-safe
 
-v1.0.3
+  - v0.8.4
+    
+      - Tidy up exceptions
 
-  * Minor fix of an exception not thrown properly
+  - v0.8.3
+    
+      - Fix incorrect handling of uninitialized lazy attributes in concurrent environment
 
-head
-====
+  - v0.8.2
+    
+      - Fix a bug with the order of `TWEAK` invocation for inherited classes
 
-v1.0.2
+  - v0.8.1
+    
+      - Make it possible to have definite lazy attributes like:
+        
+        ``` 
+        has Str:D $.s is mooish(:lazy);
+        ```
+    
+      - Fix incorrect processing of BUILDPLAN on the latest Rakudo builds
+    
+      - Fix various cases where attributes were not properly initialized
+    
+      - Fix for unbinding not taking place when it had to
 
-  * Provide better error reporting for impossible usages
+  - v0.8.0
+    
+    Major refactor of code toward increasing reliability.
+    
+      - Rely on container type rather tahn on sigil
+    
+      - Switch initialization code from wrapping `BUILD` to use of `BUILDPLAN`
 
-  * Make sure `AttrX::Mooish` works equally well with either NQP or Raku implementation of Metamodel classes
+  - v0.7.6
+    
+      - Minor but important fix for a flapping bug with `state` variables in precompiled code
 
-head
-====
+  - v0.7.5
+    
+      - Make sure a builder can return Nil and it will be handled according to Raku specs
 
-v1.0.0
+  - v0.7.4
+    
+      - Migrate to zef ecosystem.
+    
+      - Fix `$*PERL` deprecation warning.
 
-  * Implement/fix support of object cloning
+# SEE ALSO
 
-head
-====
+[`AttrX::Mooish`](docs/md/AttrX/Mooish.md)
 
-v0.8.10
+# LICENSE
 
-  * Fix accidental early initialization of lazy attributes on older Rakudo versions
+Artistic License 2.0
 
-head
-====
-
-v0.8.9
-
-  * Clearer method would not throw anymore if attribute is still building. It would be just a NOP then.
-
-head
-====
-
-v0.8.8
-
-  * Resolve some more rare race conditions
-
-head
-====
-
-v0.8.7
-
-  * Fix private attribute helper methods checked for duplicate names in public method tables
-
-  * Fix definite-typed private lazy attributes
-
-head
-====
-
-v0.8.6
-
-  * Slightly improve thread-safety
-
-v0.8.5
-------
-
-  * Make clearer method thread-safe
-
-v0.8.4
-------
-
-  * Tidy up exceptions
-
-v0.8.3
-------
-
-  * Fix incorrect handling of uninitialized lazy attributes in concurrent environment
-
-v0.8.2
-------
-
-  * Fix a bug with the order of `TWEAK` invocation for inherited classes
-
-v0.8.1
-------
-
-  * Make it possible to have definite lazy attributes like:
-
-    has Str:D $.s is mooish(:lazy);
-
-  * Fix incorrect processing of BUILDPLAN on the latest Rakudo builds
-
-  * Fix various cases where attributes were not properly initialized
-
-  * Fix for unbinding not taking place when it had to
-
-v0.8.0
-------
-
-Major refactor of code toward increasing reliability.
-
-  * Rely on container type rather tahn on sigil
-
-  * Switch initialization code from wrapping `BUILD` to use of `BUILDPLAN`
-
-v0.7.6
-------
-
-  * Minor but important fix for a flapping bug with `state` variables in precompiled code
-
-v0.7.5
-------
-
-  * Make sure a builder can return Nil and it will be handled according to Raku specs
-
-v0.7.4
-------
-
-Migrate to zef ecosystem.
-
-  * Fix `$*PERL` deprecation warning.
-
+See the [*LICENSE*](LICENSE) file in this distribution.

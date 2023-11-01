@@ -1,8 +1,8 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-<head>
-    <title></title>
-    <meta charset="UTF-8"/>
+<head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>AttrX::Mooish</title>
+    <meta charset="UTF-8">
     <style>hr,
 img {
     box-sizing: content-box
@@ -374,12 +374,12 @@ hr {
 <tr class="toc-level-1"><td class="toc-number">2</td><td class="toc-text"><a href="#SYNOPSIS">SYNOPSIS</a></td></tr>
 <tr class="toc-level-1"><td class="toc-number">3</td><td class="toc-text"><a href="#DESCRIPTION">DESCRIPTION</a></td></tr>
 <tr class="toc-level-2"><td class="toc-number">3.1</td><td class="toc-text"><a href="#Laziness_for_beginners">Laziness for beginners</a></td></tr>
-<tr class="toc-level-3"><td class="toc-number">3.1.1</td><td class="toc-text"><a href="#What_is_&quot;lazy_attribute&quot;">What is &quot;lazy attribute&quot;</a></td></tr>
+<tr class="toc-level-3"><td class="toc-number">3.1.1</td><td class="toc-text"><a href="#What_is_%22lazy_attribute%22">What is "lazy attribute"</a></td></tr>
 <tr class="toc-level-3"><td class="toc-number">3.1.2</td><td class="toc-text"><a href="#When_is_it_useful?">When is it useful?</a></td></tr>
 <tr class="toc-level-1"><td class="toc-number">4</td><td class="toc-text"><a href="#USAGE">USAGE</a></td></tr>
 <tr class="toc-level-2"><td class="toc-number">4.1</td><td class="toc-text"><a href="#Trait_parameters">Trait parameters</a></td></tr>
 <tr class="toc-level-2"><td class="toc-number">4.2</td><td class="toc-text"><a href="#Public/Private">Public/Private</a></td></tr>
-<tr class="toc-level-2"><td class="toc-number">4.3</td><td class="toc-text"><a href="#User_method's_(callbacks)_options">User method&#39;s (callbacks) options</a></td></tr>
+<tr class="toc-level-2"><td class="toc-number">4.3</td><td class="toc-text"><a href="#User_method's_(callbacks)_options">User method's (callbacks) options</a></td></tr>
 <tr class="toc-level-3"><td class="toc-number">4.3.1</td><td class="toc-text"><a href="#Options">Options</a></td></tr>
 <tr class="toc-level-2"><td class="toc-number">4.4</td><td class="toc-text"><a href="#Definite_Types">Definite Types</a></td></tr>
 <tr class="toc-level-2"><td class="toc-number">4.5</td><td class="toc-text"><a href="#Some_magic">Some magic</a></td></tr>
@@ -387,8 +387,9 @@ hr {
 <tr class="toc-level-2"><td class="toc-number">4.7</td><td class="toc-text"><a href="#Multi-threading">Multi-threading</a></td></tr>
 <tr class="toc-level-1"><td class="toc-number">5</td><td class="toc-text"><a href="#CAVEATS">CAVEATS</a></td></tr>
 <tr class="toc-level-2"><td class="toc-number">5.1</td><td class="toc-text"><a href="#Cloning">Cloning</a></td></tr>
-<tr class="toc-level-1"><td class="toc-number">6</td><td class="toc-text"><a href="#AUTHOR">AUTHOR</a></td></tr>
-<tr class="toc-level-1"><td class="toc-number">7</td><td class="toc-text"><a href="#LICENSE">LICENSE</a></td></tr>
+<tr class="toc-level-1"><td class="toc-number">6</td><td class="toc-text"><a href="#SEE_ALSO">SEE ALSO</a></td></tr>
+<tr class="toc-level-1"><td class="toc-number">7</td><td class="toc-text"><a href="#COPYRIGHT">COPYRIGHT</a></td></tr>
+<tr class="toc-level-1"><td class="toc-number">8</td><td class="toc-text"><a href="#LICENSE">LICENSE</a></td></tr>
 
 </table>
 </nav>
@@ -405,11 +406,11 @@ class Foo {
     has Num $.bar3 is rw is mooish(:lazy, :filter);
 
     method build-bar1 {
-        &quot;lazy init value&quot;
+        "lazy init value"
     }
 
     method !build-bar2 {
-        &quot;this is private mana!&quot;
+        "this is private mana!"
     }
 
     method !trigger-bar2 ( $value ) {
@@ -430,15 +431,15 @@ class Foo {
     }
 
     method baz {
-        # Yes, works with private too! Isn&#39;t it magical? ;)
-        &quot;Take a look at the magic: «{ $!bar2 }»&quot;;
+        # Yes, works with private too! Isn't it magical? ;)
+        "Take a look at the magic: «{ $!bar2 }»";
     }
 }
 
 my $foo = Foo.new;
 
 say $foo.bar1;
-say $foo.bar3.defined ?? &quot;DEF&quot; !! &quot;UNDEF&quot;;
+say $foo.bar3.defined ?? "DEF" !! "UNDEF";
 for 1..10 { $foo.bar3 = rand; say $foo.bar3 }</pre>
 <p>The above would generate a output similar to the following:</p>
 <pre class="pod-block-code">lazy init value
@@ -454,11 +455,11 @@ UNDEF
 0.9367804461546302
 0.9367804461546302</pre>
 <h1 id="DESCRIPTION"><a class="u" href="#___top" title="go to top of document">DESCRIPTION</a></h1>
-<p>This module is aiming at providing some functionality we&#39;re all missing from Moo/Moose. It implements laziness, accompanying methods and adds attribute value filter on top of what standard Moo/Moose provide.</p>
+<p>This module is aiming at providing some functionality we're all missing from Moo/Moose. It implements laziness, accompanying methods and adds attribute value filter on top of what standard Moo/Moose provide.</p>
 <p>What makes this module different from previous versions one could find in the Raku modules repository is that it implements true laziness allowing <em>Nil</em> to be a first-class value of a lazy attribute. In other words, if you look at the <a href="#SYNOPSIS">SYNOPSIS</a> section, <code>$.bar3</code> value could randomly be either undefined or 3.1415926.</p>
 <h2 id="Laziness_for_beginners"><a class="u" href="#___top" title="go to top of document">Laziness for beginners</a></h2>
 <p>This section is inteded for beginners and could be skipped by experienced lazybones.</p>
-<h3 id="What_is_&quot;lazy_attribute&quot;"><a class="u" href="#___top" title="go to top of document">What is &quot;lazy attribute&quot;</a></h3>
+<h3 id='What_is_"lazy_attribute"'><a class="u" href="#___top" title="go to top of document">What is "lazy attribute"</a></h3>
 <p>As always, more information could be found by Google. In few simple words: a lazy attribute is the one which gets its first value on demand, i.e. – on first read operation. Consider the following code:</p>
 <pre class="pod-block-code">class Foo {
     has $.bar is mooish(:lazy, :predicate);
@@ -517,21 +518,21 @@ say $foo.has-bar; # True</pre>
 </li>
 <li><p><em><code>builder</code></em></p>
 <p>Defines builder method for a lazy attribute. The value returned by the method will be used to initialize the attribute.</p>
-<p>This parameter can have <code>Str</code> or <code>Callable</code> values or be not defined at all. In the latter case we expect a method with a name composed of &quot;<em>build-</em>&quot; prefix followed by attribute name to be defined in our class. For example, for a attribute named <code>$!bar</code> the method name is expected to be <em>build-bar</em>.</p>
-<p>A string value defines builder&#39;s method name.</p>
+<p>This parameter can have <code>Str</code> or <code>Callable</code> values or be not defined at all. In the latter case we expect a method with a name composed of "<em>build-</em>" prefix followed by attribute name to be defined in our class. For example, for a attribute named <code>$!bar</code> the method name is expected to be <em>build-bar</em>.</p>
+<p>A string value defines builder's method name.</p>
 <p>A callable value is used as-is and invoked as an object method. For example:</p>
 <pre class="pod-block-code">class Foo {
-    has $.bar is mooish(:lazy, :builder( -&gt; $,*% {&quot;in-place&quot;} );
+    has $.bar is mooish(:lazy, :builder( -&gt; $,*% {"in-place"} );
 }
 
 $inst = Foo.new;
 say $inst.bar;</pre>
-<p>This would output &#39;<em>in-place</em>&#39;.</p>
+<p>This would output '<em>in-place</em>'.</p>
 <p>*Note* the use of slurpy <code>*%</code> in the pointy block. Read about callback parameters below.</p>
 </li>
 <li><p><em><code>predicate</code></em></p>
-<p>Could be <code>Bool</code> or <code>Str</code>. When defined trait will add a method to determine if attribute is set or not. Note that it doesn&#39;t matter wether it was set with a builder or by an assignment.</p>
-<p>If parameter is <code>Bool</code> <em>True</em> then method name is made of attribute name prefixed with <u>has-</u>. See <a href="#What_is_%26quot%3Blazy_attribute%26quot%3B">What is &quot;lazy attribute&quot;</a> section for example.</p>
+<p>Could be <code>Bool</code> or <code>Str</code>. When defined trait will add a method to determine if attribute is set or not. Note that it doesn't matter wether it was set with a builder or by an assignment.</p>
+<p>If parameter is <code>Bool</code> <em>True</em> then method name is made of attribute name prefixed with <u>has-</u>. See <a href="#What_is_%26quot%3Blazy_attribute%26quot%3B">What is "lazy attribute"</a> section for example.</p>
 <p>If parameter is <code>Str</code> then the string contains predicate method name:</p>
 <pre class="pod-block-code">        has $.bar is mooish(:lazy, :predicate&lt;bar-is-ready&gt;);
         ...
@@ -544,11 +545,11 @@ say $inst.bar;</pre>
 </li>
 <li><p><em><code>clearer</code></em></p>
 <p>Could be <code>Bool</code> or <code>Str</code>. When defined trait will add a method to reset the attribute to uninitialzed state. This is not equivalent to <em>undefined</em> because, as was stated above, <em>Nil</em> is a valid value of initialized attribute.</p>
-<p>Similarly to <em><code>predicate</code></em>, when <em>True</em> the method name is formed with <u>clear-</u> prefix followed by attribute&#39;s name. A <code>Str</code> value defines method name:</p>
+<p>Similarly to <em><code>predicate</code></em>, when <em>True</em> the method name is formed with <u>clear-</u> prefix followed by attribute's name. A <code>Str</code> value defines method name:</p>
 <pre class="pod-block-code">        has $.bar is mooish(:lazy, :clearer&lt;reset-bar&gt;, :predicate);
         ...
         method baz {
-            $.bar = &quot;a value&quot;;
+            $.bar = "a value";
             say self.has-bar;  # True
             self.reset-bar;
             say self.has-bar;  # False
@@ -557,7 +558,7 @@ say $inst.bar;</pre>
 </li>
 <li><p><em><code>filter</code></em></p>
 <p>A filter is a method which is executed right before storing a value to an attribute. What is returned by the method will actually be stored into the attribute. This allows us to manipulate with a user-supplied value in any necessary way.</p>
-<p>The parameter can have values of <code>Bool</code>, <code>Str</code>, <code>Callable</code>. All values are treated similarly to the <code>builder</code> parameter except that prefix &#39;<em>filter-</em>&#39; is used when value is <em>True</em>.</p>
+<p>The parameter can have values of <code>Bool</code>, <code>Str</code>, <code>Callable</code>. All values are treated similarly to the <code>builder</code> parameter except that prefix '<em>filter-</em>' is used when value is <em>True</em>.</p>
 <p>The filter method is passed with user-supplied value and the following named parameters:</p>
 <p><code>attribute</code> - contains full attribute name.</p>
 <p><code>builder</code> - passed if filter is called as a stage of attribute building.</p>
@@ -566,15 +567,15 @@ say $inst.bar;</pre>
 </li>
 <li><p><em><code>trigger</code></em></p>
 <p>A trigger is a method which is executed right after attribute value has been changed.</p>
-<p>Allowed values for this parameter are <code>Bool</code>, <code>Str</code>, <code>Callable</code>. All values are treated similarly to the <code>builder</code> parameter except that prefix &#39;<em>trigger-</em>&#39; is used when value is <em>True</em>.</p>
-<p>Trigger method gets passed with the stored value as first positional parameter. If there is also a <code>filter</code> defined for the attribute then trigger receives the value returned by the filter, not the initial. I.e. it always get what&#39;s eventually stored in the attribute. It also receives the same named parameters as <code>filter</code> method: <code>attribute</code>, <code>builder</code>, <code>old-value</code>.</p>
+<p>Allowed values for this parameter are <code>Bool</code>, <code>Str</code>, <code>Callable</code>. All values are treated similarly to the <code>builder</code> parameter except that prefix '<em>trigger-</em>' is used when value is <em>True</em>.</p>
+<p>Trigger method gets passed with the stored value as first positional parameter. If there is also a <code>filter</code> defined for the attribute then trigger receives the value returned by the filter, not the initial. I.e. it always get what's eventually stored in the attribute. It also receives the same named parameters as <code>filter</code> method: <code>attribute</code>, <code>builder</code>, <code>old-value</code>.</p>
 </li>
 <li><p><em><code>alias</code>, <code>aliases</code>, <code>init-arg</code>, <code>init-args</code></em></p>
 <p>Those are four different names for the same parameter which allows defining attribute aliases. So, whereas Internally you would have single container for an attribute that container would be accessible via different names. And it means not only attribute accessors but also clearer and predicate methods:</p>
 <pre class="pod-block-code">class Foo {
     has $.bar is rw is mooish(:clearer, :lazy, :aliases&lt;fubar baz&gt;);
 
-    method build-bar { &quot;The Answer&quot; }
+    method build-bar { "The Answer" }
 }
 
 my $inst = Foo.new( fubar =&gt; 42 );
@@ -593,7 +594,7 @@ say $inst.baz; # 3.1415926</pre>
     method build-bar { 42 }
 }
 
-my $inst = Foo.new( bar =&gt; &quot;wrong answer&quot; );
+my $inst = Foo.new( bar =&gt; "wrong answer" );
 note $inst.bar; # 42</pre>
 </li>
 <li><p><em><code>composer</code></em></p>
@@ -606,14 +607,14 @@ note $inst.bar; # 42</pre>
 <pre class="pod-block-code">    class Foo {
         has $!bar is rw is mooish(:lazy, :clearer&lt;reset-bar&gt;, :predicate, :filter&lt;wrap-filter&gt;);
 
-        method !build-bar { &quot;a private value&quot; }
+        method !build-bar { "a private value" }
         method baz {
             if self!has-bar {
                 self!reset-bar;
             }
         }
         method !wrap-filter ( $value, :$attribute ) {
-            &quot;filtered $attribute: ($value)&quot;
+            "filtered $attribute: ($value)"
         }
     }
 </pre>
@@ -623,36 +624,36 @@ note $inst.bar; # 42</pre>
         has $!baz is mooish( :trigger&lt;on_change&gt; );
         has $!fubar is mooish( :lazy&lt;set-fubar&gt; );
 
-        method !on_change ( $val ) { say &quot;changed! ({$val})&quot;; }
-        method set-baz { $!baz = &quot;new pvt&quot; }
+        method !on_change ( $val ) { say "changed! ({$val})"; }
+        method set-baz { $!baz = "new pvt" }
         method use-fubar { $!fubar }
     }
 
     $inst = Foo.new;
-    $inst.bar = &quot;new&quot;;  # changed! (new)
+    $inst.bar = "new";  # changed! (new)
     $inst.set-baz;      # changed! (new pvt)
-    $inst.use-fubar;    # Dies with &quot;No such private method &#39;!set-fubar&#39; for invocant of type &#39;Foo&#39;&quot; message
+    $inst.use-fubar;    # Dies with "No such private method '!set-fubar' for invocant of type 'Foo'" message
 </pre>
-<h2 id="User_method's_(callbacks)_options"><a class="u" href="#___top" title="go to top of document">User method&#39;s (callbacks) options</a></h2>
-<p>User defined (callback-type) methods receive additional named parameters (options) to help them understand their context. For example, a class might have a couple of attributes for which it&#39;s ok to have same trigger method if only it knows what attribute it is applied to:</p>
+<h2 id="User_method's_(callbacks)_options"><a class="u" href="#___top" title="go to top of document">User method's (callbacks) options</a></h2>
+<p>User defined (callback-type) methods receive additional named parameters (options) to help them understand their context. For example, a class might have a couple of attributes for which it's ok to have same trigger method if only it knows what attribute it is applied to:</p>
 <pre class="pod-block-code">    class Foo {
-        has $.foo is rw is mooish(:trigger(&#39;on_fubar&#39;));
-        has $.bar is rw is mooish(:trigger(&#39;on_fubar&#39;));
+        has $.foo is rw is mooish(:trigger('on_fubar'));
+        has $.bar is rw is mooish(:trigger('on_fubar'));
 
         method on_fubar ( $value, *%opt ) {
-            say &quot;Triggered for {%opt&lt;attribute&gt;} with {$value}&quot;;
+            say "Triggered for {%opt&lt;attribute&gt;} with {$value}";
         }
     }
 
     my $inst = Foo.new;
-    $inst.foo = &quot;ABC&quot;;
-    $inst.bar = &quot;123&quot;;
+    $inst.foo = "ABC";
+    $inst.bar = "123";
 </pre>
 <pre class="pod-block-code">The expected output would be:</pre>
 <pre class="pod-block-code">    Triggered for $!foo with with ABC
     Triggered for $!bar with with 123
 </pre>
-<p><strong>NOTE:</strong> If a method doesn&#39;t care about named parameters it may only have positional arguments in its signature. This doesn&#39;t work for pointy blocks where anonymous slurpy hash would be required:</p>
+<p><strong>NOTE:</strong> If a method doesn't care about named parameters it may only have positional arguments in its signature. This doesn't work for pointy blocks where anonymous slurpy hash would be required:</p>
 <pre class="pod-block-code">    class Foo {
         has $.bar is rw is mooish(:trigger(-&gt; $, $val, *% {...}));
     }
@@ -680,11 +681,11 @@ note $inst.bar; # 42</pre>
     method build-bad { Str }
 }</pre>
 <h2 id="Some_magic"><a class="u" href="#___top" title="go to top of document">Some magic</a></h2>
-<p>Note that use of this trait doesn&#39;t change attribute accessors. More than that, accessors are not required for private attributes. Consider the <code>$!bar2</code> attribute from <a href="#SYNOPSIS">SYNOPSIS</a>.</p>
+<p>Note that use of this trait doesn't change attribute accessors. More than that, accessors are not required for private attributes. Consider the <code>$!bar2</code> attribute from <a href="#SYNOPSIS">SYNOPSIS</a>.</p>
 <h2 id="Performance"><a class="u" href="#___top" title="go to top of document">Performance</a></h2>
 <p>Module versions prior to v0.5.0 were pretty much costly perfomance-wise. This was happening due to use of <a href="https://docs.raku.org/type/Proxy"><code>Proxy</code></a> to handle all attribute read/writes. Since v0.5.0 only the first read/write operation would be handled by this module unless <code>filter</code> or <code>trigger</code> parameters are used. When <code>AttrX::Mooish</code> is assured that the attribute is properly initialized it steps aside and lets the Raku core to do its job without intervention.</p>
 <p>The only exception takes place if <code>clearer</code> parameter is used and <code>clear-&lt;attribute&gt;</code> method is called. In this case the attribute state is reverted back to uninitialized state and <a href="https://docs.raku.org/type/Proxy"><code>Proxy</code></a> is getting installed again – until the next read/write operation.</p>
-<p><code>filter</code> and <code>trigger</code> are special with this respect because they require permanent monitoring of attribute operations making it effectively impossible to strip off <code>Proxy</code> from attribute&#39;s value. For this reason use of these parameters must be very carefully considered. One is highly discouraged from using them for any code where performance is important.</p>
+<p><code>filter</code> and <code>trigger</code> are special with this respect because they require permanent monitoring of attribute operations making it effectively impossible to strip off <code>Proxy</code> from attribute's value. For this reason use of these parameters must be very carefully considered. One is highly discouraged from using them for any code where performance is important.</p>
 <h2 id="Multi-threading"><a class="u" href="#___top" title="go to top of document">Multi-threading</a></h2>
 <p>This module provides partial thread-safety and must be used with care with this respect. This means that the following conditions are guaranteed:</p>
 <ul><li><p>build operations are safe among themselves</p>
@@ -698,11 +699,11 @@ note $inst.bar; # 42</pre>
 <p>To sum up the above stated, what would be guaranteed is that a read-only attribute would provide robust results in a multi-threaded environment, as it is expected from a read-only pre-initialized attribute.</p>
 <p>Predicates are considered <em>read</em> operations and as such are not protected either. Think of testing a non-mooified attribute for definedness, for example.</p>
 <h1 id="CAVEATS"><a class="u" href="#___top" title="go to top of document">CAVEATS</a></h1>
-<ul><li><p>Due to the &quot;magical&quot; nature of attribute behaviour conflicts with other traits are possible. In particular, mixing up with `is built` trait is not recommended.</p>
+<ul><li><p>Due to the "magical" nature of attribute behaviour conflicts with other traits are possible. In particular, mixing up with `is built` trait is not recommended.</p>
 </li>
-<li><p>Use of <a href="https://docs.raku.org/type/Proxy"><code>Proxy</code></a> as the container may have unexpected side effects in some use cases like passing it as a parameter. Multiple calls of <code>Proxy</code>&#39;s <code>FETCH</code> are possible, for example. While generally harmless this may result in performance issues of affected application. To workaround the problem attribute value can be temporarily assigned into a variable.</p>
+<li><p>Use of <a href="https://docs.raku.org/type/Proxy"><code>Proxy</code></a> as the container may have unexpected side effects in some use cases like passing it as a parameter. Multiple calls of <code>Proxy</code>'s <code>FETCH</code> are possible, for example. While generally harmless this may result in performance issues of affected application. To workaround the problem attribute value can be temporarily assigned into a variable.</p>
 </li>
-<li><p>Another surprising side effect happens when a &quot;mooified&quot; array or hash attribute is used with a loop. Since <a href="https://docs.raku.org/type/Proxy"><code>Proxy</code></a> is a container, loops are considering such attributes as itemized, no matter what their final value is. Consider the following:</p>
+<li><p>Another surprising side effect happens when a "mooified" array or hash attribute is used with a loop. Since <a href="https://docs.raku.org/type/Proxy"><code>Proxy</code></a> is a container, loops are considering such attributes as itemized, no matter what their final value is. Consider the following:</p>
 <pre class="pod-block-code">class Foo {
     has @.a is mooish(:lazy);
     method build-a { 1,2,3 }
@@ -718,7 +719,7 @@ Foo.new.dump; # $[1, 2, 3]</pre>
 <h2 id="Cloning"><a class="u" href="#___top" title="go to top of document">Cloning</a></h2>
 <p>Cloning of an object with mooified attributes is a non-trivial case resulting from the use of <a href="https://docs.raku.org/type/Proxy"><code>Proxy</code></a>. Again. The root of the problem lies in the fact that <code>Proxy</code> is using closures for its <code>FETCH</code>/<code>STORE</code>. This is how it knows what object is to be updated when necessary: the object is captured by the closures. But what help us under normal circumstances becomes our problem after cloning because the new object attributes would still be bound to proxies referring the original instance!</p>
 <p><code>AttrX::Mooish</code> handles this situation starting with v1.0.0 release by implementing post-clone fix up procedure where all proxies are getting replaced using new closures. This is implemented by installing special <code>clone</code> method into each class containing mooified attributes.</p>
-<p>So far, so good until it comes down to lazy attributes which were already initialized using other attributes of the class. Simple cloning doesn&#39;t affect them, but if their dependency has been changed using twiddles then we&#39;re in trouble:</p>
+<p>So far, so good until it comes down to lazy attributes which were already initialized using other attributes of the class. Simple cloning doesn't affect them, but if their dependency has been changed using twiddles then we're in trouble:</p>
 <pre class="pod-block-code">class Foo {
     has $.a1 = 1;
     has $.a2 is mooish(:lazy);
@@ -727,10 +728,10 @@ Foo.new.dump; # $[1, 2, 3]</pre>
 my $obj = Foo.new;
 say $obj.a2; # 2
 my $copy = $obj.clone(:a1(3));
-say $copy.a2; # Oops, it&#39;s still 2!</pre>
+say $copy.a2; # Oops, it's still 2!</pre>
 <p>In such situations <code>AttrX::Mooish</code> resets the lazy attributes to unitialized state so they would get re-initialized again using new values.</p>
 <p>The only exception is for writable (<code>is rw</code>) lazy attributes. When they hold a value there is no way for us to know where the value came from because it could have been assigned by code external to our class in which case resetting it might be not so smart.</p>
-<p><strong>IMPORTTANT!</strong> Also remember that a non-writable attribute can still be assigned via private accessor (<code>$!attr = $value;</code>) by class code. These cases cannot be detected either but disreprected by the module. Taking care of them is developer&#39;s responsibility!</p>
+<p><strong>IMPORTTANT!</strong> Also remember that a non-writable attribute can still be assigned via private accessor (<code>$!attr = $value;</code>) by class code. These cases cannot be detected either but disreprected by the module. Taking care of them is developer's responsibility!</p>
 <p>Generally speaking, there is no good strategy to handle all possible cases what it comes to cloning lazy entities. Sometimes it would be better to resolve edge cases manually. If this is your case then metamodel method `post-clone` can be used to do the standard fixup job:</p>
 <pre class="pod-block-code">class Foo {
     ...
@@ -741,16 +742,16 @@ say $copy.a2; # Oops, it&#39;s still 2!</pre>
     }
 }</pre>
 <p>Basically, the first line is what <code>AttrX::Mooish</code> installs for you by default. Consider the use of <code>::?CLASS</code> instead of <code>self</code>. This is mandatory because <code>self</code> can be an instance of a child class.</p>
-<p><a href="ChangeLog.md">ChangeLog</a></p>
-<h1 id="AUTHOR"><a class="u" href="#___top" title="go to top of document">AUTHOR</a></h1>
-<p>Vadim Belman &lt;vrurg@cpan.org&gt;</p>
+<h1 id="SEE_ALSO"><a class="u" href="#___top" title="go to top of document">SEE ALSO</a></h1>
+<p><a href="../../../ChangeLog.html">ChangeLog</a></p>
+<h1 id="COPYRIGHT"><a class="u" href="#___top" title="go to top of document">COPYRIGHT</a></h1>
+<p>(c) 2023, Vadim Belman &lt;vrurg@cpan.org&gt;</p>
 <h1 id="LICENSE"><a class="u" href="#___top" title="go to top of document">LICENSE</a></h1>
 <p>Artistic License 2.0</p>
-<p>See the LICENSE file in this distribution.</p>
+<p>See the <a href="../../../LICENSE"><em>LICENSE</em></a> file in this distribution.</p>
 
     </div>
 
     
 </body>
 </html>
-

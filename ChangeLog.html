@@ -1,8 +1,8 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-<head>
-    <title></title>
-    <meta charset="UTF-8"/>
+<head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>..::ChangeLog</title>
+    <meta charset="UTF-8">
     <style>hr,
 img {
     box-sizing: content-box
@@ -370,145 +370,141 @@ hr {
     <nav class="indexgroup">
 <table id="TOC">
 <caption><h2 id="TOC_Title">Table of Contents</h2></caption>
-<tr class="toc-level-2"><td class="toc-number">0.1</td><td class="toc-text"><a href="#v0.8.5">v0.8.5</a></td></tr>
-<tr class="toc-level-2"><td class="toc-number">0.2</td><td class="toc-text"><a href="#v0.8.4">v0.8.4</a></td></tr>
-<tr class="toc-level-2"><td class="toc-number">0.3</td><td class="toc-text"><a href="#v0.8.3">v0.8.3</a></td></tr>
-<tr class="toc-level-2"><td class="toc-number">0.4</td><td class="toc-text"><a href="#v0.8.2">v0.8.2</a></td></tr>
-<tr class="toc-level-2"><td class="toc-number">0.5</td><td class="toc-text"><a href="#v0.8.1">v0.8.1</a></td></tr>
-<tr class="toc-level-2"><td class="toc-number">0.6</td><td class="toc-text"><a href="#v0.8.0">v0.8.0</a></td></tr>
-<tr class="toc-level-2"><td class="toc-number">0.7</td><td class="toc-text"><a href="#v0.7.6">v0.7.6</a></td></tr>
-<tr class="toc-level-2"><td class="toc-number">0.8</td><td class="toc-text"><a href="#v0.7.5">v0.7.5</a></td></tr>
-<tr class="toc-level-2"><td class="toc-number">0.9</td><td class="toc-text"><a href="#v0.7.4">v0.7.4</a></td></tr>
+<tr class="toc-level-1"><td class="toc-number">1</td><td class="toc-text"><a href="#CHANGELOG">CHANGELOG</a></td></tr>
+<tr class="toc-level-1"><td class="toc-number">2</td><td class="toc-text"><a href="#SEE_ALSO">SEE ALSO</a></td></tr>
+<tr class="toc-level-1"><td class="toc-number">3</td><td class="toc-text"><a href="#LICENSE">LICENSE</a></td></tr>
 
 </table>
 </nav>
 
 
     <div class="pod-body">
-    <section><h1>CHANGELOG</h1>
-</section>
-<section><h1>head</h1>
-<p>v1.0.6</p>
-</section>
+    <h1 id="CHANGELOG"><a class="u" href="#___top" title="go to top of document">CHANGELOG</a></h1>
+<ul><li><p>v1.0.6</p>
 <ul><li><p>A quick fix for containerization problem with helper methods</p>
 </li>
 </ul>
-<section><h1>head</h1>
-<p>v1.0.5</p>
-</section>
+</li>
+<li><p>v1.0.5</p>
 <ul><li><p>Increase reliability of initialization</p>
 </li>
 </ul>
-<section><h1>head</h1>
-<p>v1.0.4</p>
-</section>
+</li>
+<li><p>v1.0.4</p>
 <ul><li><p>Fix an exception when mixin in roles with aliased attributes</p>
 </li>
 </ul>
-<section><h1>head</h1>
-<p>v1.0.3</p>
-</section>
+</li>
+<li><p>v1.0.3</p>
 <ul><li><p>Minor fix of an exception not thrown properly</p>
 </li>
 </ul>
-<section><h1>head</h1>
-<p>v1.0.2</p>
-</section>
+</li>
+<li><p>v1.0.2</p>
 <ul><li><p>Provide better error reporting for impossible usages</p>
 </li>
 <li><p>Make sure <code>AttrX::Mooish</code> works equally well with either NQP or Raku implementation of Metamodel classes</p>
 </li>
 </ul>
-<section><h1>head</h1>
-<p>v1.0.0</p>
-</section>
+</li>
+<li><p>v1.0.0</p>
 <ul><li><p>Implement/fix support of object cloning</p>
 </li>
 </ul>
-<section><h1>head</h1>
-<p>v0.8.10</p>
-</section>
+</li>
+<li><p>v0.8.10</p>
 <ul><li><p>Fix accidental early initialization of lazy attributes on older Rakudo versions</p>
 </li>
 </ul>
-<section><h1>head</h1>
-<p>v0.8.9</p>
-</section>
+</li>
+<li><p>v0.8.9</p>
 <ul><li><p>Clearer method would not throw anymore if attribute is still building. It would be just a NOP then.</p>
 </li>
 </ul>
-<section><h1>head</h1>
-<p>v0.8.8</p>
-</section>
+</li>
+<li><p>v0.8.8</p>
 <ul><li><p>Resolve some more rare race conditions</p>
 </li>
 </ul>
-<section><h1>head</h1>
-<p>v0.8.7</p>
-</section>
+</li>
+<li><p>v0.8.7</p>
 <ul><li><p>Fix private attribute helper methods checked for duplicate names in public method tables</p>
 </li>
 <li><p>Fix definite-typed private lazy attributes</p>
 </li>
 </ul>
-<section><h1>head</h1>
-<p>v0.8.6</p>
-</section>
+</li>
+<li><p>v0.8.6</p>
 <ul><li><p>Slightly improve thread-safety</p>
 </li>
 </ul>
-<h2 id="v0.8.5"><a class="u" href="#___top" title="go to top of document">v0.8.5</a></h2>
+</li>
+<li><p>v0.8.5</p>
 <ul><li><p>Make clearer method thread-safe</p>
 </li>
 </ul>
-<h2 id="v0.8.4"><a class="u" href="#___top" title="go to top of document">v0.8.4</a></h2>
+</li>
+<li><p>v0.8.4</p>
 <ul><li><p>Tidy up exceptions</p>
 </li>
 </ul>
-<h2 id="v0.8.3"><a class="u" href="#___top" title="go to top of document">v0.8.3</a></h2>
+</li>
+<li><p>v0.8.3</p>
 <ul><li><p>Fix incorrect handling of uninitialized lazy attributes in concurrent environment</p>
 </li>
 </ul>
-<h2 id="v0.8.2"><a class="u" href="#___top" title="go to top of document">v0.8.2</a></h2>
+</li>
+<li><p>v0.8.2</p>
 <ul><li><p>Fix a bug with the order of <code>TWEAK</code> invocation for inherited classes</p>
 </li>
 </ul>
-<h2 id="v0.8.1"><a class="u" href="#___top" title="go to top of document">v0.8.1</a></h2>
-<ul><li><p>Make it possible to have definite lazy attributes like:</p>
 </li>
-</ul>
+<li><p>v0.8.1</p>
+<ul><li><p>Make it possible to have definite lazy attributes like:</p>
 <pre class="pod-block-code">has Str:D $.s is mooish(:lazy);</pre>
-<ul><li><p>Fix incorrect processing of BUILDPLAN on the latest Rakudo builds</p>
+</li>
+<li><p>Fix incorrect processing of BUILDPLAN on the latest Rakudo builds</p>
 </li>
 <li><p>Fix various cases where attributes were not properly initialized</p>
 </li>
 <li><p>Fix for unbinding not taking place when it had to</p>
 </li>
 </ul>
-<h2 id="v0.8.0"><a class="u" href="#___top" title="go to top of document">v0.8.0</a></h2>
+</li>
+<li><p>v0.8.0</p>
 <p>Major refactor of code toward increasing reliability.</p>
 <ul><li><p>Rely on container type rather tahn on sigil</p>
 </li>
 <li><p>Switch initialization code from wrapping <code>BUILD</code> to use of <code>BUILDPLAN</code></p>
 </li>
 </ul>
-<h2 id="v0.7.6"><a class="u" href="#___top" title="go to top of document">v0.7.6</a></h2>
+</li>
+<li><p>v0.7.6</p>
 <ul><li><p>Minor but important fix for a flapping bug with <code>state</code> variables in precompiled code</p>
 </li>
 </ul>
-<h2 id="v0.7.5"><a class="u" href="#___top" title="go to top of document">v0.7.5</a></h2>
+</li>
+<li><p>v0.7.5</p>
 <ul><li><p>Make sure a builder can return Nil and it will be handled according to Raku specs</p>
 </li>
 </ul>
-<h2 id="v0.7.4"><a class="u" href="#___top" title="go to top of document">v0.7.4</a></h2>
-<p>Migrate to zef ecosystem.</p>
-<ul><li><p>Fix <code>$*PERL</code> deprecation warning.</p>
+</li>
+<li><p>v0.7.4</p>
+<ul><li><p>Migrate to zef ecosystem.</p>
+</li>
+<li><p>Fix <code>$*PERL</code> deprecation warning.</p>
 </li>
 </ul>
+</li>
+</ul>
+<h1 id="SEE_ALSO"><a class="u" href="#___top" title="go to top of document">SEE ALSO</a></h1>
+<p><a href="docs/html/AttrX/Mooish.html"><code>AttrX::Mooish</code></a></p>
+<h1 id="LICENSE"><a class="u" href="#___top" title="go to top of document">LICENSE</a></h1>
+<p>Artistic License 2.0</p>
+<p>See the <a href="LICENSE"><em>LICENSE</em></a> file in this distribution.</p>
 
     </div>
 
     
 </body>
 </html>
-
