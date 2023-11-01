@@ -1,0 +1,19 @@
+=begin rakudoc
+=config :!index :title("AttrX::Mooish Document Pages")
+
+=head1 AttrX::Mooish Document Pages
+
+=item L«C«..::ChangeLog»|rakudoc:..::ChangeLog»
+=item L«C«AttrX::Mooish»|rakudoc:AttrX::Mooish»
+=item L«C«README»|rakudoc:..::README»
+
+=head1 COPYRIGHT
+
+(c) 2023, Vadim Belman <vrurg@cpan.org>
+
+=head1 LICENCE
+
+Artistic License 2.0
+
+See the L<I<LICENCE>|file:LICENCE> file in this distribution.
+=end rakudoc

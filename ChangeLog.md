@@ -6,6 +6,13 @@ CHANGELOG
 head
 ====
 
+v1.0.6
+
+  * A quick fix for containerization problem with helper methods
+
+head
+====
+
 v1.0.5
 
   * Increase reliability of initialization
