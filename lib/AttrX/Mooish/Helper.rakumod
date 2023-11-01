@@ -34,13 +34,13 @@ method setup-attr-helpers(Mu \type, $attr) is hidden-from-backtrace {
                 ?? type.^declares_method($helper-name)
                 !! type.^find_private_method($helper-name);
 
-            my $m = %helpers{$helper};
-            $m.set_name( $helper-name );
+            my &m := %helpers{$helper}<>;
+            &m.set_name( $helper-name );
 
             if $is-public {
-                type.^add_method( $helper-name, $m );
+                type.^add_method( $helper-name, &m );
             } else {
-                type.^add_private_method( $helper-name, $m );
+                type.^add_private_method( $helper-name, &m );
             }
         }
     }
