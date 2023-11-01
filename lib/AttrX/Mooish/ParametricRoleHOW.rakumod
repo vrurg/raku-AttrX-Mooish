@@ -7,13 +7,6 @@ use AttrX::Mooish::Helper;
 
 also does AttrX::Mooish::Helper;
 
-method compose(Mu \type, :compiler_services($)) is hidden-from-backtrace {
-    for type.^attributes.grep( AttrX::Mooish::Attribute ) -> $attr {
-        self.setup-helpers(type, $attr);
-    }
-    nextsame
-}
-
 method specialize(Mu \r, Mu:U \obj, *@, *%) is hidden-from-backtrace {
     unless obj.HOW ~~ Metamodel::ClassHOW {
         AttrX::Mooish::X::TypeObject.new(:type(obj),
