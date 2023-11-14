@@ -54,7 +54,9 @@ my class AttrProxy is Proxy {
 
     method store-value(Mu $value is raw) is raw is hidden-from-backtrace {
         unless ⚛$!is-set {
-            $!val := nqp::clone_nd($!attribute.auto_viv_container);
+            my Mu $aviv := $!attribute.auto_viv_container;
+            # If the container is undefined then create a new instance of its type.
+            $!val := nqp::isconcrete_nd($aviv) ?? nqp::clone_nd($aviv) !! $aviv.new;
             $!is-set ⚛= True;
         }
         nqp::if(
@@ -178,7 +180,7 @@ method FAKE-REQUIRED {
 method set_required(Mu $required) {
     $!phony-required = False if $required;
     nextsame
-    }
+}
 
 method compose(Mu \type, :$compiler_services) is hidden-from-backtrace {
     return if try nqp::getattr_i(self, Attribute, '$!composed');
