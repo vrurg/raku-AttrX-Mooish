@@ -1,4 +1,4 @@
-=begin rakudoc
+=begin pod
 =config :!index :title("AttrX::Mooish Document Pages")
 
 =head1 AttrX::Mooish Document Pages
@@ -16,4 +16,4 @@
 Artistic License 2.0
 
 See the L<I<LICENSE>|file:LICENSE> file in this distribution.
-=end rakudoc
+=end pod

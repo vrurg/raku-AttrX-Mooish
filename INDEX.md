@@ -1,5 +1,3 @@
-# rakudoc
-
 # AttrX::Mooish Document Pages
 
   - [`..::ChangeLog`](ChangeLog.md)

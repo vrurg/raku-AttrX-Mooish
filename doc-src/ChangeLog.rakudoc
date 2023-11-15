@@ -5,6 +5,7 @@
 v1.0.6
 
 =item A quick fix for containerization problem with helper methods
+=item Fix the case with a C<%>- or C<@>-sigilled attribute with C<is Type> trait
 
 =end item
 

@@ -3,6 +3,8 @@
   - v1.0.6
     
       - A quick fix for containerization problem with helper methods
+    
+      - Fix the case with a `%`- or `@`-sigilled attribute with `is Type` trait
 
   - v1.0.5
     
