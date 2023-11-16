@@ -1,5 +1,11 @@
 # CHANGELOG
 
+  - v1.0.7
+    
+    This version primary purpose is to supercede v1.0.6 where package tarball happened to contain wrong version of `AttrX::Mooish::Attribute`.
+    
+      - Add `:auth`, `:ver`, and `:api` adverbs to every package in the distribution
+
   - v1.0.6
     
       - A quick fix for containerization problem with helper methods

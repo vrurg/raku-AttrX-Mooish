@@ -2,6 +2,15 @@
 =head1 CHANGELOG
 
 =begin item
+v1.0.7
+
+This version primary purpose is to supercede v1.0.6 where package tarball happened to contain wrong version of
+C<AttrX::Mooish::Attribute>.
+
+=item Add C<:auth>, C<:ver>, and C<:api> adverbs to every package in the distribution
+=end item
+
+=begin item
 v1.0.6
 
 =item A quick fix for containerization problem with helper methods
