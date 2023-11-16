@@ -1,5 +1,5 @@
 use v6.d;
-unit role AttrX::Mooish::ParametricRoleHOW;
+unit role AttrX::Mooish::ParametricRoleHOW:ver($?DISTRIBUTION.meta<ver>):auth($?DISTRIBUTION.meta<auth>):api($?DISTRIBUTION.meta<api>);
 
 use AttrX::Mooish::Attribute;
 use AttrX::Mooish::ClassHOW;

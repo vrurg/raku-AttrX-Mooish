@@ -1,5 +1,5 @@
 use v6.d;
-unit role AttrX::Mooish::Helper;
+unit role AttrX::Mooish::Helper:ver($?DISTRIBUTION.meta<ver>):auth($?DISTRIBUTION.meta<auth>):api($?DISTRIBUTION.meta<api>);
 
 use AttrX::Mooish::Attribute;
 use AttrX::Mooish::X;

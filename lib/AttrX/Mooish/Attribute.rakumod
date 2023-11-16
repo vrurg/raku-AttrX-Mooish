@@ -1,5 +1,5 @@
 use v6.d;
-unit role AttrX::Mooish::Attribute;
+unit role AttrX::Mooish::Attribute:ver($?DISTRIBUTION.meta<ver>):auth($?DISTRIBUTION.meta<auth>):api($?DISTRIBUTION.meta<api>);
 use nqp;
 
 use AttrX::Mooish::X;

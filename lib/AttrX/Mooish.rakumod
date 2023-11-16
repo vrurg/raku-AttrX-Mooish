@@ -1,5 +1,5 @@
 use v6.d;
-unit module AttrX::Mooish:ver($?DISTRIBUTION.meta<ver>):auth<zef:vrurg>:api($?DISTRIBUTION.meta<api>);
+unit module AttrX::Mooish:ver($?DISTRIBUTION.meta<ver>):auth($?DISTRIBUTION.meta<auth>):api($?DISTRIBUTION.meta<api>);
 #use Data::Dump;
 use nqp;
 

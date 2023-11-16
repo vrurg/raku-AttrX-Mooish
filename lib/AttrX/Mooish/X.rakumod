@@ -1,5 +1,5 @@
 use v6.d;
-unit module AttrX::Mooish::X;
+unit module AttrX::Mooish::X:ver($?DISTRIBUTION.meta<ver>):auth($?DISTRIBUTION.meta<auth>):api($?DISTRIBUTION.meta<api>);
 
 class Fatal is Exception { }
 
