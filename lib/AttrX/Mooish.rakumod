@@ -38,10 +38,6 @@ multi trait_mod:<is>( Attribute:D $attr, :$mooish! ) is export {
     }
 
     $attr.INIT-FROM-OPTIONS(@opt-list);
-
-    if $attr.lazy && $attr.type.HOW.archetypes.definite && !$attr.required {
-        $attr.FAKE-REQUIRED;
-    }
 }
 
 our sub META6 {

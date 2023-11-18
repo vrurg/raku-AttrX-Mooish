@@ -1,78 +1,82 @@
 # CHANGELOG
 
-  - v1.0.7
+  - **v1.0.8**
+    
+      - Add method `set-options` to the public API of attribute object
+
+  - **v1.0.7**
     
     This version primary purpose is to supercede v1.0.6 where package tarball happened to contain wrong version of `AttrX::Mooish::Attribute`.
     
       - Add `:auth`, `:ver`, and `:api` adverbs to every package in the distribution
 
-  - v1.0.6
+  - **v1.0.6**
     
       - A quick fix for containerization problem with helper methods
     
       - Fix the case with a `%`- or `@`-sigilled attribute with `is Type` trait
 
-  - v1.0.5
+  - **v1.0.5**
     
       - Increase reliability of initialization
 
-  - v1.0.4
+  - **v1.0.4**
     
       - Fix an exception when mixin in roles with aliased attributes
 
-  - v1.0.3
+  - **v1.0.3**
     
       - Minor fix of an exception not thrown properly
 
-  - v1.0.2
+  - **v1.0.2**
     
       - Provide better error reporting for impossible usages
     
       - Make sure `AttrX::Mooish` works equally well with either NQP or Raku implementation of Metamodel classes
 
-  - v1.0.0
+  - **v1.0.0**
     
       - Implement/fix support of object cloning
 
-  - v0.8.10
+  - **v0.8.10**
     
       - Fix accidental early initialization of lazy attributes on older Rakudo versions
 
-  - v0.8.9
+  - **v0.8.9**
     
       - Clearer method would not throw anymore if attribute is still building. It would be just a NOP then.
 
-  - v0.8.8
+  - **v0.8.8**
     
       - Resolve some more rare race conditions
 
-  - v0.8.7
+  - **v0.8.7**
     
       - Fix private attribute helper methods checked for duplicate names in public method tables
     
       - Fix definite-typed private lazy attributes
 
-  - v0.8.6
+  - **v0.8.6**
     
       - Slightly improve thread-safety
 
-  - v0.8.5
+  - **v0.8.5**
     
       - Make clearer method thread-safe
 
-  - v0.8.4
+  - **v0.8.4**
     
       - Tidy up exceptions
 
-  - v0.8.3
+  - **v0.8.3**
     
       - Fix incorrect handling of uninitialized lazy attributes in concurrent environment
 
-  - v0.8.2
+  - **v0.8.2**
     
       - Fix a bug with the order of `TWEAK` invocation for inherited classes
 
-  - v0.8.1
+  - **v0.8.1**
     
       - Make it possible to have definite lazy attributes like:
         
@@ -86,7 +90,7 @@
     
       - Fix for unbinding not taking place when it had to
 
-  - v0.8.0
+  - **v0.8.0**
     
     Major refactor of code toward increasing reliability.
     
@@ -94,15 +98,15 @@
     
       - Switch initialization code from wrapping `BUILD` to use of `BUILDPLAN`
 
-  - v0.7.6
+  - **v0.7.6**
     
       - Minor but important fix for a flapping bug with `state` variables in precompiled code
 
-  - v0.7.5
+  - **v0.7.5**
     
       - Make sure a builder can return Nil and it will be handled according to Raku specs
 
-  - v0.7.4
+  - **v0.7.4**
     
       - Migrate to zef ecosystem.
     

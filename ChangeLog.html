@@ -388,94 +388,99 @@ li > .pod-block-code { margin-top: 16px; }
 
     <div class="pod-body">
     <h1 id="CHANGELOG"><a class="u" href="#___top" title="go to top of document">CHANGELOG</a></h1>
-<ul><li><p>v1.0.7</p>
+<ul><li><p><strong>v1.0.8</strong></p>
+<ul><li><p>Add method <code>set-options</code> to the public API of attribute object</p>
+</li>
+</ul>
+</li>
+<li><p><strong>v1.0.7</strong></p>
 <p>This version primary purpose is to supercede v1.0.6 where package tarball happened to contain wrong version of <code>AttrX::Mooish::Attribute</code>.</p>
 <ul><li><p>Add <code>:auth</code>, <code>:ver</code>, and <code>:api</code> adverbs to every package in the distribution</p>
 </li>
 </ul>
 </li>
-<li><p>v1.0.6</p>
+<li><p><strong>v1.0.6</strong></p>
 <ul><li><p>A quick fix for containerization problem with helper methods</p>
 </li>
 <li><p>Fix the case with a <code>%</code>- or <code>@</code>-sigilled attribute with <code>is Type</code> trait</p>
 </li>
 </ul>
 </li>
-<li><p>v1.0.5</p>
+<li><p><strong>v1.0.5</strong></p>
 <ul><li><p>Increase reliability of initialization</p>
 </li>
 </ul>
 </li>
-<li><p>v1.0.4</p>
+<li><p><strong>v1.0.4</strong></p>
 <ul><li><p>Fix an exception when mixin in roles with aliased attributes</p>
 </li>
 </ul>
 </li>
-<li><p>v1.0.3</p>
+<li><p><strong>v1.0.3</strong></p>
 <ul><li><p>Minor fix of an exception not thrown properly</p>
 </li>
 </ul>
 </li>
-<li><p>v1.0.2</p>
+<li><p><strong>v1.0.2</strong></p>
 <ul><li><p>Provide better error reporting for impossible usages</p>
 </li>
 <li><p>Make sure <code>AttrX::Mooish</code> works equally well with either NQP or Raku implementation of Metamodel classes</p>
 </li>
 </ul>
 </li>
-<li><p>v1.0.0</p>
+<li><p><strong>v1.0.0</strong></p>
 <ul><li><p>Implement/fix support of object cloning</p>
 </li>
 </ul>
 </li>
-<li><p>v0.8.10</p>
+<li><p><strong>v0.8.10</strong></p>
 <ul><li><p>Fix accidental early initialization of lazy attributes on older Rakudo versions</p>
 </li>
 </ul>
 </li>
-<li><p>v0.8.9</p>
+<li><p><strong>v0.8.9</strong></p>
 <ul><li><p>Clearer method would not throw anymore if attribute is still building. It would be just a NOP then.</p>
 </li>
 </ul>
 </li>
-<li><p>v0.8.8</p>
+<li><p><strong>v0.8.8</strong></p>
 <ul><li><p>Resolve some more rare race conditions</p>
 </li>
 </ul>
 </li>
-<li><p>v0.8.7</p>
+<li><p><strong>v0.8.7</strong></p>
 <ul><li><p>Fix private attribute helper methods checked for duplicate names in public method tables</p>
 </li>
 <li><p>Fix definite-typed private lazy attributes</p>
 </li>
 </ul>
 </li>
-<li><p>v0.8.6</p>
+<li><p><strong>v0.8.6</strong></p>
 <ul><li><p>Slightly improve thread-safety</p>
 </li>
 </ul>
 </li>
-<li><p>v0.8.5</p>
+<li><p><strong>v0.8.5</strong></p>
 <ul><li><p>Make clearer method thread-safe</p>
 </li>
 </ul>
 </li>
-<li><p>v0.8.4</p>
+<li><p><strong>v0.8.4</strong></p>
 <ul><li><p>Tidy up exceptions</p>
 </li>
 </ul>
 </li>
-<li><p>v0.8.3</p>
+<li><p><strong>v0.8.3</strong></p>
 <ul><li><p>Fix incorrect handling of uninitialized lazy attributes in concurrent environment</p>
 </li>
 </ul>
 </li>
-<li><p>v0.8.2</p>
+<li><p><strong>v0.8.2</strong></p>
 <ul><li><p>Fix a bug with the order of <code>TWEAK</code> invocation for inherited classes</p>
 </li>
 </ul>
 </li>
-<li><p>v0.8.1</p>
+<li><p><strong>v0.8.1</strong></p>
 <ul><li><p>Make it possible to have definite lazy attributes like:</p>
 <pre class="pod-block-code">has Str:D $.s is mooish(:lazy);</pre>
 </li>
@@ -487,7 +492,7 @@ li > .pod-block-code { margin-top: 16px; }
 </li>
 </ul>
 </li>
-<li><p>v0.8.0</p>
+<li><p><strong>v0.8.0</strong></p>
 <p>Major refactor of code toward increasing reliability.</p>
 <ul><li><p>Rely on container type rather tahn on sigil</p>
 </li>
@@ -495,17 +500,17 @@ li > .pod-block-code { margin-top: 16px; }
 </li>
 </ul>
 </li>
-<li><p>v0.7.6</p>
+<li><p><strong>v0.7.6</strong></p>
 <ul><li><p>Minor but important fix for a flapping bug with <code>state</code> variables in precompiled code</p>
 </li>
 </ul>
 </li>
-<li><p>v0.7.5</p>
+<li><p><strong>v0.7.5</strong></p>
 <ul><li><p>Make sure a builder can return Nil and it will be handled according to Raku specs</p>
 </li>
 </ul>
 </li>
-<li><p>v0.7.4</p>
+<li><p><strong>v0.7.4</strong></p>
 <ul><li><p>Migrate to zef ecosystem.</p>
 </li>
 <li><p>Fix <code>$*PERL</code> deprecation warning.</p>

@@ -2,7 +2,13 @@
 =head1 CHANGELOG
 
 =begin item
-v1.0.7
+B<v1.0.8>
+
+=item Add method C<set-options> to the public API of attribute object
+=end item
+
+=begin item
+B<v1.0.7>
 
 This version primary purpose is to supercede v1.0.6 where package tarball happened to contain wrong version of
 C<AttrX::Mooish::Attribute>.
@@ -11,7 +17,7 @@ C<AttrX::Mooish::Attribute>.
 =end item
 
 =begin item
-v1.0.6
+B<v1.0.6>
 
 =item A quick fix for containerization problem with helper methods
 =item Fix the case with a C<%>- or C<@>-sigilled attribute with C<is Type> trait
@@ -19,28 +25,28 @@ v1.0.6
 =end item
 
 =begin item
-v1.0.5
+B<v1.0.5>
 
 =item Increase reliability of initialization
 
 =end item
 
 =begin item
-v1.0.4
+B<v1.0.4>
 
 =item Fix an exception when mixin in roles with aliased attributes
 
 =end item
 
 =begin item
-v1.0.3
+B<v1.0.3>
 
 =item Minor fix of an exception not thrown properly
 
 =end item
 
 =begin item
-v1.0.2
+B<v1.0.2>
 
 =item Provide better error reporting for impossible usages
 =item Make sure C<AttrX::Mooish> works equally well with either NQP or Raku implementation of Metamodel classes
@@ -48,35 +54,35 @@ v1.0.2
 =end item
 
 =begin item
-v1.0.0
+B<v1.0.0>
 
 =item Implement/fix support of object cloning
 
 =end item
 
 =begin item
-v0.8.10
+B<v0.8.10>
 
 =item Fix accidental early initialization of lazy attributes on older Rakudo versions
 
 =end item
 
 =begin item
-v0.8.9
+B<v0.8.9>
 
 =item Clearer method would not throw anymore if attribute is still building. It would be just a NOP then.
 
 =end item
 
 =begin item
-v0.8.8
+B<v0.8.8>
 
 =item Resolve some more rare race conditions
 
 =end item
 
 =begin item
-v0.8.7
+B<v0.8.7>
 
 =item Fix private attribute helper methods checked for duplicate names in public method tables
 =item Fix definite-typed private lazy attributes
@@ -84,42 +90,42 @@ v0.8.7
 =end item
 
 =begin item
-v0.8.6
+B<v0.8.6>
 
 =item Slightly improve thread-safety
 
 =end item
 
 =begin item
-v0.8.5
+B<v0.8.5>
 
 =item Make clearer method thread-safe
 
 =end item
 
 =begin item
-v0.8.4
+B<v0.8.4>
 
 =item Tidy up exceptions
 
 =end item
 
 =begin item
-v0.8.3
+B<v0.8.3>
 
 =item Fix incorrect handling of uninitialized lazy attributes in concurrent environment
 
 =end item
 
 =begin item
-v0.8.2
+B<v0.8.2>
 
 =item Fix a bug with the order of C<TWEAK> invocation for inherited classes
 
 =end item
 
 =begin item
-v0.8.1
+B<v0.8.1>
 
 =begin item
 Make it possible to have definite lazy attributes like:
@@ -135,7 +141,7 @@ Make it possible to have definite lazy attributes like:
 =end item
 
 =begin item
-v0.8.0
+B<v0.8.0>
 
 Major refactor of code toward increasing reliability.
 
@@ -145,21 +151,21 @@ Major refactor of code toward increasing reliability.
 =end item
 
 =begin item
-v0.7.6
+B<v0.7.6>
 
 =item Minor but important fix for a flapping bug with C<state> variables in precompiled code
 
 =end item
 
 =begin item
-v0.7.5
+B<v0.7.5>
 
 =item Make sure a builder can return Nil and it will be handled according to Raku specs
 
 =end item
 
 =begin item
-v0.7.4
+B<v0.7.4>
 
 =item Migrate to zef ecosystem.
 =item Fix C<$*PERL> deprecation warning.

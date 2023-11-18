@@ -107,6 +107,10 @@ method !bool-str-meth-name( $opt, Str $prefix, Str :$base-name? ) is hidden-from
 }
 
 method INIT-FROM-OPTIONS(@opt-list) {
+    if self.composed {
+        AttrX::Mooish::X::NotAllowed.new(:op('set options'), :cause("attribute $.name is already composed")).throw
+    }
+
     sub set-attr($name, $value) {
         self.^get_attribute_for_usage('$!' ~ $name).get_value(self) = $value;
     }
@@ -163,7 +167,13 @@ method INIT-FROM-OPTIONS(@opt-list) {
 
     set-option($_) for @opt-list;
 
+    if self.lazy && self.type.HOW.archetypes.definite && !self.required {
+        self.FAKE-REQUIRED;
+    }
 }
+
+# Just a public interface to the implementation detail
+method set-options(+@options, *%options) { self.INIT-FROM-OPTIONS((|@options, |%options.pairs)) }
 
 method opt2method( Str $oname, Str :$base-name? ) is hidden-from-backtrace {
     self!bool-str-meth-name( self."$oname"(), %opt2prefix{$oname}, :$base-name );
@@ -182,8 +192,12 @@ method set_required(Mu $required) {
     nextsame
 }
 
+method composed(--> Mu) is raw {
+    nqp::istrue(nqp::getattr_i(self, Attribute, '$!composed'))
+}
+
 method compose(Mu \type, :$compiler_services) is hidden-from-backtrace {
-    return if try nqp::getattr_i(self, Attribute, '$!composed');
+    return if self.composed;
 
     $!always-proxy = $!filter || $!trigger;
 
