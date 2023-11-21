@@ -274,7 +274,7 @@ method make-mooish(Mu $instance is raw, Mu $type is raw, %attrinit) is hidden-fr
         nqp::if(
             nqp::iscont($attr-var),
             ($attr-var = $init-value),
-            ($attr-var.STORE($init-value)));
+            ($attr-var.STORE($init-value<>)));
     }
     else {
         my $attr-var := self.attr-var: $instance, :$type, :proxify;
