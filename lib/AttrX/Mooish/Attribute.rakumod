@@ -102,8 +102,16 @@ my constant %opt2prefix = clearer => 'clear',
                           filter => 'filter',
                           composer => 'compose';
 
-method !bool-str-meth-name( $opt, Str $prefix, Str :$base-name? ) is hidden-from-backtrace {
-    $opt ~~ Bool ?? $prefix ~ '-' ~ ( $base-name // $!base-name ) !! $opt;
+method !bool-str-meth-name($opt, Str $prefix, Str :$base-name is copy) is hidden-from-backtrace {
+    my proto sub make-name(|) {*}
+    multi sub make-name(Bool) {
+        $prefix ~ '-' ~ $base-name
+    }
+    multi sub make-name(Str:D $_) {
+        .contains('*') ?? S:g/\*/$base-name/ !! $opt
+    }
+    $base-name //= $!base-name;
+    make-name($opt)
 }
 
 method INIT-FROM-OPTIONS(@opt-list) {
