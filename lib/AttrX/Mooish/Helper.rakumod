@@ -26,16 +26,19 @@ method setup-attr-helpers(Mu \type, $attr) is hidden-from-backtrace {
     my $is-public := $attr.has_accessor;
     for %helpers.keys -> $helper {
         next unless $attr."$helper"(); # Don't generate if attribute isn't set
+        my SetHash $added .= new;
+        ALIAS:
         for @aliases -> $base-name {
             my $helper-name = $attr.opt2method( $helper, :$base-name  );
 
-            AttrX::Mooish::X::HelperMethod.new( :$helper, :$helper-name ).throw
-            if $is-public
-                ?? type.^declares_method($helper-name)
-                !! type.^find_private_method($helper-name);
+            if ($is-public ?? type.^declares_method($helper-name) !! type.^find_private_method($helper-name)) {
+                next ALIAS if $helper-name ∈ $added;
+                AttrX::Mooish::X::HelperMethod.new( :$helper, :$helper-name ).throw
+            }
 
+            $added.set($helper-name);
             my &m := %helpers{$helper}<>;
-            &m.set_name( $helper-name );
+            &m.set_name( $helper-name ) unless &m.name;
 
             if $is-public {
                 type.^add_method( $helper-name, &m );
