@@ -8,7 +8,7 @@ use lib $?FILE.IO.parent(1).add("lib"); use CustomHOW;
 subtest "Base" => {
     my class Foo {
         has $.a is rw is mooish(:clearer, :lazy, :init-arg<a1 a2>);
-        has $.n is mooish(:lazy, :init-arg<n1>, :no-init);
+        has $.n is mooish(:lazy, :init-arg<n1>, :no-init, :predicate<foo-has-*>);
 
         method build-a {
             42
@@ -24,7 +24,7 @@ subtest "Base" => {
 
     my role FooRole {
         has $.a is rw is mooish(:clearer, :lazy, :aliases<a1 a2>);
-        has $.n is mooish(:lazy, :no-init);
+        has $.n is mooish(:lazy, :no-init, :alias<n1>, :predicate<foo-has-*>);
 
         method build-a {
             42
@@ -51,13 +51,18 @@ subtest "Base" => {
 
     for @t -> %data {
         subtest %data<name>, {
-            plan 13;
+            plan 17;
             my \type = %data<type>;
             $inst = type.new( a => pi, n => "невірна відповідь" );
             is $inst.a, pi, "name itself";
             is $inst.a1, pi, "access via alias 1";
             is $inst.a2, pi, "access via alias 2";
+
+            nok $inst.foo-has-n, "custom predicate for \$.n before read";
+            nok $inst.foo-has-n1, "custom predicate for alias before read";
             is $inst.n, "Це - Відповідь!", "no-init ignores constructor";
+            ok $inst.foo-has-n, "custom predicate for \$.n after read";
+            ok $inst.foo-has-n1, "custom predicate for alias after read";
 
             $inst.a2 = pi*2;
             is $inst.a, pi*2, "manual set via alias";
