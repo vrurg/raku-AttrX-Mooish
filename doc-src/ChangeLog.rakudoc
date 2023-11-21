@@ -5,6 +5,9 @@
 B<v1.0.8>
 
 =item Add method C<set-options> to the public API of attribute object
+=item Expand support for aliases (I<init-args>) by allowing more customized auto-generated method names
+=item Don't die when helper method names clashes
+=item Fix a problem with containerized initial value
 =end item
 
 =begin item

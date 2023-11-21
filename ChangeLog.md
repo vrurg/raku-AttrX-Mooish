@@ -3,6 +3,12 @@
   - **v1.0.8**
     
       - Add method `set-options` to the public API of attribute object
+    
+      - Expand support for aliases (*init-args*) by allowing more customized auto-generated method names
+    
+      - Don't die when helper method names clashes
+    
+      - Fix a problem with containerized initial value
 
   - **v1.0.7**
     
