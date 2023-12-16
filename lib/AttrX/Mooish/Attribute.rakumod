@@ -75,7 +75,7 @@ my class AttrProxy is Proxy {
 # PvtMode enum defines what privacy mode is used when looking for an option method:
 # force: makes the method always private
 # never: makes it always public
-# as-attr: makes is strictly same as attribute privacy
+# as-attr: makes is strictly the same as attribute's own privacy
 # auto: when options is defined with method name string then uses attribute mode first; and uses opposite if not
 #       found. Always uses attribute mode if defined as Bool
 my enum PvtMode <pvmForce pvmNever pvmAsAttr pvmAuto>;
@@ -177,7 +177,9 @@ method INIT-FROM-OPTIONS(@opt-list) is hidden-from-backtrace {
 }
 
 # Just a public interface to the implementation detail
-method set-options(+@options, *%options) { self.INIT-FROM-OPTIONS((|@options, |%options.pairs)) }
+method set-options(+@options, *%options) is hidden-from-backtrace {
+    self.INIT-FROM-OPTIONS((|@options, |%options.pairs))
+}
 
 method opt2method( Str $oname, Str :$base-name? ) is hidden-from-backtrace {
     self!bool-str-meth-name( self."$oname"(), %opt2prefix{$oname}, :$base-name );
@@ -208,13 +210,6 @@ method compose(Mu \type, :$compiler_services) is hidden-from-backtrace {
     callsame;
 
     type.^setup-attr-helpers(self);
-
-    if self.has_accessor {
-        my $orig-accessor := type.^method_table.{$!base-name};
-        for @!init-args -> $alias {
-            type.^add_method($alias, $orig-accessor);
-        }
-    }
 
     self.invoke-composer( type );
 }
