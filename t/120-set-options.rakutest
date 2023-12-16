@@ -3,7 +3,7 @@ use Test;
 use AttrX::Mooish;
 use AttrX::Mooish::X;
 
-plan 10;
+plan 9;
 
 multi trait_mod:<is>(Attribute:D $attr, :$custom-attr!) {
     &trait_mod:<is>($attr, :mooish);
@@ -34,11 +34,5 @@ nok $foo.has-VAL, "alias predicate after clear";
 $foo = Foo.new(VAL => e);
 
 is $foo.val, e, "added alias works as initializer";
-
-throws-like
-    { Foo.^get_attribute_for_usage('$!val').set-options(:!predicate) },
-    AttrX::Mooish::X::NotAllowed,
-    :message(/ '$!val' .* "already composed" /),
-    "options can only be set before attribute gets composed";
 
 done-testing;

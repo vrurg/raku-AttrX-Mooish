@@ -114,11 +114,7 @@ method !bool-str-meth-name($opt, Str $prefix, Str :$base-name is copy) is hidden
     make-name($opt)
 }
 
-method INIT-FROM-OPTIONS(@opt-list) {
-    if self.composed {
-        AttrX::Mooish::X::NotAllowed.new(:op('set options'), :cause("attribute $.name is already composed")).throw
-    }
-
+method INIT-FROM-OPTIONS(@opt-list) is hidden-from-backtrace {
     sub set-attr($name, $value) {
         self.^get_attribute_for_usage('$!' ~ $name).get_value(self) = $value;
     }
