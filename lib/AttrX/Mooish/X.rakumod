@@ -56,3 +56,11 @@ class HelperMethod is Fatal {
         "Cannot install {$.helper}: a method with name '$.helper-name' is already defined"
     }
 }
+
+class StoreValue is Fatal does X::Wrapper {
+    has Attribute:D $.attribute is required;
+    method message {
+        "Exception " ~ self.exception.^name ~ " has been thrown while storing a value into " ~ $!attribute.name
+            ~ self!wrappee-message(:details)
+    }
+}

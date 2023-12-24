@@ -42,11 +42,10 @@ subtest "Base Errors" => {
     }
 
     throws-like { $inst = Foo4.new; my $v = $inst.bar },
-        X::TypeCheck,
-        message => q<Type check failed in assignment to $!bar; expected <anon> but got Str ("default value")>,
+        AttrX::Mooish::X::StoreValue,
+        exception => X::TypeCheck,
+        message => /<.wb> "X::TypeCheck::Assignment" <.wb> .* \s '$!bar' <.wb>/,
         "value from builder don't conform 'where' constraint";
-
-        #CATCH { note "Got exception ", $_.WHO; $_.throw}
 }
 
 subtest "Nils", {
@@ -63,8 +62,9 @@ subtest "Nils", {
     $inst = Foo.new;
 
     throws-like { $inst.foo },
-                X::Hash::Store::OddNumber,
-                :message(rx:s/^Odd number of elements found where hash initializer expected\:/),
+                AttrX::Mooish::X::StoreValue,
+                exception => X::Hash::Store::OddNumber,
+                message => /<.wb> "X::Hash::Store::OddNumber" <.wb> .* \s '%!foo' <.wb>/,
                 "hash build returns Nil";
 }
 

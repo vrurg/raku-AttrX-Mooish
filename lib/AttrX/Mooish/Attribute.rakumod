@@ -53,6 +53,11 @@ my class AttrProxy is Proxy {
     }
 
     method store-value(Mu $value is raw) is raw is hidden-from-backtrace {
+        CATCH {
+            default {
+                AttrX::Mooish::X::StoreValue.new(:exception($_), :$!attribute).throw
+            }
+        }
         unless ⚛$!is-set {
             my Mu $aviv := $!attribute.auto_viv_container;
             # If the container is undefined then create a new instance of its type.
