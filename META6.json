@@ -1,43 +1,42 @@
 {
-  "name": "AttrX::Mooish",
-  "description": "Extending attribute functionality with ideas from Moo/Moose",
-  "version": "1.0.8",
-  "meta-version": "0",
-  "authors": [
-    "Vadim Belman"
-  ],
-  "auth": "zef:vrurg",
-  "depends": [],
-  "build-depends": [],
-  "test-depends": [
-    "Test",
-    "Test::META",
-    "Test::When"
-  ],
-  "provides": {
-    "AttrX::Mooish": "lib/AttrX/Mooish.rakumod",
-    "AttrX::Mooish::Attribute": "lib/AttrX/Mooish/Attribute.rakumod",
-    "AttrX::Mooish::ClassHOW": "lib/AttrX/Mooish/ClassHOW.rakumod",
-    "AttrX::Mooish::Helper": "lib/AttrX/Mooish/Helper.rakumod",
-    "AttrX::Mooish::ParametricRoleHOW": "lib/AttrX/Mooish/ParametricRoleHOW.rakumod",
-    "AttrX::Mooish::X": "lib/AttrX/Mooish/X.rakumod"
-  },
-  "resources": [],
-  "support": {
-    "source": "https://github.com/vrurg/raku-AttrX-Mooish.git"
-  },
-  "license": "Artistic-2.0",
-  "tags": [
-    "AttrX",
-    "Moo",
-    "Moose",
-    "Mooish",
-    "attribute",
-    "mooish",
-    "trait"
-  ],
-  "api": "1.0.5",
-  "production": true,
-  "source-url": "git://github.com/vrurg/raku-AttrX-Mooish.git",
-  "raku": "6.d"
+    "api": "1.0.6",
+    "auth": "zef:vrurg",
+    "authors": [
+        "Vadim Belman"
+    ],
+    "build-depends": [],
+    "depends": [],
+    "description": "Extending attribute functionality with ideas from Moo/Moose",
+    "license": "Artistic-2.0",
+    "meta-version": "0",
+    "name": "AttrX::Mooish",
+    "production": true,
+    "provides": {
+        "AttrX::Mooish": "lib/AttrX/Mooish.rakumod",
+        "AttrX::Mooish::Attribute": "lib/AttrX/Mooish/Attribute.rakumod",
+        "AttrX::Mooish::ClassHOW": "lib/AttrX/Mooish/ClassHOW.rakumod",
+        "AttrX::Mooish::Helper": "lib/AttrX/Mooish/Helper.rakumod",
+        "AttrX::Mooish::ParametricRoleHOW": "lib/AttrX/Mooish/ParametricRoleHOW.rakumod",
+        "AttrX::Mooish::X": "lib/AttrX/Mooish/X.rakumod"
+    },
+    "raku": "6.d",
+    "resources": [],
+    "source-url": "git://github.com/vrurg/raku-AttrX-Mooish.git",
+    "support": {
+        "source": "https://github.com/vrurg/raku-AttrX-Mooish.git"
+    },
+    "tags": [
+        "AttrX",
+        "Moo",
+        "Moose",
+        "Mooish",
+        "attribute",
+        "lazy"
+    ],
+    "test-depends": [
+        "Test",
+        "Test::META",
+        "Test::When"
+    ],
+    "version": "1.0.9"
 }

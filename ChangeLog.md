@@ -1,5 +1,9 @@
 # CHANGELOG
 
+  - **1.0.9**
+    
+      - Provide attribute name when storing a value throws (`AttrX::Mooish::X::StoreValue` exception)
+
   - **v1.0.8**
     
       - Add method `set-options` to the public API of attribute object
