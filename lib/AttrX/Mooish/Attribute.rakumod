@@ -34,7 +34,7 @@ my class AttrProxy is Proxy {
 
     method build-acquire {
         return False if ⚛$!is-set;
-        my $bp = my $bp-old = $!built-promise;
+        my $bp = my $bp-old = ⚛$!built-promise;
         if !$bp-old.defined && ($bp = cas($!built-promise, $bp-old, Promise.new)) === $bp-old {
             return True;
         }
