@@ -57,8 +57,17 @@ class HelperMethod is Fatal {
     }
 }
 
-class StoreValue is Fatal does X::Wrapper {
+class StoreValue is Fatal {
     has Attribute:D $.attribute is required;
+BEGIN {
+    # X::Wrapper role is only available since around Sep 2023. Use own version with earlier compilers.
+    if $*RAKU.compiler.version >= v2023.10 {
+        ::?CLASS.^add_role(::('X::Wrapper'));
+    }
+    else {
+        ::?CLASS.^add_role: do { require ::('AttrX::Mooish::X::Wrapper') }
+    }
+}
     method message {
         "Exception " ~ self.exception.^name ~ " has been thrown while storing a value into " ~ $!attribute.name
             ~ self!wrappee-message(:details)

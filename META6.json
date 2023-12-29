@@ -17,7 +17,8 @@
         "AttrX::Mooish::ClassHOW": "lib/AttrX/Mooish/ClassHOW.rakumod",
         "AttrX::Mooish::Helper": "lib/AttrX/Mooish/Helper.rakumod",
         "AttrX::Mooish::ParametricRoleHOW": "lib/AttrX/Mooish/ParametricRoleHOW.rakumod",
-        "AttrX::Mooish::X": "lib/AttrX/Mooish/X.rakumod"
+        "AttrX::Mooish::X": "lib/AttrX/Mooish/X.rakumod",
+        "AttrX::Mooish::X::Wrapper": "lib/AttrX/Mooish/X/Wrapper.rakumod"
     },
     "raku": "6.d",
     "resources": [],
