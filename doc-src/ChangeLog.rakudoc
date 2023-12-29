@@ -5,6 +5,7 @@
 B<1.0.9>
 
 =item Provide attribute name when storing a value throws (C<AttrX::Mooish::X::StoreValue> exception)
+=item Fix another race condition when building attribute value
 =end item
 
 =begin item

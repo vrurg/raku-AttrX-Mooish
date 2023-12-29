@@ -3,6 +3,8 @@
   - **1.0.9**
     
       - Provide attribute name when storing a value throws (`AttrX::Mooish::X::StoreValue` exception)
+    
+      - Fix another race condition when building attribute value
 
   - **v1.0.8**
     
