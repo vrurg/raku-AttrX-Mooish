@@ -62,18 +62,20 @@ my class AttrProxy is Proxy {
             my Mu $aviv := $!attribute.auto_viv_container;
             # If the container is undefined then create a new instance of its type.
             $!val := nqp::isconcrete_nd($aviv) ?? nqp::clone_nd($aviv) !! $aviv.new;
-            $!is-set ⚛= True;
         }
         nqp::if(
             nqp::iscont($!val),
             ($!val = $value),
             ($!val.STORE($value)));
-        $!attribute.unbind-proxy($!instance, $!val)
+        $!attribute.unbind-proxy($!instance, $!val);
+        $!is-set ⚛= True;
+
+        $!val
     }
 
-    method FIXUP($is-set, Mu \val) is implementation-detail {
-        $!is-set ⚛= $is-set;
+    method FIXUP($is-set, Mu \val --> Nil) is implementation-detail {
         self.VAR.store-value(val) if $is-set;
+        $!is-set ⚛= $is-set;
     }
 }
 
