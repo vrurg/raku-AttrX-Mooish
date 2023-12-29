@@ -59,7 +59,8 @@ subtest "Nil to a definite smiley" => {
     lives-ok { $inst.bar = "a string" }, "assignment of defined value";
     throws-like
         { $inst.bar = Nil },
-        X::TypeCheck,
+        AttrX::Mooish::X::StoreValue,
+        exception => X::TypeCheck,
         "assignment of Nil to a definite type attribute";
 }
 
@@ -116,7 +117,8 @@ subtest "Definite lazy attribute" => {
 
     throws-like
         { my $v = $inst.bad },
-        X::TypeCheck,
+        AttrX::Mooish::X::StoreValue,
+        exception => X::TypeCheck,
         "cannot initialize a definite lazy attribute with a type object";
     lives-ok { $inst.bad = 12 }, "assignment into a bad definite is still possible";
 

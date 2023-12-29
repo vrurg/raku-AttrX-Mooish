@@ -4,3 +4,5 @@
 .idea/
 AttrX-Mooish-v*
 *.iml
+.gen-doc-index.json
+.gen-doc-link-dest.json

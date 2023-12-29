@@ -453,22 +453,20 @@ Generally speaking, there is no good strategy to handle all possible cases what 
 
 Basically, the first line is what `AttrX::Mooish` installs for you by default. Consider the use of `::?CLASS` instead of `self`. This is mandatory because `self` can be an instance of a child class.
 
-SEE
-===
+SEE ALSO
+========
 
-ALSO
+[ChangeLog](rakudoc:..::ChangeLog)
 
-[ChangeLog](ChangeLog.md)
+COPYRIGHT
+=========
 
-AUTHOR
-======
-
-Vadim Belman <vrurg@cpan.org>
+(c) 2023, Vadim Belman <vrurg@cpan.org>
 
 LICENSE
 =======
 
 Artistic License 2.0
 
-See the LICENSE file in this distribution.
+See the [*LICENSE*](file:LICENSE) file in this distribution.
 

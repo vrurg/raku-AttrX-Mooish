@@ -1,0 +1,10 @@
+=begin pod
+=config :!index :title("AttrX::Mooish Document Pages")
+
+=head1 AttrX::Mooish Document Pages
+
+=item L«C«..::ChangeLog»|rakudoc:..::ChangeLog»
+=item L«C«AttrX::Mooish»|rakudoc:AttrX::Mooish»
+=item L«C«README»|rakudoc:..::README»
+
+=end pod

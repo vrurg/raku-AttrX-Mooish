@@ -1,5 +1,5 @@
 use v6.d;
-unit role AttrX::Mooish::Attribute;
+unit role AttrX::Mooish::Attribute:ver($?DISTRIBUTION.meta<ver>):auth($?DISTRIBUTION.meta<auth>):api($?DISTRIBUTION.meta<api>);
 use nqp;
 
 use AttrX::Mooish::X;
@@ -34,7 +34,7 @@ my class AttrProxy is Proxy {
 
     method build-acquire {
         return False if ⚛$!is-set;
-        my $bp = my $bp-old = $!built-promise;
+        my $bp = my $bp-old = ⚛$!built-promise;
         if !$bp-old.defined && ($bp = cas($!built-promise, $bp-old, Promise.new)) === $bp-old {
             return True;
         }
@@ -53,27 +53,36 @@ my class AttrProxy is Proxy {
     }
 
     method store-value(Mu $value is raw) is raw is hidden-from-backtrace {
-        cas $!is-set, {
-            $!val := nqp::clone_nd($!attribute.auto_viv_container) unless $_;
-            True
-        };
+        CATCH {
+            default {
+                AttrX::Mooish::X::StoreValue.new(:exception($_), :$!attribute).throw
+            }
+        }
+        unless ⚛$!is-set {
+            my Mu $aviv := $!attribute.auto_viv_container;
+            # If the container is undefined then create a new instance of its type.
+            $!val := nqp::isconcrete_nd($aviv) ?? nqp::clone_nd($aviv) !! $aviv.new;
+        }
         nqp::if(
             nqp::iscont($!val),
             ($!val = $value),
             ($!val.STORE($value)));
-        $!attribute.unbind-proxy($!instance, $!val)
+        $!attribute.unbind-proxy($!instance, $!val);
+        $!is-set ⚛= True;
+
+        $!val
     }
 
-    method FIXUP($is-set, Mu \val) is implementation-detail {
-        $!is-set ⚛= $is-set;
+    method FIXUP($is-set, Mu \val --> Nil) is implementation-detail {
         self.VAR.store-value(val) if $is-set;
+        $!is-set ⚛= $is-set;
     }
 }
 
 # PvtMode enum defines what privacy mode is used when looking for an option method:
 # force: makes the method always private
 # never: makes it always public
-# as-attr: makes is strictly same as attribute privacy
+# as-attr: makes is strictly the same as attribute's own privacy
 # auto: when options is defined with method name string then uses attribute mode first; and uses opposite if not
 #       found. Always uses attribute mode if defined as Bool
 my enum PvtMode <pvmForce pvmNever pvmAsAttr pvmAuto>;
@@ -100,11 +109,19 @@ my constant %opt2prefix = clearer => 'clear',
                           filter => 'filter',
                           composer => 'compose';
 
-method !bool-str-meth-name( $opt, Str $prefix, Str :$base-name? ) is hidden-from-backtrace {
-    $opt ~~ Bool ?? $prefix ~ '-' ~ ( $base-name // $!base-name ) !! $opt;
+method !bool-str-meth-name($opt, Str $prefix, Str :$base-name is copy) is hidden-from-backtrace {
+    my proto sub make-name(|) {*}
+    multi sub make-name(Bool) {
+        $prefix ~ '-' ~ $base-name
+    }
+    multi sub make-name(Str:D $_) {
+        .contains('*') ?? S:g/\*/$base-name/ !! $opt
+    }
+    $base-name //= $!base-name;
+    make-name($opt)
 }
 
-method INIT-FROM-OPTIONS(@opt-list) {
+method INIT-FROM-OPTIONS(@opt-list) is hidden-from-backtrace {
     sub set-attr($name, $value) {
         self.^get_attribute_for_usage('$!' ~ $name).get_value(self) = $value;
     }
@@ -161,6 +178,14 @@ method INIT-FROM-OPTIONS(@opt-list) {
 
     set-option($_) for @opt-list;
 
+    if self.lazy && self.type.HOW.archetypes.definite && !self.required {
+        self.FAKE-REQUIRED;
+    }
+}
+
+# Just a public interface to the implementation detail
+method set-options(+@options, *%options) is hidden-from-backtrace {
+    self.INIT-FROM-OPTIONS((|@options, |%options.pairs))
 }
 
 method opt2method( Str $oname, Str :$base-name? ) is hidden-from-backtrace {
@@ -178,23 +203,20 @@ method FAKE-REQUIRED {
 method set_required(Mu $required) {
     $!phony-required = False if $required;
     nextsame
-    }
+}
+
+method composed(--> Mu) is raw {
+    nqp::istrue(nqp::getattr_i(self, Attribute, '$!composed'))
+}
 
 method compose(Mu \type, :$compiler_services) is hidden-from-backtrace {
-    return if try nqp::getattr_i(self, Attribute, '$!composed');
+    return if self.composed;
 
     $!always-proxy = $!filter || $!trigger;
 
     callsame;
 
     type.^setup-attr-helpers(self);
-
-    if self.has_accessor {
-        my $orig-accessor := type.^method_table.{$!base-name};
-        for @!init-args -> $alias {
-            type.^add_method($alias, $orig-accessor);
-        }
-    }
 
     self.invoke-composer( type );
 }
@@ -250,7 +272,7 @@ method make-mooish(Mu $instance is raw, Mu $type is raw, %attrinit) is hidden-fr
         nqp::if(
             nqp::iscont($attr-var),
             ($attr-var = $init-value),
-            ($attr-var.STORE($init-value)));
+            ($attr-var.STORE($init-value<>)));
     }
     else {
         my $attr-var := self.attr-var: $instance, :$type, :proxify;

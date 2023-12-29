@@ -1,5 +1,5 @@
 use v6.d;
-unit module AttrX::Mooish::X;
+unit module AttrX::Mooish::X:ver($?DISTRIBUTION.meta<ver>):auth($?DISTRIBUTION.meta<auth>):api($?DISTRIBUTION.meta<api>);
 
 class Fatal is Exception { }
 
@@ -54,5 +54,22 @@ class HelperMethod is Fatal {
     has Str:D $.helper-name is required;
     method message {
         "Cannot install {$.helper}: a method with name '$.helper-name' is already defined"
+    }
+}
+
+class StoreValue is Fatal {
+    has Attribute:D $.attribute is required;
+BEGIN {
+    # X::Wrapper role is only available since around Sep 2023. Use own version with earlier compilers.
+    if $*RAKU.compiler.version >= v2023.10 {
+        ::?CLASS.^add_role(::('X::Wrapper'));
+    }
+    else {
+        ::?CLASS.^add_role: do { require ::('AttrX::Mooish::X::Wrapper') }
+    }
+}
+    method message {
+        "Exception " ~ self.exception.^name ~ " has been thrown while storing a value into " ~ $!attribute.name
+            ~ self!wrappee-message(:details)
     }
 }

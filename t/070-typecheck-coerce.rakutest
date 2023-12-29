@@ -45,11 +45,14 @@ subtest "Basics", {
         }
     }
 
-    throws-like {
+    throws-like
+        {
             $inst = Foo2.new( initial => 43.1 );
             my $v = $inst.foo;
-        }, X::TypeCheck,
-        message => q<Type check failed in assignment to $!foo; expected <anon> but got Rat (43.1)>,
+        },
+        AttrX::Mooish::X::StoreValue,
+        exception => X::TypeCheck::Assignment,
+        message => /<.wb> "X::TypeCheck::Assignment" <.wb> .* \s '$!foo' <.wb>/,
         "subset fails as expected from initial bad string value";
 }
 
@@ -80,8 +83,10 @@ subtest "Typed", {
     $inst.bar = <a b c>;
     isa-ok $inst.bar, Array[Str], "attribute type preserved";
     is-deeply $inst.bar.Array, [<a b c>], "valid coercion to parametrized array";
-    throws-like { $inst.bar = 1, 2, 3 },
-        X::TypeCheck,
+    throws-like
+        { $inst.bar = 1, 2, 3 },
+        AttrX::Mooish::X::StoreValue,
+        exception => X::TypeCheck,
         "assignment of list of integers fails type check";
     is-deeply $inst.bar.Array, [<a b c>], "array attribute doesn't change after failed assignment";
     $inst.test-baz;
@@ -97,8 +102,10 @@ subtest "Typed", {
     $inst.bar = a=>1, b=>2;
     isa-ok $inst.bar, Hash[Int], "hash type preserved";
     is-deeply $inst.bar, Hash[Int].new( 'a', 1, 'b', 2 ), "valid coercion to parametrized hash";
-    throws-like { $inst.bar = a=>"str", b=>"2" },
-        X::TypeCheck,
+    throws-like
+        { $inst.bar = a=>"str", b=>"2" },
+        AttrX::Mooish::X::StoreValue,
+        exception => X::TypeCheck::Assignment,
         "assignment of pairs of Str values to Int hash fails type check";
     is-deeply $inst.bar, Hash[Int].new( 'a', 1, 'b', 2 ), "hash attribute doesn't change after failed assignment";
 }

@@ -1,93 +1,194 @@
 =begin pod
-=CHANGELOG
+=head1 CHANGELOG
 
-=head v1.0.5
+=begin item
+B<1.0.9>
+
+=item Provide attribute name when storing a value throws (C<AttrX::Mooish::X::StoreValue> exception)
+=end item
+
+=begin item
+B<v1.0.8>
+
+=item Add method C<set-options> to the public API of attribute object
+=item Expand support for aliases (I<init-args>) by allowing more customized auto-generated method names
+=item Don't die when helper method names clashes
+=item Fix a problem with containerized initial value
+=end item
+
+=begin item
+B<v1.0.7>
+
+This version primary purpose is to supercede v1.0.6 where package tarball happened to contain wrong version of
+C<AttrX::Mooish::Attribute>.
+
+=item Add C<:auth>, C<:ver>, and C<:api> adverbs to every package in the distribution
+=end item
+
+=begin item
+B<v1.0.6>
+
+=item A quick fix for containerization problem with helper methods
+=item Fix the case with a C<%>- or C<@>-sigilled attribute with C<is Type> trait
+
+=end item
+
+=begin item
+B<v1.0.5>
 
 =item Increase reliability of initialization
 
-=head v1.0.4
+=end item
+
+=begin item
+B<v1.0.4>
 
 =item Fix an exception when mixin in roles with aliased attributes
 
-=head v1.0.3
+=end item
+
+=begin item
+B<v1.0.3>
 
 =item Minor fix of an exception not thrown properly
 
-=head v1.0.2
+=end item
+
+=begin item
+B<v1.0.2>
 
 =item Provide better error reporting for impossible usages
 =item Make sure C<AttrX::Mooish> works equally well with either NQP or Raku implementation of Metamodel classes
 
-=head v1.0.0
+=end item
+
+=begin item
+B<v1.0.0>
 
 =item Implement/fix support of object cloning
 
-=head v0.8.10
+=end item
+
+=begin item
+B<v0.8.10>
 
 =item Fix accidental early initialization of lazy attributes on older Rakudo versions
 
-=head v0.8.9
+=end item
+
+=begin item
+B<v0.8.9>
 
 =item Clearer method would not throw anymore if attribute is still building. It would be just a NOP then.
 
-=head v0.8.8
+=end item
+
+=begin item
+B<v0.8.8>
 
 =item Resolve some more rare race conditions
 
-=head v0.8.7
+=end item
+
+=begin item
+B<v0.8.7>
 
 =item Fix private attribute helper methods checked for duplicate names in public method tables
 =item Fix definite-typed private lazy attributes
 
-=head v0.8.6
+=end item
+
+=begin item
+B<v0.8.6>
 
 =item Slightly improve thread-safety
 
-=head2 v0.8.5
+=end item
+
+=begin item
+B<v0.8.5>
 
 =item Make clearer method thread-safe
 
-=head2 v0.8.4
+=end item
+
+=begin item
+B<v0.8.4>
 
 =item Tidy up exceptions
 
-=head2 v0.8.3
+=end item
+
+=begin item
+B<v0.8.3>
 
 =item Fix incorrect handling of uninitialized lazy attributes in concurrent environment
 
-=head2 v0.8.2
+=end item
+
+=begin item
+B<v0.8.2>
 
 =item Fix a bug with the order of C<TWEAK> invocation for inherited classes
 
-=head2 v0.8.1
+=end item
 
-=item Make it possible to have definite lazy attributes like:
+=begin item
+B<v0.8.1>
+
+=begin item
+Make it possible to have definite lazy attributes like:
 
     has Str:D $.s is mooish(:lazy);
+
+=end item
 
 =item Fix incorrect processing of BUILDPLAN on the latest Rakudo builds
 =item Fix various cases where attributes were not properly initialized
 =item Fix for unbinding not taking place when it had to
 
-=head2 v0.8.0
+=end item
+
+=begin item
+B<v0.8.0>
 
 Major refactor of code toward increasing reliability.
 
 =item Rely on container type rather tahn on sigil
 =item Switch initialization code from wrapping C<BUILD> to use of C<BUILDPLAN>
 
-=head2 v0.7.6
+=end item
+
+=begin item
+B<v0.7.6>
 
 =item Minor but important fix for a flapping bug with C<state> variables in precompiled code
 
-=head2 v0.7.5
+=end item
+
+=begin item
+B<v0.7.5>
 
 =item Make sure a builder can return Nil and it will be handled according to Raku specs
 
-=head2 v0.7.4
+=end item
 
-Migrate to zef ecosystem.
+=begin item
+B<v0.7.4>
 
+=item Migrate to zef ecosystem.
 =item Fix C<$*PERL> deprecation warning.
 
+=end item
+
+=head1 SEE ALSO
+
+L«C<AttrX::Mooish>|rakudoc:AttrX::Mooish:auth<zef:vrurg>»
+
+=head1 LICENSE
+
+Artistic License 2.0
+
+See the L<I<LICENSE>|file:LICENSE> file in this distribution.
 =end pod
+

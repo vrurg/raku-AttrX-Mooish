@@ -1,0 +1,38 @@
+use v6.e.PREVIEW;
+use Test;
+use AttrX::Mooish;
+use AttrX::Mooish::X;
+
+plan 9;
+
+multi trait_mod:<is>(Attribute:D $attr, :$custom-attr!) {
+    &trait_mod:<is>($attr, :mooish);
+    $attr.set-options:
+        :alias($attr.base-name.uc),
+        :predicate, :clearer,
+        :lazy(-> $, *% { π });
+}
+
+
+class Foo {
+    has $.val is custom-attr;
+}
+
+my $foo = Foo.new;
+
+nok $foo.has-val, "attribute predicate before read";
+nok $foo.has-VAL, "alias predicate before read";
+is $foo.val, π, "attribute is visible with its own name";
+is $foo.VAL, π, "attribute is visible as its alias";
+ok $foo.has-val, "attribute predicate after read";
+ok $foo.has-VAL, "alias predicate after read";
+
+$foo.clear-VAL;
+nok $foo.has-val, "attribute predicate after clear";
+nok $foo.has-VAL, "alias predicate after clear";
+
+$foo = Foo.new(VAL => e);
+
+is $foo.val, e, "added alias works as initializer";
+
+done-testing;

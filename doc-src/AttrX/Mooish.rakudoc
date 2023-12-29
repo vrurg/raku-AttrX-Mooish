@@ -560,19 +560,19 @@ can be used to do the standard fixup job:
 Basically, the first line is what C<AttrX::Mooish> installs for you by default. Consider the use of C<::?CLASS> instead
 of C<self>. This is mandatory because C<self> can be an instance of a child class.
 
-=SEE ALSO
+=head1 SEE ALSO
 
-L<ChangeLog|ChangeLog.md>
+L<ChangeLog|rakudoc:..::ChangeLog>
 
-=head1 AUTHOR
+=head1 COPYRIGHT
 
-Vadim Belman <vrurg@cpan.org>
+(c) 2023, Vadim Belman <vrurg@cpan.org>
 
 =head1 LICENSE
 
 Artistic License 2.0
 
-See the LICENSE file in this distribution.
+See the L<I<LICENSE>|file:LICENSE> file in this distribution.
 
 =end pod
 

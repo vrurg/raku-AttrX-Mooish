@@ -1,6 +1,5 @@
 use v6.d;
-unit module AttrX::Mooish:ver($?DISTRIBUTION.meta<ver>):auth<zef:vrurg>:api($?DISTRIBUTION.meta<api>);
-#use Data::Dump;
+unit module AttrX::Mooish:ver($?DISTRIBUTION.meta<ver>):auth($?DISTRIBUTION.meta<auth>):api($?DISTRIBUTION.meta<api>);
 use nqp;
 
 use AttrX::Mooish::Attribute;
@@ -38,10 +37,6 @@ multi trait_mod:<is>( Attribute:D $attr, :$mooish! ) is export {
     }
 
     $attr.INIT-FROM-OPTIONS(@opt-list);
-
-    if $attr.lazy && $attr.type.HOW.archetypes.definite && !$attr.required {
-        $attr.FAKE-REQUIRED;
-    }
 }
 
 our sub META6 {
