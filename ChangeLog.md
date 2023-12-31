@@ -1,5 +1,7 @@
 # CHANGELOG
 
+  - **1.0.10**
+
   - **1.0.9**
     
       - Provide attribute name when storing a value throws (`AttrX::Mooish::X::StoreValue` exception)

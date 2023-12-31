@@ -2,6 +2,11 @@
 =head1 CHANGELOG
 
 =begin item
+B<1.0.10>
+
+=end item
+
+=begin item
 B<1.0.9>
 
 =item Provide attribute name when storing a value throws (C<AttrX::Mooish::X::StoreValue> exception)
